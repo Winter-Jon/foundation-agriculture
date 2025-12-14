@@ -1,0 +1,53 @@
+# ----------------- 数据集设置 -----------------
+# 注意：在运行不同 Fold 时，需要修改此处路径，指向对应的 fold_X 文件夹
+data_dir: datasets/AgriNet-1K/wds_views/fold_2
+dataset: wds/agrinet-1k
+train_split: train/shard_{00000..00671}.tar
+val_split: val/shard_{00000..00167}.tar
+train_num_samples: 1338406
+val_num_samples: 334602
+num_classes: 1020  # 根据你的描述，共有1020个类
+input_size: [3, 224, 224] # 标准 ImageNet 尺寸
+batch_size: 128    # 单卡 Batch Size，根据显存调整 (8卡就是 1024 total batch)
+workers: 16         # 数据加载线程数
+
+# ----------------- 模型设置 -----------------
+model: resnet50    # 代理模型，ResNet50 也是很好的选择
+pretrained: true   # 从头训练，为了捕捉特定数据集的分布特性
+drop: 0.05         # Dropout
+drop_path: 0.05    # Stochastic Depth，ResNet50设为0即可，ResNet101+可设0.1
+
+# ----------------- 优化器与调度器 -----------------
+opt: adamw           # SGD 简单鲁棒，适合 ResNet
+momentum: 0.9
+weight_decay: 1e-4 # 标准权重衰减
+lr_base: 1e-3      # 基础学习率 (配合 batch_size=256 的标准，会自动根据你的 global batch size 缩放)
+sched: cosine      # 余弦退火调度
+epochs: 100        # 100 epoch 足够用于挖掘难例 (标准是300)
+warmup_epochs: 5   # 预热 5 epoch
+warmup_lr: 1e-6    # 预热起始学习率
+min_lr: 1e-5       # 最小学习率
+
+# ----------------- 硬件与加速 -----------------
+amp: true          # 开启混合精度 (Automatic Mixed Precision) - 极大提升速度
+channels_last: true # 开启内存布局优化 (NVIDIA Tensor Core 友好)
+pin_mem: true      # 锁页内存，加速数据传输
+
+# ----------------- 数据增强 (中等强度) -----------------
+# 既防止过拟合，又不过度扭曲图像导致“假难例”
+scale: [0.08, 1.0] # Random Resized Crop 范围
+ratio: [0.75, 1.3333] # 宽高比范围
+hflip: 0.5         # 水平翻转概率
+vflip: 0.0         # 垂直翻转
+
+# Mixup/Cutmix (轻微使用，防止模型对简单样本过度自信)
+mixup: 0.1         # 轻微 Mixup
+cutmix: 0.0        # 暂时关闭 Cutmix，保持物体完整性以便挖掘
+smoothing: 0.1     # Label Smoothing
+
+# ----------------- 杂项 -----------------
+log_interval: 100
+save_images: false # 调试时可开启
+output: ./outputs/hard_mining # 输出目录
+experiment: resnet50_fold_2_mining  # 实验名称，每次换fold记得改名
+
