@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=pack_data-folds2      # 作业名称
+#SBATCH --job-name=resnet50-longtail      # 作业名称
 #SBATCH --partition=batch           # 指定GPU分区（根据集群调整）
 #SBATCH --nodes=1                   # 节点数
 #SBATCH --ntasks-per-node=1         # 每节点核心数
 #SBATCH --cpus-per-task=64           # 每个任务需要的CPU核心
-#SBATCH --gres=gpu:0                # 申请的GPU数量（重要！）
+#SBATCH --gres=gpu:4                # 申请的GPU数量（重要！）
 #SBATCH --mem=128G                   # 内存请求
-#SBATCH --time=100:00:00             # 运行时间 (HH:MM:SS)
+#SBATCH --time=12:00:00             # 运行时间 (HH:MM:SS)
 #SBATCH --output=slurm/%x_%j.out          # 输出日志 (%x=作业名, %j=作业ID)
 #SBATCH --error=slurm/%x_%j.err           # 错误日志
 
@@ -20,7 +20,6 @@ export WANDB_MODE=offline
 export http_proxy="http://10.10.10.10:7899"
 export https_proxy="http://10.10.10.10:7899"
 
+NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 
-# bash scripts/train.sh 8
-python preprocess/prepare_hdd_folds.py
-# python preprocess/clean_img.py
+bash scripts/train.sh $NUM_GPUS

@@ -2,14 +2,18 @@
 # 注意：在运行不同 Fold 时，需要修改此处路径，指向对应的 fold_X 文件夹
 data_dir: datasets/AgriNet-1K/wds_views/fold_2
 dataset: wds/agrinet-1k
-train_split: train/shard_{00000..00671}.tar
-val_split: val/shard_{00000..00167}.tar
-train_num_samples: 1338406
-val_num_samples: 334602
+train_split: train/shard_{00000..00629}.tar
+val_split: val/shard_{00000..00209}.tar
+class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
+train_num_samples: 1254756
+val_num_samples: 418252
 num_classes: 1020  # 根据你的描述，共有1020个类
 input_size: [3, 224, 224] # 标准 ImageNet 尺寸
 batch_size: 128    # 单卡 Batch Size，根据显存调整 (8卡就是 1024 total batch)
 workers: 16         # 数据加载线程数
+eval_metric: balanced_accuracy
+
+enable_long_tail_metrics: true  # 启用长尾指标计算
 
 # ----------------- 模型设置 -----------------
 model: resnet50    # 代理模型，ResNet50 也是很好的选择
@@ -48,6 +52,6 @@ smoothing: 0.1     # Label Smoothing
 # ----------------- 杂项 -----------------
 log_interval: 100
 save_images: false # 调试时可开启
-output: ./outputs/hard_mining # 输出目录
-experiment: resnet50_fold_2_mining  # 实验名称，每次换fold记得改名
+output: ./outputs/resnet50-hard-mining # 输出目录
+experiment: resnet50_fold_2  # 实验名称，每次换fold记得改名
 

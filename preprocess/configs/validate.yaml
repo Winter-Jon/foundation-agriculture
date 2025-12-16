@@ -1,0 +1,47 @@
+# ----------------- 数据集设置 -----------------
+# 验证配置文件 - 用于模型评测和难例挖掘
+data_dir: ''
+dataset: wds/agrinet-1k
+split: val/shard_{00000..00167}.tar  # 验证集
+num_samples: 334602  # 验证集样本数
+num_classes: 1020  # 类别数
+input_size: [3, 224, 224]  # 输入尺寸
+batch_size: 256    # 验证时可以用更大的batch size
+workers: 16         # 数据加载线程数
+
+# ----------------- 模型设置 -----------------
+model: resnet50    # 模型架构
+checkpoint: ''     # 模型检查点路径，命令行指定
+num_gpu: 1         # GPU数量
+device: cuda       # 设备类型
+
+# ----------------- 验证选项 -----------------
+# 长尾分布指标
+enable_long_tail_metrics: true  # 启用长尾指标计算
+metrics_avg: macro              # 启用precision/recall/F1计算，使用macro平均
+
+# Cross Entropy保存（用于难例挖掘）
+save_cross_entropy: true        # 保存每个图像的cross entropy分数
+results_file: ''                # 结果文件路径，命令行指定
+
+# ----------------- 数据预处理 -----------------
+# 验证时的数据预处理参数
+crop_pct: 0.875    # 中心裁剪比例
+interpolation: bicubic  # 插值方法
+mean: [0.485, 0.456, 0.406]  # ImageNet均值
+std: [0.229, 0.224, 0.225]   # ImageNet标准差
+
+# ----------------- 硬件与加速 -----------------
+amp: true           # 启用混合精度
+channels_last: true # 内存布局优化
+pin_mem: true       # 锁页内存
+no_prefetcher: false # 使用快速预取器
+
+# ----------------- 日志与输出 -----------------
+log_freq: 50        # 日志频率
+results_format: csv # 结果文件格式
+
+# ----------------- 其他选项 -----------------
+tta: 0              # 测试时增强倍数，0表示不使用
+use_ema: false      # 是否使用EMA模型
+torchcompile: ''    # torch编译后端，如'inductor'

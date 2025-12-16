@@ -9,7 +9,7 @@ PHYSICAL_ROOT = Path("/home/jiangwentao/Repos/foundation-agriculture/datasets/Ag
 # 2. 这里填你想创建软链接的目标路径
 VIEW_ROOT = Path("/home/jiangwentao/Repos/foundation-agriculture/datasets/AgriNet-1K/wds_views")
 
-NUM_FOLDS = 5
+NUM_FOLDS = 4
 # =======================================
 
 def create_links(src_files, dst_dir):

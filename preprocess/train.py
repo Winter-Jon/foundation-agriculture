@@ -14,6 +14,7 @@ NVIDIA CUDA specific speedups adopted from NVIDIA Apex examples
 
 Hacked together by / Copyright 2020 Ross Wightman (https://github.com/rwightman)
 """
+import sys
 import argparse
 import copy
 import importlib
@@ -31,6 +32,20 @@ import torch.nn as nn
 import torchvision.utils
 import yaml
 
+# Hack
+from utils import reader_wds as custom_reader_wds
+sys.modules['timm.data.readers.reader_wds'] = custom_reader_wds
+
+import timm.data.loader
+from utils.prefetcher_loader import PrefetchLoaderWithKey
+timm.data.loader.PrefetchLoader = PrefetchLoaderWithKey
+
+from utils.collate import FastCollateMixupWithKey, fast_collate_with_key
+timm.data.loader.fast_collate = fast_collate_with_key
+
+import timm.data.dataset
+timm.data.dataset.IterableImageDataset.__iter__ = custom_reader_wds.iterable_image_dataset_iter
+
 from timm import utils
 from timm.data import create_dataset, create_loader, create_naflex_loader, resolve_data_config, \
     Mixup, FastCollateMixup, AugMixDataset
@@ -42,9 +57,7 @@ from timm.scheduler import create_scheduler_v2, scheduler_kwargs
 from timm.utils import NativeScaler
 from timm.task import DistillationTeacher, ClassificationTask, LogitDistillationTask, FeatureDistillationTask
 
-# 导入长尾分布评估指标
-from metrics import balanced_accuracy, macro_f1_score, LongTailMetricsTracker
-
+from utils.metrics import balanced_accuracy, macro_f1_score, LongTailMetricsTracker
 
 try:
     import wandb
@@ -381,8 +394,8 @@ group.add_argument('--output', default='', type=str, metavar='PATH',
                    help='path to output folder (default: none, current dir)')
 group.add_argument('--experiment', default='', type=str, metavar='NAME',
                    help='name of train experiment, name of sub-folder for output')
-group.add_argument('--eval-metric', default='top1', type=str, metavar='EVAL_METRIC',
-                   help='Best metric (default: "top1"')
+group.add_argument('--eval-metric', default='balanced_accuracy', type=str, metavar='EVAL_METRIC',
+                   help='Best metric (default: "balanced_accuracy"')
 group.add_argument('--enable-long-tail-metrics', action='store_true', default=False,
                    help='Enable long-tail distribution metrics (Balanced Accuracy and Macro-F1 Score)')
 group.add_argument('--tta', type=int, default=0, metavar='N',
@@ -806,7 +819,7 @@ def main():
         if mixup_active:
             if args.prefetcher:
                 assert not num_aug_splits  # collate conflict (need to support de-interleaving in collate mixup)
-                collate_fn = FastCollateMixup(**mixup_args)
+                collate_fn = FastCollateMixupWithKey(**mixup_args)
             else:
                 mixup_fn = Mixup(**mixup_args)
 
@@ -1194,7 +1207,7 @@ def train_one_epoch(
     data_start_time = update_start_time = time.time()
     optimizer.zero_grad()
     update_sample_count = 0
-    for batch_idx, (input, target) in enumerate(loader):
+    for batch_idx, (key, input, target) in enumerate(loader):
         last_batch = batch_idx == last_batch_idx
         need_update = last_batch or (batch_idx + 1) % accum_steps == 0
         update_idx = batch_idx // accum_steps
@@ -1380,7 +1393,7 @@ def validate(
     top1_m = utils.AverageMeter()
     top5_m = utils.AverageMeter()
     
-    # 初始化长尾分布指标跟踪器（如果启用）
+    # 初始化长尾分布指标跟踪器
     long_tail_tracker = None
     if args.enable_long_tail_metrics:
         long_tail_tracker = LongTailMetricsTracker(num_classes=args.num_classes)
@@ -1390,7 +1403,7 @@ def validate(
     end = time.time()
     last_idx = len(loader) - 1
     with torch.inference_mode():
-        for batch_idx, (input, target) in enumerate(loader):
+        for batch_idx, (key, input, target) in enumerate(loader):
             last_batch = batch_idx == last_idx
             if not args.prefetcher:
                 input = input.to(device=device, dtype=model_dtype)
@@ -1429,7 +1442,7 @@ def validate(
             top1_m.update(acc1.item(), batch_size)
             top5_m.update(acc5.item(), batch_size)
             
-            # 更新长尾分布指标（如果启用）
+            # 更新长尾分布指标跟踪器
             if long_tail_tracker is not None:
                 long_tail_tracker.update(output, target, reduced_loss.item())
 
@@ -1445,20 +1458,18 @@ def validate(
                     f'Acc@5: {top5_m.val:>7.3f} ({top5_m.avg:>7.3f})'
                 )
 
-    # 构建基础指标字典
     metrics = OrderedDict([
         ('loss', losses_m.avg),
         ('top1', top1_m.avg),
         ('top5', top5_m.avg),
     ])
     
-    # 如果启用了长尾分布指标，计算并添加到结果中
+    # 长尾分布指标
     if long_tail_tracker is not None:
         long_tail_metrics = long_tail_tracker.compute_metrics()
         metrics['balanced_accuracy'] = long_tail_metrics.get('balanced_accuracy', 0.0)
         metrics['macro_f1'] = long_tail_metrics.get('macro_f1', 0.0)
-        
-        # 记录长尾分布指标
+
         if utils.is_primary(args):
             _logger.info(
                 f'{log_name}: Balanced Accuracy: {metrics["balanced_accuracy"]:.3f}, '
