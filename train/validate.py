@@ -30,9 +30,12 @@ import numpy as np
 from utils import reader_wds as custom_reader_wds
 sys.modules['timm.data.readers.reader_wds'] = custom_reader_wds
 
-from utils.prefetcher_loader import PrefetchLoaderWithKey
 import timm.data.loader
+from utils.prefetcher_loader import PrefetchLoaderWithKey
 timm.data.loader.PrefetchLoader = PrefetchLoaderWithKey
+
+from utils.collate import FastCollateMixupWithKey, fast_collate_with_key
+timm.data.loader.fast_collate = fast_collate_with_key
 
 import timm.data.dataset
 timm.data.dataset.IterableImageDataset.__iter__ = custom_reader_wds.iterable_image_dataset_iter
@@ -185,7 +188,7 @@ parser.add_argument('--retry', default=False, action='store_true',
 parser.add_argument('--metrics-avg', type=str, default=None,
                     choices=['micro', 'macro', 'weighted'],
                     help='Enable precision, recall, F1-score calculation and specify the averaging method. '
-                         'Requires scikit-learn. (default: None)')
+                          'Requires scikit-learn. (default: None)')
 
 # NaFlex loader arguments
 parser.add_argument('--naflex-loader', action='store_true', default=False,
@@ -440,10 +443,13 @@ def validate(args):
             if collect_all_preds or args.save_cross_entropy:
                 preds = torch.argmax(output, dim=1)
                 
+
                 if collect_all_preds:
                     all_preds.append(preds)  # Keep on GPU
                     all_targets.append(target) # Keep on GPU
-                    all_keys.append(keys)
+
+                all_keys.append(keys)
+
 
                 if args.save_cross_entropy:
                     raw_ce = F.cross_entropy(output, target, reduction='none')
@@ -521,26 +527,42 @@ def validate(args):
 
     if args.save_cross_entropy and cross_entropy_chunks:
         cross_entropy_file = args.results_file.replace('.csv', '_cross_entropy.csv') if args.results_file else 'cross_entropy_results.csv'
-        _logger.info(f"Writing {len(cross_entropy_chunks)} batches to {cross_entropy_file}...")
+        _logger.info(f"Processing cross-entropy results and sorting by loss (descending)...")
         
-        has_direct_keys = len(all_keys) > 0
+        # 1. 合并所有数值数据 (Shape: [N, 4]) -> [global_index, cross_entropy, prediction, target]
+        all_ce_data = np.vstack(cross_entropy_chunks)
         
+        # 2. 展平文件名列表
+        flat_keys = [item for sublist in all_keys for item in sublist]
+
+        # 3. 组合成字典列表以便排序
+        # all_ce_data[:, 1] 是 Cross Entropy 值
+        final_results = []
+        num_samples = all_ce_data.shape[0]
+        
+        for i in range(num_samples):
+            # 获取对应行的数值
+            row = all_ce_data[i]
+            # 获取对应的文件名 (如果有的话，防止索引越界)
+            fname = flat_keys[i] if i < len(flat_keys) else ""
+            
+            final_results.append({
+                'filename': fname,
+                'cross_entropy': float(row[1]),
+                'prediction': int(row[2]),
+                'target': int(row[3])
+            })
+            
+        # 4. 按 cross_entropy 降序排序
+        final_results.sort(key=lambda x: x['cross_entropy'], reverse=True)
+
+        # 5. 写入文件
+        _logger.info(f"Writing {len(final_results)} sorted samples to {cross_entropy_file}...")
         with open(cross_entropy_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['global_index', 'cross_entropy', 'prediction', 'target', 'filename'])
+            writer = csv.DictWriter(f, fieldnames=['filename', 'cross_entropy', 'prediction', 'target'])
+            writer.writeheader()
+            writer.writerows(final_results)
             
-            # Flatten chunks for iteration if we have keys to zip with
-            flat_data_iter = (row for chunk in cross_entropy_chunks for row in chunk)
-            
-            if has_direct_keys:
-                _logger.info("Using keys directly from data loader.")
-                for row_data, filename in zip(flat_data_iter, all_keys):
-                    # row_data is [index, ce, pred, target]
-                    # We reconstruct the row with the actual filename
-                    writer.writerow(list(row_data) + [filename])
-            else:
-                for row_data in flat_data_iter:
-                    writer.writerow(list(row_data) + [""])
         _logger.info(f"Cross-entropy results written to {cross_entropy_file}.")
 
     results = OrderedDict(

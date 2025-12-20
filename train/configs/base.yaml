@@ -1,6 +1,6 @@
 # ----------------- 数据集设置 -----------------
 # 注意：在运行不同 Fold 时，需要修改此处路径，指向对应的 fold_X 文件夹
-data_dir: datasets/AgriNet-1K/wds_views/fold_2
+data_dir: datasets/AgriNet-1K/wds_views/fold_3
 dataset: wds/agrinet-1k
 train_split: train/shard_{00000..00629}.tar
 val_split: val/shard_{00000..00209}.tar
@@ -53,5 +53,5 @@ smoothing: 0.1     # Label Smoothing
 log_interval: 100
 save_images: false # 调试时可开启
 output: ./outputs/resnet50-hard-mining # 输出目录
-experiment: resnet50_fold_2  # 实验名称，每次换fold记得改名
+experiment: resnet50_fold_3  # 实验名称，每次换fold记得改名
 
