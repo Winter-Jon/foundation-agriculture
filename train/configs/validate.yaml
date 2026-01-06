@@ -2,9 +2,9 @@
 # 验证配置文件 - 用于模型评测和难例挖掘
 data_dir: ''
 dataset: wds/agrinet-1k
-split: val/shard_{00000..00209}.tar  # 验证集
+split: val/shard_{00000..00208}.tar  # 验证集
 class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
-num_samples: 418252
+num_samples: 417573
 num_classes: 1020  # 类别数
 input_size: [3, 224, 224]  # 输入尺寸
 batch_size: 256    # 验证时可以用更大的batch size

@@ -15,5 +15,5 @@ torchrun \
     --master_addr=$MASTER_ADDR \
     --nproc_per_node=$GPUS \
     --master_port=$PORT \
-    trains/train.py \
+    train/train.py \
     --config $CONFIG
