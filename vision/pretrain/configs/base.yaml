@@ -3,12 +3,16 @@ data_dir: datasets/AgriNet-1K/wds_split
 dataset: wds/agrinet-1k
 train_split: train/train-{00000..00760}.tar
 val_split: val/val-{00000..00024}.tar
+train_split: train/train-{00000..00760}.tar
+val_split: val/val-{00000..00024}.tar
 class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
+train_num_samples: 1520292
+val_num_samples: 50000
 train_num_samples: 1520292
 val_num_samples: 50000
 num_classes: 1020  # 共有1020个类
 input_size: [3, 224, 224] # 标准 ImageNet 尺寸
-batch_size: 128    # 单卡 Batch Size，根据显存调整
+batch_size: 256    # 单卡 Batch Size，根据显存调整
 workers: 16         # 数据加载线程数
 eval_metric: balanced_accuracy
 
@@ -19,13 +23,17 @@ model: resnet50    # 模型
 pretrained: true   # 从头训练
 drop: 0.1         # Dropout
 drop_path: 0.1    # Stochastic Depth，ResNet50设为0即可，ResNet101+可设0.1
+drop: 0.1         # Dropout
+drop_path: 0.1    # Stochastic Depth，ResNet50设为0即可，ResNet101+可设0.1
 
 # ----------------- 优化器与调度器 -----------------
 opt: adamw           # SGD 简单鲁棒，适合 ResNet
 momentum: 0.9
 weight_decay: 1e-4 # 标准权重衰减
 lr_base: 1e-4      # 基础学习
+lr_base: 1e-4      # 基础学习
 sched: cosine      # 余弦退火调度
+epochs: 300        
 epochs: 300        
 warmup_epochs: 5   
 warmup_lr: 1e-5    # 预热起始学习率

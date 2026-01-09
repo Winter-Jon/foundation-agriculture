@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 # ================= 配置区域 =================
 # 数据集根目录
-DATA_ROOT = "/home/jiangwentao/Repos/foundation-agriculture/datasets/AgriNet-1K/all"
+DATA_ROOT = "datasets/AgriNet-1K/all"
 # 起始索引 (通常从 1 开始: P00001)
 START_INDEX = 1
 # ===========================================

@@ -7,11 +7,11 @@ import multiprocessing
 
 # ================= 配置区域 =================
 # 原始数据集根目录
-DATA_ROOT = "/home/jiangwentao/Repos/foundation-agriculture/datasets/AgriNet-1K/all"
+DATA_ROOT = "datasets/AgriNet-1K/all"
 # 删除日志保存位置
 LOG_FILE = "deleted_images_log.txt"
 # 并行进程数 (HDD 建议 8-16)
-NUM_WORKERS = 16
+NUM_WORKERS = 128
 # ===========================================
 
 # 确保 PIL 不会加载截断的图片，而是抛出错误

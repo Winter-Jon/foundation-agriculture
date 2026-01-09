@@ -27,5 +27,5 @@ python train/validate.py \
   --checkpoint outputs/resnet101/resnet101_0/last.pth.tar \
   --results-file outputs/resnet101/resnet101_0/metrics_last.csv
 
-  # --checkpoint outputs/resnet50/resnet50_0/last.pth.tar \
-  # --results-file outputs/resnet50/resnet50_0/metrics_last.csv
+  # --checkpoint outputs/resnet50/resnet50_0/model_best.pth.tar \
+  # --results-file outputs/resnet50/resnet50_0/metrics_best.csv
