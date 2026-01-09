@@ -1,17 +1,18 @@
 # ----------------- 数据集设置 -----------------
 # 验证配置文件 - 用于模型评测和难例挖掘
-data_dir: ''
+data_dir: datasets/AgriNet-1K/wds_split
 dataset: wds/agrinet-1k
-split: val/shard_{00000..00208}.tar  # 验证集
+split: test/test-{00000..00049}.tar  # 验证集
 class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
-num_samples: 417573
+num_samples: 100000
 num_classes: 1020  # 类别数
 input_size: [3, 224, 224]  # 输入尺寸
 batch_size: 256    # 验证时可以用更大的batch size
 workers: 16         # 数据加载线程数
 
 # ----------------- 模型设置 -----------------
-model: resnet50    # 模型架构
+# model: resnet50    # 模型架构
+model: vit_large_patch14_clip_224.openai_ft_in12k    # 模型
 checkpoint: ''     # 模型检查点路径，命令行指定
 num_gpu: 1         # GPU数量
 device: cuda       # 设备类型
@@ -22,7 +23,7 @@ enable_long_tail_metrics: true  # 启用长尾指标计算
 metrics_avg: macro              # 启用precision/recall/F1计算，使用macro平均
 
 # Cross Entropy保存（用于难例挖掘）
-save_cross_entropy: true        # 保存每个图像的cross entropy分数
+save_cross_entropy: false        # 保存每个图像的cross entropy分数
 results_file: ''                # 结果文件路径，命令行指定
 
 # ----------------- 数据预处理 -----------------

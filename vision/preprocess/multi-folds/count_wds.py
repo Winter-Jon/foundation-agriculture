@@ -5,8 +5,8 @@ from tqdm import tqdm
 
 # ================= 配置 =================
 # 指向存放真实 tar 包的物理路径 (HDD)
-DATA_ROOT = Path("/home/jiangwentao/Repos/foundation-agriculture/datasets/AgriNet-1K/wds_folds")
-NUM_WORKERS = 16  # 并行读取进程数
+DATA_ROOT = Path("datasets/AgriNet-1K/wds_split")
+NUM_WORKERS = 64  # 并行读取进程数
 # =======================================
 
 def count_tar_images(tar_path):
@@ -31,7 +31,7 @@ def main():
         return
 
     # 1. 获取所有的 Fold 和其下的 tar 文件
-    folds = sorted([d for d in DATA_ROOT.iterdir() if d.is_dir() and "fold_" in d.name])
+    folds = sorted([d for d in DATA_ROOT.iterdir() if d.is_dir()])
     
     fold_counts = {}
     total_images = 0

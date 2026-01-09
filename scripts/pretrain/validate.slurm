@@ -23,6 +23,5 @@ export https_proxy="http://10.10.10.10:7899"
 
 python train/validate.py \
   -c train/configs/validate.yaml \
-  --data-dir datasets/AgriNet-1K/wds_views/fold_3 \
-  --checkpoint outputs/resnet50-hard-mining-1/resnet50_fold_3/model_best.pth.tar \
-  --results-file outputs/resnet50-hard-mining-1/resnet50_fold_3/metrics.csv
+  --checkpoint outputs/vit-large/vit_large_0/model_best.pth.tar \
+  --results-file outputs/vit-large/vit_large_0/metrics.csv

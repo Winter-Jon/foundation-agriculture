@@ -1,35 +1,36 @@
 # ----------------- 数据集设置 -----------------
 data_dir: datasets/AgriNet-1K/wds_split
 dataset: wds/agrinet-1k
-train_split: train/shard_{00000..00626}.tar
-val_split: val/shard_{00000..00208}.tar
+train_split: train/train-{00000..00760}.tar
+val_split: val/val-{00000..00024}.tar
 class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
-train_num_samples: 1252719
-val_num_samples: 417573
+train_num_samples: 1520292
+val_num_samples: 50000
 num_classes: 1020  # 共有1020个类
 input_size: [3, 224, 224] # 标准 ImageNet 尺寸
-batch_size: 128    # 单卡 Batch Size，根据显存调整
+batch_size: 256    # 单卡 Batch Size，根据显存调整
 workers: 16         # 数据加载线程数
 eval_metric: balanced_accuracy
 
 enable_long_tail_metrics: true  # 启用长尾指标计算
 
 # ----------------- 模型设置 -----------------
-model: resnet101    # 模型
+# model: vit_large_patch14_clip_224.openai_ft_in12k    # 模型
+model: swin_small_patch4_window7_224.ms_in1k
 pretrained: true   # 从头训练
-drop: 0.05         # Dropout
-drop_path: 0.05    # Stochastic Depth，ResNet50设为0即可，ResNet101+可设0.1
+drop: 0.1         # Dropout
+drop_path: 0.1    # Stochastic Depth，ResNet50设为0即可，ResNet101+可设0.1
 
 # ----------------- 优化器与调度器 -----------------
 opt: adamw           # SGD 简单鲁棒，适合 ResNet
 momentum: 0.9
 weight_decay: 1e-4 # 标准权重衰减
-lr_base: 1e-3      # 基础学习
+lr_base: 1e-4      # 基础学习
 sched: cosine      # 余弦退火调度
-epochs: 100        
+epochs: 300        
 warmup_epochs: 5   
 warmup_lr: 1e-6    # 预热起始学习率
-min_lr: 1e-5       # 最小学习率
+min_lr: 5e-6       # 最小学习率
 
 # ----------------- 硬件与加速 -----------------
 amp: true          # 开启混合精度 (Automatic Mixed Precision) - 极大提升速度
@@ -50,6 +51,5 @@ smoothing: 0.1     # Label Smoothing
 # ----------------- 杂项 -----------------
 log_interval: 100
 save_images: false # 调试时可开启
-output: ./outputs/resnet50-hard-mining-1 # 输出目录
-experiment: resnet50_fold_0  # 实验名称
-
+output: ./outputs/swin-small # 输出目录
+experiment: swin_small_0  # 实验名称

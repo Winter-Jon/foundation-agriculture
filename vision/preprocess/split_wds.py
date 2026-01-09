@@ -10,10 +10,10 @@ import webdataset as wds
 
 # ================= 配置区域 =================
 INPUT_JSON_PATH = "./split_info.json"
-OUTPUT_WDS_DIR = "/home/jiangwentao/Repos/foundation-agriculture/datasets/AgriNet-1K/wds_split"
+OUTPUT_WDS_DIR = "datasets/AgriNet-1K/wds_split"
 TARGET_SIZE = 256
 SHARD_SIZE = 2000
-NUM_WORKERS = 16 
+NUM_WORKERS = 64 
 # ===========================================
 
 def safe_write_shard(args):
