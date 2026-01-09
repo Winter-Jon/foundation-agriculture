@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=resnet50-fold0      # 作业名称
+#SBATCH --job-name=agrinet-resnet50      # 作业名称
 #SBATCH --partition=batch           # 指定GPU分区（根据集群调整）
 #SBATCH --nodes=1                   # 节点数
 #SBATCH --ntasks-per-node=1         # 每节点核心数
 #SBATCH --cpus-per-task=32           # 每个任务需要的CPU核心
 #SBATCH --gres=gpu:4                # 申请的GPU数量（重要！）
 #SBATCH --mem=64G                   # 内存请求
-#SBATCH --time=12:00:00             # 运行时间 (HH:MM:SS)
+#SBATCH --time=48:00:00             # 运行时间 (HH:MM:SS)
 #SBATCH --output=slurm/%x_%j.out          # 输出日志 (%x=作业名, %j=作业ID)
 #SBATCH --error=slurm/%x_%j.err           # 错误日志
 
@@ -22,7 +22,7 @@ export https_proxy="http://10.10.10.10:7899"
 
 NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 
-CONFIG=train/configs/base-3.yaml
+CONFIG=train/configs/base.yaml
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29502}

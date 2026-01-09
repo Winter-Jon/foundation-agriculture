@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4           # 每个任务需要的CPU核心
 #SBATCH --gres=gpu:1                # 申请的GPU数量（重要！）
 #SBATCH --mem=8G                   # 内存请求
-#SBATCH --time=00:10:00             # 运行时间 (HH:MM:SS)
+#SBATCH --time=00:20:00             # 运行时间 (HH:MM:SS)
 #SBATCH --output=slurm/%x_%j.out          # 输出日志 (%x=作业名, %j=作业ID)
 #SBATCH --error=slurm/%x_%j.err           # 错误日志
 
@@ -23,6 +23,9 @@ export https_proxy="http://10.10.10.10:7899"
 
 python train/validate.py \
   -c train/configs/validate.yaml \
-  --data-dir datasets/AgriNet-1K/wds_views/fold_3 \
-  --checkpoint outputs/resnet50-hard-mining-1/resnet50_fold_3/model_best.pth.tar \
-  --results-file outputs/resnet50-hard-mining-1/resnet50_fold_3/metrics.csv
+  --model resnet101 \
+  --checkpoint outputs/resnet101/resnet101_0/last.pth.tar \
+  --results-file outputs/resnet101/resnet101_0/metrics_last.csv
+
+  # --checkpoint outputs/resnet50/resnet50_0/last.pth.tar \
+  # --results-file outputs/resnet50/resnet50_0/metrics_last.csv
