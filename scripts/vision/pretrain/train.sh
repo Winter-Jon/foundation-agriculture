@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GPUS=$1
-CONFIG=train/configs/base.yaml
+CONFIG=vision/pretrain/configs/base.yaml
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29501}
@@ -15,5 +15,5 @@ torchrun \
     --master_addr=$MASTER_ADDR \
     --nproc_per_node=$GPUS \
     --master_port=$PORT \
-    train/train.py \
+    vision/pretrain/train.py \
     --config $CONFIG

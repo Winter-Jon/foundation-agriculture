@@ -21,8 +21,8 @@ export http_proxy="http://10.10.10.10:7899"
 export https_proxy="http://10.10.10.10:7899"
 
 
-python train/validate.py \
-  -c train/configs/validate.yaml \
+python vision/pretrain/validate.py \
+  -c vision/pretrain/configs/validate.yaml \
   --model resnet101 \
   --checkpoint outputs/resnet101/resnet101_0/last.pth.tar \
   --results-file outputs/resnet101/resnet101_0/metrics_last.csv

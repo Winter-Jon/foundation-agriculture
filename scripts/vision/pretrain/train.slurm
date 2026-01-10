@@ -22,7 +22,7 @@ export https_proxy="http://10.10.10.10:7899"
 
 NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 
-CONFIG=train/configs/base.yaml
+CONFIG=vision/pretrain/configs/base.yaml
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
 PORT=${PORT:-29502}
@@ -36,5 +36,5 @@ torchrun \
     --master_addr=$MASTER_ADDR \
     --nproc_per_node=$NUM_GPUS \
     --master_port=$PORT \
-    train/train.py \
+    vision/pretrain/train.py \
     --config $CONFIG
