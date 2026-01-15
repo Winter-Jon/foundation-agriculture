@@ -59,6 +59,8 @@ from timm.task import DistillationTeacher, ClassificationTask, LogitDistillation
 
 from utils.metrics import balanced_accuracy, macro_f1_score, LongTailMetricsTracker
 
+from model import *
+
 try:
     import wandb
     has_wandb = True
