@@ -1,2 +1,3 @@
 from .FocusNet import FocusNet, focusnet_tiny_224
 from .dynamic_transformer import DynamicTransformer, dynamic_transformer_tiny_patch4_window7_224
+from .hybrid_transformer import hybrid_transformer_base
