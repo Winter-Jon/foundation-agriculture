@@ -11,7 +11,7 @@ batch_size: 256    # 验证时可以用更大的batch size
 workers: 16         # 数据加载线程数
 
 # ----------------- 模型设置 -----------------
-model: resnet101    # 模型架构
+model: resnet50    # 模型架构
 checkpoint: ''     # 模型检查点路径，命令行指定
 num_gpu: 1         # GPU数量
 device: cuda       # 设备类型
