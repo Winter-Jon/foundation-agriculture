@@ -46,6 +46,8 @@ from timm.models import create_model, load_checkpoint, is_model, list_models
 from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_fuser, \
     decay_batch_step, check_batch_size_retry, ParseKwargs, reparameterize_model
 
+from model import *
+
 try:
     from functorch.compile import memory_efficient_fusion
     has_functorch = True
