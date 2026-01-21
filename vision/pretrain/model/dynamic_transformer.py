@@ -227,23 +227,56 @@ class Global_Cross_Attention(nn.Module):
         return x
 
 class DynamicAttention(nn.Module):
-    def __init__(self, dim=96, ca_num_heads = 4, num_heads = 8,
-                 input_resolution=56*56,query_ratio =8):
+    """Dynamic attention with optional recurrent (memory) query.
+
+    This is adapted from the RecA idea in the paper: keep a running query (Q_hat)
+    and add it to the current query before attention.
+
+    Here, the query is the learnable query_tokens (reduced tokens). We keep a
+    per-forward memory tensor with the same shape as the expanded query.
+    """
+
+    def __init__(self, dim=96, ca_num_heads=4, num_heads=8,
+                 input_resolution=56 * 56, query_ratio=8, use_memory: bool = True):
         super().__init__()
-        self.query_tokens = nn.Parameter(torch.zeros(1, input_resolution//query_ratio, dim))
+        self.use_memory = use_memory
+
+        self.query_tokens = nn.Parameter(torch.zeros(1, input_resolution // query_ratio, dim))
         trunc_normal_(self.query_tokens, std=0.02)
 
-        self.attn = Multi_Scale_Awareness(dim=dim, ca_num_heads=ca_num_heads, )
+        self.attn = Multi_Scale_Awareness(dim=dim, ca_num_heads=ca_num_heads)
         self.cross_attn = Global_Cross_Attention(dim=dim, num_heads=num_heads)
 
-    def forward(self, x, H, W):
-
+    def forward(self, x, H, W, q_hat: Optional[torch.Tensor] = None):
+        """Args:
+            x: (B, N, C)
+            q_hat: (B, Nq, C) or None
+        Returns:
+            x_cross: (B, N, C)
+            q_hat_new: (B, Nq, C) or None
+        """
         B, N, C = x.shape
         k, v = self.attn(x, H, W)
-        q = self.query_tokens.expand(B, -1, -1)
-        x_cross = self.cross_attn(q, k, v)
 
-        return  x_cross
+        q = self.query_tokens.expand(B, -1, -1)
+
+        if not self.use_memory:
+            q_hat_new = None
+            x_cross = self.cross_attn(q, k, v)
+            return x_cross, q_hat_new
+
+        # init / shape-guard
+        # 记忆查询：q_hat 保存上一轮的 query（RecA），用于增强跨层/跨块特征交互
+        if (q_hat is None) or (q_hat.shape != q.shape):
+            q_hat = torch.zeros_like(q)
+
+        # 记忆融合：当前 query + 历史记忆
+        q = q + q_hat
+        q_hat_new = q
+
+        x_cross = self.cross_attn(q, k, v)
+        return x_cross, q_hat_new
+
 
 class WindowAttention(nn.Module):
     r""" Window based multi-head self attention (W-MSA) module with relative position bias.
@@ -265,8 +298,8 @@ class WindowAttention(nn.Module):
         self.dim = dim
         self.window_size = window_size  # Wh, Ww
         self.num_heads = num_heads
-        head_dim = dim // num_heads
-        self.scale = qk_scale or head_dim ** -0.5
+        self.head_dim = dim // num_heads
+        self.scale = qk_scale or self.head_dim ** -0.5
 
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
@@ -275,7 +308,10 @@ class WindowAttention(nn.Module):
         # get pair-wise relative position index for each token inside the window
         coords_h = torch.arange(self.window_size[0])
         coords_w = torch.arange(self.window_size[1])
-        coords = torch.stack(torch.meshgrid([coords_h, coords_w]))  # 2, Wh, Ww
+        try:
+            coords = torch.stack(torch.meshgrid([coords_h, coords_w], indexing="ij"))  # 2, Wh, Ww
+        except TypeError:
+            coords = torch.stack(torch.meshgrid([coords_h, coords_w]))  # 2, Wh, Ww
         coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
         relative_coords = coords_flatten[:, :, None] - coords_flatten[:, None, :]  # 2, Wh*Ww, Wh*Ww
         relative_coords = relative_coords.permute(1, 2, 0).contiguous()  # Wh*Ww, Wh*Ww, 2
@@ -293,22 +329,43 @@ class WindowAttention(nn.Module):
         trunc_normal_(self.relative_position_bias_table, std=.02)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, mask=None):
-        """
+    def forward(self, x, mask=None, q_hat: Optional[torch.Tensor] = None, use_memory: bool = True):
+        """Window-based multi-head self-attention with optional recurrent query (RecA).
+
         Args:
-            x: input features with shape of (num_windows*B, N, C)
-            mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
+            x: (num_windows*B, N, C)
+            mask: attention mask or None
+            q_hat: (num_windows*B, N, C) recurrent query memory (previous Q), or None
+            use_memory: if False, behaves like standard W-MSA
+
+        Returns:
+            out: (num_windows*B, N, C)
+            q_hat_new: (num_windows*B, N, C) if use_memory else None
         """
         B_, N, C = x.shape
         qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+        q, k, v = qkv[0], qkv[1], qkv[2]  # [B_, heads, N, head_dim]
+
+        if not use_memory:
+            q_hat_new = None
+        else:
+            # q_hat lives in the (B_, N, C) space (before splitting heads)
+            # 窗口内记忆：每个窗口保存自己的 q_hat（RecA）
+            if (q_hat is None) or (q_hat.shape != x.shape):
+                q_hat = torch.zeros_like(x)
+
+            q_flat = q.transpose(1, 2).reshape(B_, N, C)  # [B_, N, C]
+            # 记忆融合：当前 query + 历史记忆
+            q_flat = q_flat + q_hat
+            q_hat_new = q_flat
+            q = q_flat.reshape(B_, N, self.num_heads, self.head_dim).permute(0, 2, 1, 3)
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
 
         relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
-            self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1)  # Wh*Ww,Wh*Ww,nH
-        relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
+            self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1)
+        relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()
         attn = attn + relative_position_bias.unsqueeze(0)
 
         if mask is not None:
@@ -321,10 +378,10 @@ class WindowAttention(nn.Module):
 
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
-        x = self.proj(x)
-        x = self.proj_drop(x)
-        return x
+        out = (attn @ v).transpose(1, 2).reshape(B_, N, C)
+        out = self.proj(out)
+        out = self.proj_drop(out)
+        return out, q_hat_new
 
 class DynamicTransformerBlock(nn.Module):
 
@@ -342,28 +399,35 @@ class DynamicTransformerBlock(nn.Module):
 
         self.norm1 = norm_layer(dim)
         self.norm2 = norm_layer(dim)
-        self.dynamic_attn = DynamicAttention(dim=dim, ca_num_heads = ca_num_heads,
-                                                       query_ratio=query_ratio,
-                                                          num_heads = num_heads,
-                                                         input_resolution=input_resolution[0]*input_resolution[1])
+        self.dynamic_attn = DynamicAttention(dim=dim, ca_num_heads=ca_num_heads,
+                                               query_ratio=query_ratio,
+                                               num_heads=num_heads,
+                                               input_resolution=input_resolution[0] * input_resolution[1],
+                                               use_memory=True)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x):
+    def forward(self, x, memory_state: Dict[str, Any]):
         H, W = self.input_resolution
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
 
+        # 取出动态注意力的记忆
+        q_hat_dyn = memory_state.get("dyn", None)
+
         dy_shortcut = x
-        x = self.norm1(x)
-        x = self.drop_path(self.dynamic_attn(x,H,W)) + dy_shortcut
+        x_norm = self.norm1(x)
+        x_dyn, q_hat_dyn = self.dynamic_attn(x_norm, H, W, q_hat=q_hat_dyn)
+        x = self.drop_path(x_dyn) + dy_shortcut
 
         # FFN
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x
+        # 写回动态注意力记忆
+        memory_state["dyn"] = q_hat_dyn
+        return x, memory_state
 
 class DynamicAwareWindowBlock(nn.Module):
 
@@ -386,10 +450,11 @@ class DynamicAwareWindowBlock(nn.Module):
 
         self.norm1 = norm_layer(dim)
 
-        self.dynamic_attn = DynamicAttention(dim=dim, ca_num_heads = ca_num_heads,
-                                                       query_ratio=query_ratio,
-                                                        num_heads = num_heads,
-                                                         input_resolution=input_resolution[0]*input_resolution[1])
+        self.dynamic_attn = DynamicAttention(dim=dim, ca_num_heads=ca_num_heads,
+                                               query_ratio=query_ratio,
+                                               num_heads=num_heads,
+                                               input_resolution=input_resolution[0] * input_resolution[1],
+                                               use_memory=True)
 
         self.attn = WindowAttention(
             dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
@@ -426,57 +491,83 @@ class DynamicAwareWindowBlock(nn.Module):
         self.register_buffer("attn_mask", attn_mask)
         self.fused_window_process = fused_window_process
 
-    def forward(self, x):
+    def forward(self, x, memory_state: Dict[str, Any]):
         H, W = self.input_resolution
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
 
+        # -------- Dynamic (cross) attention with recurrent query on query_tokens --------
+        # 动态注意力记忆（跨层/跨块）
+        q_hat_dyn = memory_state.get("dyn", None)
         dy_shortcut = x
-        x = self.norm1(x)
-        x = self.drop_path(self.dynamic_attn(x,H,W)) + dy_shortcut
+        x_norm = self.norm1(x)
+        x_dyn, q_hat_dyn = self.dynamic_attn(x_norm, H, W, q_hat=q_hat_dyn)
+        x = self.drop_path(x_dyn) + dy_shortcut
+        # 写回动态注意力记忆
+        memory_state["dyn"] = q_hat_dyn
+
+        # -------- Window self-attention with recurrent query (RecA) --------
+        # 窗口注意力记忆（局部窗口内的 q_hat）
+        q_hat_win = memory_state.get("win", None)
+        if (q_hat_win is None) or (q_hat_win.shape != x.shape):
+            q_hat_win = torch.zeros_like(x)
 
         shortcut = x
         x = self.norm2(x)
         x = x.view(B, H, W, C)
 
+        q_hat_map = q_hat_win.view(B, H, W, C)
+
         # cyclic shift
         if self.shift_size > 0:
+            shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
+            shifted_q = torch.roll(q_hat_map, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
             if not self.fused_window_process:
-                shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
-                # partition windows
-                x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
+                x_windows = window_partition(shifted_x, self.window_size)
             else:
                 x_windows = WindowProcess.apply(x, B, H, W, C, -self.shift_size, self.window_size)
+            q_windows = window_partition(shifted_q, self.window_size)
         else:
             shifted_x = x
-            # partition windows
-            x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
+            x_windows = window_partition(shifted_x, self.window_size)
+            q_windows = window_partition(q_hat_map, self.window_size)
 
-        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
+        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)
+        q_hat_windows = q_windows.view(-1, self.window_size * self.window_size, C)
 
-        # W-MSA/SW-MSA
-        attn_windows = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
+        attn_windows, q_hat_windows_new = self.attn(x_windows, mask=self.attn_mask, q_hat=q_hat_windows, use_memory=True)
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
+        q_hat_windows_new = q_hat_windows_new.view(-1, self.window_size, self.window_size, C)
 
-        # reverse cyclic shift
+        # reverse cyclic shift (feature)
         if self.shift_size > 0:
             if not self.fused_window_process:
-                shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+                shifted_x = window_reverse(attn_windows, self.window_size, H, W)
                 x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
             else:
                 x = WindowProcessReverse.apply(attn_windows, B, H, W, C, self.shift_size, self.window_size)
         else:
-            shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
-            x = shifted_x
+            x = window_reverse(attn_windows, self.window_size, H, W)
+
+        # reverse cyclic shift (query memory)
+        if self.shift_size > 0:
+            q_shifted = window_reverse(q_hat_windows_new, self.window_size, H, W)
+            q_map_new = torch.roll(q_shifted, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
+        else:
+            q_map_new = window_reverse(q_hat_windows_new, self.window_size, H, W)
+
+        q_hat_win_new = q_map_new.view(B, H * W, C)
+        # 写回窗口注意力记忆
+        memory_state["win"] = q_hat_win_new
+
         x = x.view(B, H * W, C)
         x = shortcut + self.drop_path(x)
 
         # FFN
         x = x + self.drop_path(self.mlp(self.norm2(x)))
-
-        return x
+        return x, memory_state
 
 class WindowBlock(nn.Module):
     def __init__(self, dim, input_resolution, num_heads, window_size=7,
@@ -503,26 +594,42 @@ class WindowBlock(nn.Module):
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
         self.fused_window_process = fused_window_process
 
-    def forward(self, x):
+    def forward(self, x, memory_state: Dict[str, Any]):
         H, W = self.input_resolution
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
 
+        # 窗口注意力记忆
+        q_hat_win = memory_state.get("win", None)
+        if (q_hat_win is None) or (q_hat_win.shape != x.shape):
+            q_hat_win = torch.zeros_like(x)
+
         shortcut = x
         x = self.norm1(x)
         x = x.view(B, H, W, C)
-        x_windows = window_partition(x, self.window_size)  # nW*B, window_size, window_size, C
-        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, Ws*Ws, C
 
-        attn_windows = self.attn(x_windows, mask=None)
+        q_hat_map = q_hat_win.view(B, H, W, C)
+
+        x_windows = window_partition(x, self.window_size)
+        q_windows = window_partition(q_hat_map, self.window_size)
+
+        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)
+        q_hat_windows = q_windows.view(-1, self.window_size * self.window_size, C)
+
+        attn_windows, q_hat_windows_new = self.attn(x_windows, mask=None, q_hat=q_hat_windows, use_memory=True)
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
+        q_hat_windows_new = q_hat_windows_new.view(-1, self.window_size, self.window_size, C)
 
-        x = window_reverse(attn_windows, self.window_size, H, W)  # B, H, W, C
+        x = window_reverse(attn_windows, self.window_size, H, W)
+        q_map_new = window_reverse(q_hat_windows_new, self.window_size, H, W)
+
         x = x.view(B, H * W, C)
+        # 写回窗口注意力记忆
+        memory_state["win"] = q_map_new.view(B, H * W, C)
 
         x = shortcut + self.drop_path(x)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
-        return x
+        return x, memory_state
 
 class DynamicBasicLayer(nn.Module):
 
@@ -556,15 +663,18 @@ class DynamicBasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def forward(self, x, memory_state: Dict[str, Any]):
         for blk in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
-            else:
-                x = blk(x)
+            # NOTE: torch.utils.checkpoint only supports Tensor inputs/outputs;
+            # memory_state is a dict, so we disable checkpointing in memory-attention mode.
+            x, memory_state = blk(x, memory_state)
         if self.downsample is not None:
             x = self.downsample(x)
-        return x
+            # resolution / token count changes: reset memories
+            # 下采样后 token 数变化，记忆需要重置
+            memory_state["dyn"] = None
+            memory_state["win"] = None
+        return x, memory_state
 
 class HybridBasicLayer(nn.Module):
 
@@ -600,15 +710,18 @@ class HybridBasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def forward(self, x, memory_state: Dict[str, Any]):
         for blk in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
-            else:
-                x = blk(x)
+            # NOTE: torch.utils.checkpoint only supports Tensor inputs/outputs;
+            # memory_state is a dict, so we disable checkpointing in memory-attention mode.
+            x, memory_state = blk(x, memory_state)
         if self.downsample is not None:
             x = self.downsample(x)
-        return x
+            # resolution / token count changes: reset memories
+            # 下采样后 token 数变化，记忆需要重置
+            memory_state["dyn"] = None
+            memory_state["win"] = None
+        return x, memory_state
 
 class WindowBasicLayer(nn.Module):
 
@@ -642,16 +755,18 @@ class WindowBasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x):
-
+    def forward(self, x, memory_state: Dict[str, Any]):
         for blk in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
-            else:
-                x = blk(x)
+            # NOTE: torch.utils.checkpoint only supports Tensor inputs/outputs;
+            # memory_state is a dict, so we disable checkpointing in memory-attention mode.
+            x, memory_state = blk(x, memory_state)
         if self.downsample is not None:
             x = self.downsample(x)
-        return x
+            # resolution / token count changes: reset memories
+            # 下采样后 token 数变化，记忆需要重置
+            memory_state["dyn"] = None
+            memory_state["win"] = None
+        return x, memory_state
 
 class DynamicTransformer(nn.Module):
     r""" Swin Transformer
@@ -801,8 +916,11 @@ class DynamicTransformer(nn.Module):
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
+        # 记忆状态在层间传递（dyn: 动态注意力；win: 窗口注意力）
+        memory_state: Dict[str, Any] = {"dyn": None, "win": None}
+
         for layer in self.layers:
-            x = layer(x)
+            x, memory_state = layer(x, memory_state)
 
         x = self.norm(x)  # B L C
         x = self.avgpool(x.transpose(1, 2))  # B C 1
@@ -818,10 +936,10 @@ def creat_model():
     model = DynamicTransformer(embed_dim=96,ca_num_heads=[6, 6, 6, -1])
     return model
 
+
 @register_model
-def dynamic_transformer_tiny_patch4_window7_224(pretrained=False, **kwargs):
-    model = DynamicTransformer(embed_dim=96,ca_num_heads=[6, 6, 6, -1], depths=[2, 2, 6, 2],
-                               num_heads=[3, 6, 12, 24], window_size=7, **kwargs)
+def dynamic_transformer_v2(pretrained=False, **kwargs):
+    model = DynamicTransformer(embed_dim=96,ca_num_heads=[6, 6, 6, -1], **kwargs)
     return model
 
 if __name__ == '__main__':
