@@ -24,6 +24,9 @@ except Exception:
     WindowProcessReverse = None
     # print("[Warning] Fused window process have not been installed. Please refer to get_started.md for installation.")
 
+from typing import Any, Dict, Optional
+
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
