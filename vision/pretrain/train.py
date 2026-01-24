@@ -170,6 +170,10 @@ group.add_argument('--head-init-bias', default=None, type=float,
                    help='Head initialization bias value')
 group.add_argument('--torchcompile-mode', type=str, default=None,
                     help="torch.compile mode (default: None).")
+group.add_argument('--inject-mda-vit', action='store_true', default=False,
+                    help="Inject MDA into vit timm models.")
+group.add_argument('--inject-mda-swin', action='store_true', default=False,
+                    help="Inject MDA into swin timm models.")
 
 # scripting / codegen
 scripting_group = group.add_mutually_exclusive_group()
@@ -539,6 +543,23 @@ def main():
         **factory_kwargs,
         **args.model_kwargs,
     )
+
+    class MDAMemoryConfig:
+        """控制记忆增强注意力的配置。"""
+        latent_dim: int = model.num_features  # None => latent_dim = dim
+        enabled: bool = True              # 关闭则等价于原 timm attention
+        detach_memory: bool = False       # 是否对 memory_q_STM 做 detach（避免跨层梯度耦合）
+        # 注：MDATransUNet_v2 中 is_start/is_end 控制 Identity/Linear；这里保留同样语义
+        use_identity_at_start: bool = True
+        use_identity_at_end: bool = True
+    
+    if args.inject_mda_vit:
+        model = inject_mda_into_timm_vit(model, MDAMemoryConfig())
+    if args.inject_mda_swin:
+        model = inject_mda_into_timm_swin(model, MDAMemoryConfig())
+
+     # head init
+
     if args.head_init_scale is not None:
         with torch.no_grad():
             model.get_classifier().weight.mul_(args.head_init_scale)
@@ -956,7 +977,7 @@ def main():
     if args.distributed:
         if utils.is_primary(args):
             _logger.info("Preparing task for distributed training")
-        task.prepare_distributed(device_ids=[device])
+        task.prepare_distributed(device_ids=[device], find_unused_parameters=True)
 
     # Compile task if requested (should be done after DDP)
     if args.torchcompile:

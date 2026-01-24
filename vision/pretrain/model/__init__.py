@@ -1,3 +1,4 @@
 from .FocusNet import FocusNet, focusnet_tiny_224
 from .dynamic_transformer import DynamicTransformer, dynamic_transformer_v2
 from .hybrid_transformer import hybrid_transformer_base
+from .mam_timm_vit import inject_mda_into_timm_swin, inject_mda_into_timm_vit
