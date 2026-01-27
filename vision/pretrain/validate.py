@@ -167,6 +167,10 @@ parser.add_argument('--reparam', default=False, action='store_true',
 parser.add_argument('--model-kwargs', nargs='*', default={}, action=ParseKwargs)
 parser.add_argument('--torchcompile-mode', type=str, default=None,
                     help="torch.compile mode (default: None).")
+parser.add_argument('--inject-mda-vit', action='store_true', default=False,
+                    help="Inject MDA into vit timm models.")
+parser.add_argument('--inject-mda-swin', action='store_true', default=False,
+                    help="Inject MDA into swin timm models.")
 
 scripting_group = parser.add_mutually_exclusive_group()
 scripting_group.add_argument('--torchscript', default=False, action='store_true',
@@ -277,6 +281,20 @@ def validate(args):
     if args.num_classes is None:
         assert hasattr(model, 'num_classes'), 'Model must have `num_classes` attr if not set on cmd line/config.'
         args.num_classes = model.num_classes
+
+    class MDAMemoryConfig:
+        """控制记忆增强注意力的配置。"""
+        latent_dim: int = model.num_features  # None => latent_dim = dim
+        enabled: bool = True              # 关闭则等价于原 timm attention
+        detach_memory: bool = False       # 是否对 memory_q_STM 做 detach（避免跨层梯度耦合）
+        # 注：MDATransUNet_v2 中 is_start/is_end 控制 Identity/Linear；这里保留同样语义
+        use_identity_at_start: bool = True
+        use_identity_at_end: bool = True
+    
+    if args.inject_mda_vit:
+        model = inject_mda_into_timm_vit(model, MDAMemoryConfig())
+    if args.inject_mda_swin:
+        model = inject_mda_into_timm_swin(model, MDAMemoryConfig())
 
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, args.use_ema)
