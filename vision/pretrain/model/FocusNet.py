@@ -35,40 +35,34 @@ class DropPath(nn.Module):
         return f"drop_prob={self.drop_prob}"
 
 
-# class LayerNorm(nn.Module):
-#     """
-#     ConvNeXt 风格 LayerNorm，支持：
-#     - channels_last: (B,H,W,C)
-#     - channels_first: (B,C,H,W)
-#     """
+class LayerNorm(nn.Module):
+    """
+    ConvNeXt 风格 LayerNorm，支持：
+    - channels_last: (B,H,W,C)
+    - channels_first: (B,C,H,W)
+    """
 
-#     def __init__(self, normalized_shape: int, eps: float = 1e-6, data_format: str = "channels_last"):
-#         super().__init__()
-#         if data_format not in ("channels_last", "channels_first"):
-#             raise NotImplementedError(f"Unsupported data_format={data_format}")
+    def __init__(self, normalized_shape: int, eps: float = 1e-6, data_format: str = "channels_last"):
+        super().__init__()
+        if data_format not in ("channels_last", "channels_first"):
+            raise NotImplementedError(f"Unsupported data_format={data_format}")
 
-#         self.weight = nn.Parameter(torch.ones(normalized_shape))
-#         self.bias = nn.Parameter(torch.zeros(normalized_shape))
-#         self.eps = eps
-#         self.data_format = data_format
-#         self.normalized_shape = (normalized_shape,)
+        self.weight = nn.Parameter(torch.ones(normalized_shape))
+        self.bias = nn.Parameter(torch.zeros(normalized_shape))
+        self.eps = eps
+        self.data_format = data_format
+        self.normalized_shape = (normalized_shape,)
 
-#     def forward(self, x: torch.Tensor) -> torch.Tensor:
-#         if self.data_format == "channels_last":
-#             return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.data_format == "channels_last":
+            return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
 
-#         # channels_first: 沿 channel 做 LN
-#         u = x.mean(1, keepdim=True)
-#         s = (x - u).pow(2).mean(1, keepdim=True)
-#         x = (x - u) / torch.sqrt(s + self.eps)
-#         return self.weight[:, None, None] * x + self.bias[:, None, None]
+        # channels_first: 沿 channel 做 LN
+        u = x.mean(1, keepdim=True)
+        s = (x - u).pow(2).mean(1, keepdim=True)
+        x = (x - u) / torch.sqrt(s + self.eps)
+        return self.weight[:, None, None] * x + self.bias[:, None, None]
 
-class LayerNorm(nn.GroupNorm):
-    def __init__(self, num_channels, eps=1e-6):
-        super().__init__(num_groups=1, num_channels=num_channels, eps=eps)
-
-    def forward(self, x):
-        return super().forward(x)
 
 class PatchEmbed(nn.Module):
     """
@@ -85,9 +79,9 @@ class PatchEmbed(nn.Module):
         self.proj2 = nn.Conv2d(embed_dim, embed_dim, kernel_size=3, stride=1, padding=1, bias=False)
         self.proj3 = nn.Conv2d(embed_dim, embed_dim, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.norm1 = LayerNorm(embed_dim, eps=1e-6) if use_norm else nn.Identity()
-        self.norm2 = LayerNorm(embed_dim, eps=1e-6) if use_norm else nn.Identity()
-        self.norm3 = LayerNorm(embed_dim, eps=1e-6) if use_norm else nn.Identity()
+        self.norm1 = LayerNorm(embed_dim, eps=1e-6, data_format="channels_first") if use_norm else nn.Identity()
+        self.norm2 = LayerNorm(embed_dim, eps=1e-6, data_format="channels_first") if use_norm else nn.Identity()
+        self.norm3 = LayerNorm(embed_dim, eps=1e-6, data_format="channels_first") if use_norm else nn.Identity()
 
         self.act = nn.GELU()
 
@@ -108,7 +102,7 @@ class PatchEmbedConv1(nn.Module):
         super().__init__()
         k = (patch_size, patch_size)
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=k, stride=k, bias=False)
-        self.norm = LayerNorm(embed_dim, eps=1e-6) if use_norm else nn.Identity()
+        self.norm = LayerNorm(embed_dim, eps=1e-6, data_format="channels_first") if use_norm else nn.Identity()
         self.act = nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -129,9 +123,9 @@ class PatchMerging(nn.Module):
         self.proj2 = nn.Conv2d(dim * 2, dim * 2, kernel_size=3, stride=1, padding=1, bias=False)
         self.proj3 = nn.Conv2d(dim * 2, dim * 2, kernel_size=3, stride=1, padding=1, bias=False)
 
-        self.norm1 = LayerNorm(dim * 2, eps=1e-6)
-        self.norm2 = LayerNorm(dim * 2, eps=1e-6)
-        self.norm3 = LayerNorm(dim * 2, eps=1e-6)
+        self.norm1 = LayerNorm(dim * 2, eps=1e-6, data_format="channels_first")
+        self.norm2 = LayerNorm(dim * 2, eps=1e-6, data_format="channels_first")
+        self.norm3 = LayerNorm(dim * 2, eps=1e-6, data_format="channels_first")
         self.act = nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -150,7 +144,7 @@ class PatchMergingConv1(nn.Module):
     def __init__(self, dim: int):
         super().__init__()
         self.proj = nn.Conv2d(dim, dim * 2, kernel_size=2, stride=2, bias=False)
-        self.norm = LayerNorm(dim * 2, eps=1e-6)
+        self.norm = LayerNorm(dim * 2, eps=1e-6, data_format="channels_first")
         self.act = nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -168,7 +162,7 @@ class ConvMlp(nn.Module):
 
     def __init__(self, dim: int, hidden_dim: int, drop_path_prob: float = 0.0):
         super().__init__()
-        self.norm = LayerNorm(dim, eps=1e-6)
+        self.norm = LayerNorm(dim, eps=1e-6, data_format="channels_first")
         self.fc1 = nn.Conv2d(dim, hidden_dim, kernel_size=1)
         self.pos = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1, groups=hidden_dim)
         self.fc2 = nn.Conv2d(hidden_dim, dim, kernel_size=1)
@@ -217,7 +211,7 @@ class WindowFocus(nn.Module):
         padded_size = (self.window_size - image_size % self.window_size) % self.window_size + image_size
         self.num_port = (padded_size // self.window_size) ** 2 if (self.window_size <= padded_size) else 1
 
-        self.norm = LayerNorm(dim, eps=1e-6)
+        self.norm = LayerNorm(dim, eps=1e-6, data_format="channels_first")
 
         self.kv = nn.Sequential(
             nn.Conv2d(dim, dim, kernel_size=1, bias=qkv_bias),
@@ -274,7 +268,6 @@ class WindowFocus(nn.Module):
         out = kv * area_gate * channel_gate
         out = self.layer_scale[:, None, None] * self.proj(out)
         out = self.drop_path(out)
-        out = out.contiguous()
         return out + skip
 
 
@@ -407,7 +400,6 @@ class FocusNet(nn.Module):
         drop_path_rate: float = 0.1,
         patch_norm: bool = True,
         use_checkpoint: bool = False,
-        **kwargs
     ):
         super().__init__()
         self.num_classes = int(num_classes)
@@ -449,7 +441,7 @@ class FocusNet(nn.Module):
             self.layers.append(layer)
             image_size_layer //= 2
 
-        self.norm = LayerNorm(self.num_features, eps=1e-6)
+        self.norm = LayerNorm(self.num_features, eps=1e-6, data_format="channels_first")
         self.avgpool = nn.AdaptiveAvgPool1d(1)
         self.head = nn.Linear(self.num_features, self.num_classes) if self.num_classes > 0 else nn.Identity()
 
@@ -484,7 +476,6 @@ class FocusNet(nn.Module):
 # -------------------------
 # 预设配置（保留你原先的使用习惯，但全部指向 FocusNet，避免 FocusEnd 未定义）
 # -------------------------
-
 @register_model
 def focusnet_tiny_224(pretrained=False, **kwargs) -> FocusNet:
     return FocusNet(
@@ -495,7 +486,6 @@ def focusnet_tiny_224(pretrained=False, **kwargs) -> FocusNet:
         num_heads=(3, 6, 12, 24),
         **kwargs,
     )
-
 
 def focusnet_debug(num_classes: int = 1000, **kwargs) -> FocusNet:
     # 对应你原来的 test() 设定（仅用于调试/实验）

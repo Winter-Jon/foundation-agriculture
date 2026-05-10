@@ -5,7 +5,7 @@ train_split: train/train-{00000..00760}.tar
 val_split: val/val-{00000..00024}.tar
 # val_split: test/test-{00000..00049}.tar
 class_map: 'datasets/AgriNet-1K/AgriNet-wds.txt'  # 类别映射文件路径，若有需要可指定
-train_num_samples: 1520292
+train_num_samples: 1520357
 val_num_samples: 50000
 num_classes: 1020  # 共有1020个类
 input_size: [3, 224, 224] # 标准 ImageNet 尺寸
