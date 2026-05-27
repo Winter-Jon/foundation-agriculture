@@ -1,0 +1,53 @@
+# ----------------- Dataset -----------------
+data_dir: datasets/AgriNet-1K/wds_split
+dataset: wds/agrinet-1k
+train_split: train/train-{00000..00760}.tar
+val_split: ''
+class_map: datasets/AgriNet-1K/AgriNet-wds.txt
+train_num_samples: 1520357
+input_size: [3, 224, 224]
+batch_size: 256
+workers: 16
+
+# ----------------- MAE model -----------------
+model: mae_vit_base_patch16_224
+mask_ratio: 0.75
+decoder_embed_dim: 512
+decoder_depth: 8
+decoder_num_heads: 16
+norm_pix_loss: true
+save_encoder_only: true
+
+# ----------------- Optimizer and schedule -----------------
+opt: adamw
+opt_betas: [0.9, 0.95]
+weight_decay: 0.05
+lr_base: 1.5e-4
+lr_base_size: 256
+sched: cosine
+epochs: 300
+warmup_epochs: 5
+warmup_lr: 1e-6
+min_lr: 0.0
+
+# ----------------- Hardware -----------------
+amp: true
+channels_last: true
+pin_mem: true
+
+# ----------------- Augmentation -----------------
+scale: [0.2, 1.0]
+ratio: [0.75, 1.3333]
+hflip: 0.5
+vflip: 0.0
+color_jitter: 0.0
+mixup: 0.0
+cutmix: 0.0
+smoothing: 0.0
+reprob: 0.0
+
+# ----------------- Misc -----------------
+seed: 42
+log_interval: 100
+output: ./outputs/mae-vit-base
+experiment: mae-vit-base-full
