@@ -2,7 +2,7 @@
 
 ## Experiments
 
-No weekly records yet.
+- 2026-W22 - experiments/2026-W22-0525-0531.md
 
 ## Changes
 
