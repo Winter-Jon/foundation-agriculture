@@ -1,0 +1,88 @@
+You are collecting Fine-R1-style contrastive reasoning-chain annotations for agricultural fine-grained visual recognition.
+
+CRITICAL: You MUST begin your entire response with a free-text reasoning chain inside `<think>`...`</think>` tags. Do NOT output any JSON before the closing `</think>` tag.
+
+Image id: {{ img_name }}
+Task domain: {{ task_domain | default("unknown") }}
+Ground-truth label for annotation: {{ gt_label }}
+Ground-truth Chinese label: {{ gt_label_zh | default("") }}
+Candidate labels: {{ candidate_labels | tojson }}
+Candidate label details: {{ candidate_label_details | default([]) | tojson(indent=2) }}
+
+Images are attached in this order:
+1. Query image: {{ query_image | default(img_name) }}
+{% for path in positive_reference_images | default([]) %}
+{{ loop.index + 1 }}. Positive same-class reference image: {{ path }}
+{% endfor %}
+{% set offset = 1 + (positive_reference_images | default([]) | length) %}
+{% for item in negative_reference_images | default([]) %}
+{{ offset + loop.index }}. Negative reference image for {{ item.code }}: {{ item.image_path }}
+{% endfor %}
+
+{% if knowledge_available %}
+Structured agricultural knowledge for the ground-truth label:
+{{ class_knowledge | tojson(indent=2) }}
+{% else %}
+No structured agricultural knowledge is available for this label. Use only visible image evidence and set wiki_evidence to ["insufficient wiki knowledge"].
+{% endif %}
+
+Task:
+Create a contrastive reasoning-chain annotation for this query image. First, perform a detailed step-by-step reasoning analysis inside `<think>`...`</think>` tags. Then, output the structured JSON conclusion.
+
+Your reasoning should cover:
+1. Query image observation: describe the visible traits, symptoms, or morphological features you observe.
+2. Positive reference alignment: explain how the query image matches the same-class representative images.
+3. Negative reference contrast: for each confusing candidate, explain the visible distinctions using the negative reference images.
+4. Wiki knowledge verification: cite relevant agricultural or taxonomic facts from the provided structured knowledge to support your conclusion.
+5. Uncertainty assessment: briefly state whether you are confident (low), somewhat unsure (medium), or highly uncertain (high) and why.
+
+Rules:
+- Start your response with a `<think>` block containing the free-text reasoning chain described above.
+- After the `</think>` tag, output only valid JSON. Do not wrap the JSON in Markdown fences.
+- Do not invent visual details that are not visible in the image.
+- Do not invent agricultural knowledge. If knowledge is missing, write exactly "insufficient wiki knowledge".
+- The final_label in the JSON must be one of candidate_labels.
+- Use concise evidence phrases in the JSON fields that are suitable for later SFT or preference-data construction.
+- If the image is ambiguous, keep final_label as the annotation label but set uncertainty to "medium" or "high" and explain why.
+
+Return format:
+<think>
+1. Query observation: ...
+2. Positive alignment: ...
+3. Negative contrast: ...
+4. Wiki verification: ...
+5. Uncertainty: ...
+</think>
+
+Then return this exact JSON schema:
+{
+  "task_domain": "{{ task_domain | default("unknown") }}",
+  "final_label": "{{ gt_label }}",
+  "final_label_zh": "{{ gt_label_zh | default("") }}",
+  "candidate_labels": {{ candidate_labels | tojson }},
+  "query_visual_evidence": [
+    "visible trait in the query image supporting the final label"
+  ],
+  "positive_reference_alignment": [
+    "how the query aligns with same-class representative images"
+  ],
+  "negative_reference_contrast": [
+    {
+      "candidate": "candidate label being contrasted",
+      "why_less_likely": "visible distinction from negative reference images"
+    }
+  ],
+  "wiki_evidence": [
+    "agricultural or taxonomic fact from the provided wiki knowledge, or insufficient wiki knowledge"
+  ],
+  "agricultural_interpretation": "short interpretation supported by visible evidence and provided wiki knowledge",
+  "uncertainty": "low | medium | high",
+  "answer_check": {
+    "label_in_candidates": true,
+    "uses_ground_truth_label_for_annotation": true,
+    "evidence_mentions_visual_traits": true,
+    "positive_references_used": {{ (positive_reference_images | default([]) | length > 0) | tojson }},
+    "negative_references_used": {{ (negative_reference_images | default([]) | length > 0) | tojson }},
+    "wiki_available": {{ knowledge_available | tojson }}
+  }
+}

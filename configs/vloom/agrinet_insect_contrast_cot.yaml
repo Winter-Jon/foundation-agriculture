@@ -1,0 +1,48 @@
+output_root: outputs/vloom/contrast_cot
+exp_name: agrinet_insect_contrast_cot
+template_dir: templates/vloom
+max_concurrent: 4
+log_level: INFO
+log_interval: 10
+dry_run: true
+
+imports:
+  - tools.vloom_agrinet
+
+model:
+  model_name: Qwen/Qwen2.5-VL-7B-Instruct
+  base_url: http://127.0.0.1:30000/v1
+  api_key: EMPTY
+  generation_kwargs:
+    max_tokens: 2048
+    temperature: 0.2
+    top_p: 0.9
+    max_image_size: 1024
+    timeout: 300
+
+datasets:
+  - type: agrinet_contrast
+    name: agrinet_insect
+    description: AgriNet-1K insect and arthropod samples for contrastive reasoning-chain annotation
+    data_root: datasets/AgriNet-1K
+    class_file: AgriNet-wds-cls.txt
+    image_root: .
+    knowledge_file: metadata/classes_knowledge.jsonl
+    pairs_file: metadata/finegrained_pairs.jsonl
+    max_samples: 10
+    candidates_per_item: 4
+    allow_missing_data: true
+    recursive_fallback: false
+
+task_definitions:
+  - type: default
+    name: agrinet_contrast_cot
+    description: Fine-R1-style contrastive reasoning-chain annotation for AgriNet-1K
+    agent_type: optional_image_basic
+    templates:
+      usr: task/agrinet_contrast_cot.j2
+    image_config:
+      max_image_size: 1024
+
+run_tasks:
+  - agrinet_contrast_cot

@@ -1,0 +1,50 @@
+output_root: outputs/vloom/contrast_cot
+exp_name: agrinet_disease_pest_contrast_cot_real
+template_dir: templates/vloom
+max_concurrent: 4
+log_level: INFO
+log_interval: 10
+dry_run: false
+
+imports:
+  - tools.vloom_agrinet
+
+model:
+  model_name: gemini-3.1-pro-preview
+  base_url: https://yunwu.ai/v1
+  api_key: ""
+  generation_kwargs:
+    max_tokens: 2048
+    temperature: 0.2
+    top_p: 0.9
+    max_image_size: 1024
+    timeout: 300
+
+datasets:
+  - type: agrinet_contrast
+    name: agrinet_disease_pest
+    description: Formal wiki-distilled AgriNet-1K N04 disease and N05 pest teacher collection
+    data_root: datasets/AgriNet-1K
+    class_file: outputs/vlm_data/disease_pest/classes_all_disease_pest.jsonl
+    knowledge_file: outputs/vlm_data/disease_pest/classes_all_disease_pest.jsonl
+    pairs_file: outputs/vlm_data/disease_pest/finegrained_pairs_vit_base.jsonl
+    sample_file: outputs/vlm_data/disease_pest/contrast_samples_vit_base.jsonl
+    max_samples:
+    candidates_per_item: 4
+    include_references: true
+    include_wiki: true
+    allow_missing_data: false
+    recursive_fallback: false
+
+task_definitions:
+  - type: default
+    name: agrinet_contrast_cot
+    description: Formal wiki-distilled teacher annotation for AgriNet disease/pest classes
+    agent_type: optional_image_basic
+    templates:
+      usr: task/agrinet_contrast_cot.j2
+    image_config:
+      max_image_size: 1024
+
+run_tasks:
+  - agrinet_contrast_cot
