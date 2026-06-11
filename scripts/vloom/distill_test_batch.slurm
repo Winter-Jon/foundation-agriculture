@@ -37,7 +37,7 @@ echo "=== Stage 1: Prepare test batch data ==="
   --data-root datasets/AgriNet-1K \
   --feature-root outputs/vit-base-cluster/vit-base-1 \
   --output-dir outputs/vlm_data/disease_pest_test \
-  --samples-per-class 2 \
+  --samples-per-class 5 \
   --reuse-pairs outputs/vlm_data/disease_pest/finegrained_pairs_vit_base.jsonl \
   --random-sample-classes 32
 

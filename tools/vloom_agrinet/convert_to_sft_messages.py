@@ -191,20 +191,29 @@ def pick_query_zh(task_domain: str, candidate_names: List[str], key: str) -> str
 
 
 def _clean_field_text(text: str, lang: str = "en") -> str:
-    """Remove reference terminology from a text field."""
+    """Remove reference terminology and image leaks from a text field."""
+    # Remove file name references (e.g., P00025, P00055, N04001_P00001)
+    text = re.sub(r"\b[A-Z]\d{5}(?:_P\d{5})?\b", "", text)
+    # Remove image number references (e.g., "Image 1", "image 2")
+    text = re.sub(r"\b[Ii]mage\s*\d+\b", "", text)
+    # Remove "known characteristics images" and similar phrases
+    text = re.sub(r"\bknown characteristics images?\b", "known characteristics", text, flags=re.IGNORECASE)
+    text = re.sub(r"\btypical symptoms images?\b", "typical symptoms", text, flags=re.IGNORECASE)
+
     if lang == "zh":
-        text = re.sub(r"正例参考", "典型症状", text)
+        text = re.sub(r"正例参考", "典型特征", text)
         text = re.sub(r"负例参考", "其他情况", text)
-        text = re.sub(r"同类代表图像?", "典型症状", text)
+        text = re.sub(r"同类代表图像?", "典型特征", text)
         text = re.sub(r"对比样本", "其他情况", text)
-        text = re.sub(r"参考图像?", "相关样本", text)
-        text = re.sub(r"参考样本", "相关样本", text)
+        text = re.sub(r"参考图像?", "相关特征", text)
+        text = re.sub(r"参考样本", "相关特征", text)
+        text = re.sub(r"已记录案例", "已知特征", text)
         return text
-    text = re.sub(r"\bpositive reference[s]?\b", "typical symptoms", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bpositive reference[s]?\b", "known characteristics", text, flags=re.IGNORECASE)
     text = re.sub(r"\bnegative reference[s]?\b", "other conditions", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bsame-class representative[s]?\b", "typical examples", text, flags=re.IGNORECASE)
-    text = re.sub(r"\breference image[s]?\b", "related samples", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bthe reference[s]?\b", "the typical cases", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bsame-class representative[s]?\b", "typical characteristics", text, flags=re.IGNORECASE)
+    text = re.sub(r"\breference image[s]?\b", "known features", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bthe reference[s]?\b", "the known cases", text, flags=re.IGNORECASE)
     return text
 
 
@@ -224,37 +233,34 @@ def build_finer1_think(
 
     if lang == "en":
         section_titles = {
-            "visual_features": "Analysis of Visual Features:",
-            "candidates": "Candidate Subcategories:",
-            "comparison": "Comparison Process:",
+            "visual_features": "Visual Observation:",
+            "candidates": "Candidate Analysis:",
             "knowledge": "Knowledge Verification:",
             "final": "Final Prediction:",
             "based_on": "Based on the observed features, the following candidates are considered:",
-            "comparison_with": "Comparison with {}:",
+            "analysis_for": "Analysis for {}:",
             "uncertainty": "Uncertainty assessment:",
             "prediction_is": "The prediction is:",
         }
     else:
         section_titles = {
-            "visual_features": "视觉特征分析：",
-            "candidates": "候选子类别：",
-            "comparison": "对比过程：",
+            "visual_features": "视觉观察：",
+            "candidates": "候选分析：",
             "knowledge": "知识验证：",
             "final": "最终预测：",
             "based_on": "根据观察到的特征，考虑以下候选：",
-            "comparison_with": "与{}的对比：",
+            "analysis_for": "关于{}的分析：",
             "uncertainty": "不确定性评估：",
             "prediction_is": "预测结果为：",
         }
 
     if original_think and len(original_think) > 100:
         has_structure = any(kw in original_think for kw in [
-            "Analysis of", "Candidate", "Comparison", "Final Prediction", "Visual Features",
-            "视觉特征", "候选子类别", "对比过程", "知识验证", "最终预测", "不确定性评估",
-            "同类代表", "负例区分"
+            "Visual Observation", "Candidate Analysis", "Final Prediction",
+            "视觉观察", "候选分析", "知识验证", "最终预测", "不确定性评估"
         ])
         if has_structure:
-            is_original_zh = any(kw in original_think for kw in ["视觉特征", "候选子类别", "对比过程", "最终预测"])
+            is_original_zh = any(kw in original_think for kw in ["视觉观察", "候选分析", "知识验证", "最终预测"])
             if (lang == "zh" and is_original_zh) or (lang == "en" and not is_original_zh):
                 cleaned = original_think
                 for code, name in name_mapping.items():
@@ -278,22 +284,24 @@ def build_finer1_think(
         lines.append(f"- {name}")
     lines.append("")
 
-    lines.append(section_titles["comparison"])
+    # Combine positive alignment and negative contrast into unified candidate analysis
     pos_alignments = result.get("positive_reference_alignment", [])
-    if pos_alignments:
-        lines.append(section_titles["comparison_with"].format(final_label_name))
-        for align in pos_alignments:
-            lines.append(f"  - {_clean_field_text(align, lang=lang)}")
+    contrasts = result.get("negative_reference_contrast", [])
+
+    if pos_alignments or contrasts:
+        lines.append(section_titles["analysis_for"].format(final_label_name))
+        if pos_alignments:
+            for align in pos_alignments:
+                lines.append(f"  - {_clean_field_text(align, lang=lang)}")
         lines.append("")
 
-    contrasts = result.get("negative_reference_contrast", [])
     if contrasts:
         for c in contrasts:
             candidate_code = c.get("candidate", "")
             candidate_name = name_mapping.get(str(candidate_code), str(candidate_code))
             why = c.get("why_less_likely", "")
             if candidate_name and why:
-                lines.append(section_titles["comparison_with"].format(candidate_name))
+                lines.append(section_titles["analysis_for"].format(candidate_name))
                 lines.append(f"  - {_clean_field_text(why, lang=lang)}")
                 lines.append("")
 
@@ -420,14 +428,15 @@ def convert_to_student_sft(
 
     student_think = _clean_field_text(teacher_think, lang=lang)
     if lang == "zh":
-        student_think = re.sub(r"典型症状", "已知特征", student_think)
+        student_think = re.sub(r"典型特征", "已知特征", student_think)
         student_think = re.sub(r"其他情况", "替代选项", student_think)
-        student_think = re.sub(r"相关样本", "已记录案例", student_think)
+        student_think = re.sub(r"相关特征", "已知特征", student_think)
     else:
-        student_think = re.sub(r"\btypical symptoms\b", "known characteristics", student_think, flags=re.IGNORECASE)
+        student_think = re.sub(r"\bknown characteristics\b", "known features", student_think, flags=re.IGNORECASE)
         student_think = re.sub(r"\bother conditions\b", "alternatives", student_think, flags=re.IGNORECASE)
-        student_think = re.sub(r"\brelated samples\b", "documented cases", student_think, flags=re.IGNORECASE)
-        student_think = re.sub(r"\bthe typical cases\b", "documented cases", student_think, flags=re.IGNORECASE)
+        student_think = re.sub(r"\bknown features\b", "known characteristics", student_think, flags=re.IGNORECASE)
+        student_think = re.sub(r"\bthe known cases\b", "documented cases", student_think, flags=re.IGNORECASE)
+        student_think = re.sub(r"\btypical characteristics\b", "known characteristics", student_think, flags=re.IGNORECASE)
 
     assistant_content = f"<think>\n{student_think}\n</think>\n\n<answer>{final_label_name}</answer>"
 
@@ -509,6 +518,10 @@ def main() -> None:
 
     try:
         for key, row in payload.items():
+            if row is None:
+                traces_rejected += 1
+                continue
+
             template_vars = row.get("template_vars", {})
             name_mapping_en = build_name_mapping(template_vars, lang="en")
             name_mapping_zh = build_name_mapping(template_vars, lang="zh")

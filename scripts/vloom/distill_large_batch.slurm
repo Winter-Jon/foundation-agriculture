@@ -37,7 +37,7 @@ echo "=== Stage 1: Prepare large batch data ==="
   --data-root datasets/AgriNet-1K \
   --feature-root outputs/vit-base-cluster/vit-base-1 \
   --output-dir outputs/vlm_data/disease_pest_large \
-  --samples-per-class 10 \
+  --samples-per-class 5 \
   --reuse-pairs outputs/vlm_data/disease_pest/finegrained_pairs_vit_base.jsonl
 
 SAMPLES=$(wc -l < outputs/vlm_data/disease_pest_large/contrast_samples_vit_base.jsonl)

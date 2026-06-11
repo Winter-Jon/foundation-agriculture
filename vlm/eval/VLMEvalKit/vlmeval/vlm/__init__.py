@@ -73,6 +73,7 @@ from .qianfan_vl import Qianfan_VL
 from .qtunevl import QTuneVL, QTuneVLChat
 from .qwen2_vl import Qwen2VLChat, Qwen2VLChatAguvis
 from .qwen3_vl import Qwen3VLChat
+from .qwen3_vl_local import Qwen3VLLocalChat
 from .qwen_vl import QwenVL, QwenVLChat
 from .rbdash import RBDash
 from .ristretto import Ristretto

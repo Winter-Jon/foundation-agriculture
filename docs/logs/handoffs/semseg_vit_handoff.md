@@ -66,7 +66,7 @@ Common training parameters:
 - `weight_decay=1e-4`
 - `lr_drop=25`
 - device: `cuda`
-- Slurm: `partition=batch`, `gres=gpu:2`, `cpus-per-task=16`, `mem=64G`, `exclude=gpu03`
+- Slurm: `partition=batch`, `gres=gpu:2`, `cpus-per-task=16`, `mem=64G`
 
 The Slurm script derives a unique torchrun port from `SLURM_JOB_ID`:
 
@@ -315,4 +315,3 @@ Check a v2 dataset before training:
 2. Treat original split results under `outputs/semseg_vit` as leaky baselines.
 3. If adding `04-pest-disease` to v2, audit its 129-class palette labels carefully. The original `04` split had no hash leakage but labels are highly imbalanced and many classes are rare.
 4. Consider a stronger segmentation head only after finishing the backbone pretraining comparison, because the current lightweight decoder was chosen for a controlled backbone comparison.
-

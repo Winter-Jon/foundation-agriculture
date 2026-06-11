@@ -1,0 +1,25 @@
+{
+  "model": "models/Qwen3-VL-4B-Instruct",
+  "test_traces": [
+    "outputs/vlm_data/disease_pest_test/teacher_traces_en.jsonl",
+    "outputs/vlm_data/disease_pest_test/teacher_traces_zh.jsonl"
+  ],
+  "large_traces": [
+    "outputs/vlm_data/disease_pest_large/teacher_traces_en.jsonl",
+    "outputs/vlm_data/disease_pest_large/teacher_traces_zh.jsonl"
+  ],
+  "output_dir": "outputs/vlm_eval/qwen3_vl_4b_disease_pest",
+  "max_new_tokens": 128,
+  "normalization": {
+    "extract_answer_tags": true,
+    "match_label_code": true,
+    "match_chinese_aliases": true,
+    "match_contained_label": true,
+    "report_groups": ["overall", "language", "task_domain", "language_task_domain"]
+  },
+  "frameworks": {
+    "inference_adapter": "vlm/eval/tools/run_qwen3_vl_eval.py",
+    "vlmevalkit_subtree": "vlm/eval/VLMEvalKit"
+  }
+}
+

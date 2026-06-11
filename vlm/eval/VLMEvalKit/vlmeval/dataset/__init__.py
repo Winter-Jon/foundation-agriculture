@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from vlmeval.smp import LMUDataRoot, dump, get_intermediate_file_path, load, localize_df, toliststr
+from .agrinet import AgriNetVLM
 from .asclepius import Asclepius
 from .av_speakerbench import AVSpeakerBench
 from .CGAVCounting.cg_av_counting import CGAVCounting
@@ -273,7 +274,7 @@ class ConcatDataset(ImageBaseDataset):
 
 # Add new supported dataset class here
 IMAGE_DATASET = [
-    ImageCaptionDataset, ImageYORNDataset, ImageMCQDataset, ImageVQADataset,
+    AgriNetVLM, ImageCaptionDataset, ImageYORNDataset, ImageMCQDataset, ImageVQADataset,
     MathVision, LENS, MMMUDataset, OCRBench, MathVista, LLaVABench, LLaVABench_KO, VGRPBench, MMVet,  # noqa: E501
     MTVQADataset, TableVQABench, MMLongBench, VCRDataset, MMDUDataset, DUDE,
     SlideVQA, MUIRDataset, CCOCRDataset, GMAIMMBenchDataset, MMERealWorld,

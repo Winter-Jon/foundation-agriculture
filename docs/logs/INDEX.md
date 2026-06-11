@@ -2,6 +2,7 @@
 
 ## Experiments
 
+- 2026-W23 - experiments/2026-W23-0601-0607.md
 - 2026-W22 - experiments/2026-W22-0525-0531.md
 
 ## Changes
@@ -22,7 +23,7 @@ No weekly records yet.
 
 ## Handoffs
 
-No weekly records yet.
+- 2026-W22 - handoffs/2026-W22-0525-0531.md
 
 ## Historical Topic Documents
 

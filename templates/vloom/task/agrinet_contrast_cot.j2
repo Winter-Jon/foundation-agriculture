@@ -1,4 +1,4 @@
-You are collecting Fine-R1-style contrastive reasoning-chain annotations for agricultural fine-grained visual recognition.
+You are a professional agricultural image recognition expert. Analyze the given plant/pest/disease image and provide a detailed reasoning chain for identification.
 
 CRITICAL: You MUST begin your entire response with a free-text reasoning chain inside `<think>`...`</think>` tags. Do NOT output any JSON before the closing `</think>` tag.
 
@@ -9,16 +9,6 @@ Ground-truth Chinese label: {{ gt_label_zh | default("") }}
 Candidate labels: {{ candidate_labels | tojson }}
 Candidate label details: {{ candidate_label_details | default([]) | tojson(indent=2) }}
 
-Images are attached in this order:
-1. Query image: {{ query_image | default(img_name) }}
-{% for path in positive_reference_images | default([]) %}
-{{ loop.index + 1 }}. Positive same-class reference image: {{ path }}
-{% endfor %}
-{% set offset = 1 + (positive_reference_images | default([]) | length) %}
-{% for item in negative_reference_images | default([]) %}
-{{ offset + loop.index }}. Negative reference image for {{ item.code }}: {{ item.image_path }}
-{% endfor %}
-
 {% if knowledge_available %}
 Structured agricultural knowledge for the ground-truth label:
 {{ class_knowledge | tojson(indent=2) }}
@@ -27,14 +17,15 @@ No structured agricultural knowledge is available for this label. Use only visib
 {% endif %}
 
 Task:
-Create a contrastive reasoning-chain annotation for this query image. First, perform a detailed step-by-step reasoning analysis inside `<think>`...`</think>` tags. Then, output the structured JSON conclusion.
+Analyze the query image and provide a detailed reasoning chain for identifying the plant disease or pest. First, perform a step-by-step reasoning analysis inside `<think>`...`</think>` tags. Then, output the structured JSON conclusion.
 
 Your reasoning should cover:
-1. Query image observation: describe the visible traits, symptoms, or morphological features you observe.
-2. Positive reference alignment: explain how the query image matches the same-class representative images.
-3. Negative reference contrast: for each confusing candidate, explain the visible distinctions using the negative reference images.
-4. Wiki knowledge verification: cite relevant agricultural or taxonomic facts from the provided structured knowledge to support your conclusion.
-5. Uncertainty assessment: briefly state whether you are confident (low), somewhat unsure (medium), or highly uncertain (high) and why.
+1. Visual observation: describe the visible traits, symptoms, or morphological features you observe in the image.
+2. Candidate analysis: for each candidate label, explain why it matches or does not match based on visual evidence.
+3. Knowledge verification: cite relevant agricultural or taxonomic facts from the provided structured knowledge to support your conclusion.
+4. Uncertainty assessment: briefly state whether you are confident (low), somewhat unsure (medium), or highly uncertain (high) and why.
+
+IMPORTANT: Write your reasoning as if you are analyzing a single image using your internal knowledge. Do NOT reference any external images, comparison images, or numbered images. Do NOT mention "positive reference", "negative reference", "reference image", or similar terms. Focus solely on describing what you see in the query image and applying your agricultural knowledge.
 
 Rules:
 - Start your response with a `<think>` block containing the free-text reasoning chain described above.
@@ -47,11 +38,10 @@ Rules:
 
 Return format:
 <think>
-1. Query observation: ...
-2. Positive alignment: ...
-3. Negative contrast: ...
-4. Wiki verification: ...
-5. Uncertainty: ...
+1. Visual observation: ...
+2. Candidate analysis: ...
+3. Knowledge verification: ...
+4. Uncertainty assessment: ...
 </think>
 
 Then return this exact JSON schema:
@@ -64,12 +54,12 @@ Then return this exact JSON schema:
     "visible trait in the query image supporting the final label"
   ],
   "positive_reference_alignment": [
-    "how the query aligns with same-class representative images"
+    "how the query aligns with known characteristics of the predicted class"
   ],
   "negative_reference_contrast": [
     {
       "candidate": "candidate label being contrasted",
-      "why_less_likely": "visible distinction from negative reference images"
+      "why_less_likely": "visual distinction from the predicted class"
     }
   ],
   "wiki_evidence": [
