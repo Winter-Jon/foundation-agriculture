@@ -76,7 +76,7 @@ def validate_pairs(rows: Sequence[Dict[str, Any]], errors: List[str], top_k: int
                 add_error(errors, f"{anchor}: self hard negative")
 
 
-def validate_samples(rows: Sequence[Dict[str, Any]], errors: List[str]) -> Counter:
+def validate_samples(rows: Sequence[Dict[str, Any]], errors: List[str], expected_negatives: int) -> Counter:
     counts: Counter = Counter()
     for row in rows:
         sample_id = str(row.get("sample_id", ""))
@@ -94,10 +94,11 @@ def validate_samples(rows: Sequence[Dict[str, Any]], errors: List[str]) -> Count
             add_error(errors, f"{sample_id}: query image does not exist: {query}")
         if len(positives) != 2:
             add_error(errors, f"{sample_id}: expected 2 positive refs, found {len(positives)}")
-        if len(negatives) != 3:
-            add_error(errors, f"{sample_id}: expected 3 negative refs, found {len(negatives)}")
-        if len(candidates) != 4:
-            add_error(errors, f"{sample_id}: expected 4 candidates, found {len(candidates)}")
+        if len(negatives) != expected_negatives:
+            add_error(errors, f"{sample_id}: expected {expected_negatives} negative refs, found {len(negatives)}")
+        expected_candidates = expected_negatives + 1
+        if len(candidates) != expected_candidates:
+            add_error(errors, f"{sample_id}: expected {expected_candidates} candidates, found {len(candidates)}")
         if label not in candidate_codes:
             add_error(errors, f"{sample_id}: final_label {label} missing from candidates")
         if query in positives:
@@ -155,6 +156,8 @@ def main() -> None:
     parser.add_argument("--expected-disease", type=int, default=145)
     parser.add_argument("--expected-pest", type=int, default=72)
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--expected-negatives", type=int, default=3)
+    parser.add_argument("--samples-per-class", type=int, default=1)
     args = parser.parse_args()
 
     errors: List[str] = []
@@ -166,9 +169,9 @@ def main() -> None:
     validate_classes(disease_rows, args.expected_disease, "disease", errors)
     validate_classes(pest_rows, args.expected_pest, "pest", errors)
     validate_pairs(pair_rows, errors, args.top_k)
-    sample_counts = validate_samples(sample_rows, errors)
+    sample_counts = validate_samples(sample_rows, errors, args.expected_negatives)
 
-    expected_samples = args.expected_disease + args.expected_pest
+    expected_samples = (args.expected_disease + args.expected_pest) * args.samples_per_class
     if len(sample_rows) != expected_samples:
         add_error(errors, f"samples: expected {expected_samples}, found {len(sample_rows)}")
 

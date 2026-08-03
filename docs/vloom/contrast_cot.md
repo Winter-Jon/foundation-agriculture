@@ -104,7 +104,27 @@ base_url: https://yunwu.ai/v1
 model: gemini-3.1-pro-preview
 ```
 
-The API key is read only from the environment. Set `YUNWU_API_KEY` or `OPENAI_API_KEY`, then turn off `dry_run` in a copied config for formal collection:
+The API key is read only from the environment. Do not paste API keys into YAML, scripts, logs, or docs. For reusable user-level credentials, install the `apikey` CLI under `~/.apikeys/bin/apikey` and store secrets as GPG-encrypted files under `~/.apikeys/secrets`.
+
+Initialize the encrypted user store once with an existing GPG key:
+
+```bash
+~/.apikeys/bin/apikey init <gpg-key-id>
+```
+
+Store the Yunwu provider metadata and encrypted API key:
+
+```bash
+~/.apikeys/bin/apikey set yunwu --base-url https://yunwu.ai/v1
+```
+
+Before running a collection job, export credentials into the current shell:
+
+```bash
+eval "$(~/.apikeys/bin/apikey env yunwu)"
+```
+
+This exports `YUNWU_API_BASE_URL` and `YUNWU_API_KEY`; the real key remains encrypted on disk. You can still set `YUNWU_API_KEY` or `OPENAI_API_KEY` manually if needed, then turn off `dry_run` in a copied config for formal collection:
 
 ```bash
 CONFIG_PATH=configs/vloom/agrinet_disease_pest_contrast_cot.yaml scripts/vloom/run_agrinet_contrast_cot.sh
@@ -117,7 +137,7 @@ The runner writes a redacted `config.yaml` under the output directory and refuse
 Use the parallel teacher-collection wrapper for the formal run:
 
 ```bash
-export YUNWU_API_KEY=...
+eval "$(~/.apikeys/bin/apikey env yunwu)"
 MAX_CONCURRENT=4 scripts/vloom/run_agrinet_disease_pest_teacher_parallel.sh
 ```
 
@@ -146,6 +166,7 @@ outputs/vloom/contrast_cot/agrinet_disease_pest_contrast_cot_real/
 Operational cautions:
 
 - Do not paste API keys into YAML, scripts, logs, or docs.
+- Prefer `~/.apikeys/bin/apikey env yunwu` over writing key exports into shell startup files.
 - Use `MAX_CONCURRENT=2` if Yunwu rate-limits or returns intermittent provider errors.
 - The earlier sequential collection attempt was stopped; use the parallel wrapper for the next formal run.
 

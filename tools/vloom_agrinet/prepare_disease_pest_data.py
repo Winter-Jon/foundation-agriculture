@@ -128,6 +128,47 @@ def iter_images(class_dir: Path) -> List[str]:
     ]
 
 
+def load_train_images_by_class(split_info_path: Path) -> Dict[str, List[str]]:
+    data = read_json(split_info_path)
+    train_rows = data.get("splits", {}).get("train", [])
+    images_by_class: Dict[str, List[str]] = {}
+    for row in train_rows:
+        code = row.get("cls") or row.get("class_name")
+        path = row.get("source_path") or row.get("path")
+        if not code or not path:
+            continue
+        images_by_class.setdefault(str(code), []).append(str(path))
+    return {code: sorted(paths) for code, paths in images_by_class.items()}
+
+
+def filter_rows_to_train_visible(
+    rows_by_domain: Dict[str, List[Dict[str, Any]]],
+    train_images_by_class: Dict[str, List[str]],
+) -> Dict[str, List[Dict[str, Any]]]:
+    train_codes = set(train_images_by_class)
+    return {
+        domain: [row for row in rows if row["code"] in train_codes]
+        for domain, rows in rows_by_domain.items()
+    }
+
+
+def load_class_list(path: Path) -> set[str]:
+    codes: set[str] = set()
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            value = line.strip()
+            if value and not value.startswith("#"):
+                codes.add(value)
+    return codes
+
+
+def filter_rows_to_codes(rows_by_domain: Dict[str, List[Dict[str, Any]]], codes: set[str]) -> Dict[str, List[Dict[str, Any]]]:
+    return {
+        domain: [row for row in rows if row["code"] in codes]
+        for domain, rows in rows_by_domain.items()
+    }
+
+
 def compute_pairs(feature_paths: Sequence[Path], class_codes: Sequence[str], top_k: int) -> Dict[str, List[Dict[str, Any]]]:
     try:
         import torch
@@ -195,45 +236,98 @@ def build_samples(
     representatives: Dict[str, List[str]],
     all_root: Path,
     samples_per_class: int,
+    negative_count: int,
+    train_images_by_class: Optional[Dict[str, List[str]]] = None,
+    random_seed: Optional[int] = None,
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
     rows_by_code = {row["code"]: row for rows in rows_by_domain.values() for row in rows}
     warnings: List[str] = []
     samples: List[Dict[str, Any]] = []
+    rng = random.Random(random_seed) if random_seed is not None else None
+
+    def reference_images_for_code(class_code: str) -> List[str]:
+        if train_images_by_class is not None:
+            return list(train_images_by_class.get(class_code, []))
+        return iter_images(all_root / class_code)
+
+    def choose_reference_image(class_code: str, exclude: Optional[str] = None) -> Optional[str]:
+        choices = [path for path in reference_images_for_code(class_code) if path != exclude]
+        if not choices:
+            return None
+        if rng is not None:
+            return rng.choice(choices)
+        return choices[0]
+
     for domain in ["disease", "pest"]:
+        domain_codes = [row["code"] for row in rows_by_domain[domain]]
         for row in rows_by_domain[domain]:
             code = row["code"]
             reps = representatives.get(code, [])
             rep_set = set(reps)
-            images = [path for path in iter_images(all_root / code) if path not in rep_set]
-            if not images:
-                images = iter_images(all_root / code)
-                warnings.append(f"{code}: query fallback includes representative candidates")
+            source_images = train_images_by_class.get(code, []) if train_images_by_class is not None else iter_images(all_root / code)
+            if train_images_by_class is not None:
+                images = list(source_images)
+            else:
+                images = [path for path in source_images if path not in rep_set]
+                if not images:
+                    images = list(source_images)
+                    warnings.append(f"{code}: query fallback includes representative candidates")
             if not images:
                 warnings.append(f"{code}: no query images available")
                 continue
-            negatives = [neg for neg in pairs_by_code.get(code, []) if representatives.get(neg["code"])]
-            if len(negatives) < 3:
-                warnings.append(f"{code}: only {len(negatives)} representative-backed negatives")
-            chosen_negatives = negatives[:3]
+            if rng is not None:
+                images = rng.sample(images, k=min(samples_per_class, len(images)))
+            else:
+                images = images[:samples_per_class]
+
+            negatives = [
+                neg
+                for neg in pairs_by_code.get(code, [])
+                if neg.get("code") in rows_by_code and reference_images_for_code(neg["code"])
+            ]
+            chosen_negatives = negatives[:negative_count]
+            if len(chosen_negatives) < negative_count:
+                used_codes = {neg["code"] for neg in chosen_negatives}
+                filler_codes = [
+                    candidate
+                    for candidate in domain_codes
+                    if candidate != code and candidate not in used_codes and reference_images_for_code(candidate)
+                ]
+                if rng is not None:
+                    rng.shuffle(filler_codes)
+                for filler_code in filler_codes:
+                    chosen_negatives.append({"code": filler_code, "similarity": None, "filled_random_negative": True})
+                    if len(chosen_negatives) >= negative_count:
+                        break
+            if len(chosen_negatives) < negative_count:
+                warnings.append(f"{code}: only {len(chosen_negatives)} random-image negatives after filler")
             candidate_codes = [code] + [neg["code"] for neg in chosen_negatives]
-            for image_path in images[:samples_per_class]:
+            for image_path in images:
                 positive_refs = [rep for rep in reps if rep != image_path][:2]
                 if len(positive_refs) < 2:
                     warnings.append(f"{code}: only {len(positive_refs)} non-query positive representatives for {Path(image_path).name}")
+                negative_refs = []
+                for neg in chosen_negatives:
+                    neg_path = choose_reference_image(neg["code"], exclude=image_path)
+                    if neg_path is None:
+                        warnings.append(f"{code}: no negative image available for {neg['code']}")
+                        continue
+                    negative_refs.append(
+                        {
+                            "code": neg["code"],
+                            "image_path": neg_path,
+                            "similarity": neg["similarity"],
+                            "filled_from_representative": False,
+                            "filled_random_negative": bool(neg.get("filled_random_negative")),
+                        }
+                    )
                 samples.append(
                     {
                         "sample_id": f"{domain}_{code}_{Path(image_path).stem}",
                         "task_domain": domain,
                         "query_image": image_path,
                         "positive_reference_images": positive_refs,
-                        "negative_reference_images": [
-                            {
-                                "code": neg["code"],
-                                "image_path": representatives[neg["code"]][0],
-                                "similarity": neg["similarity"],
-                            }
-                            for neg in chosen_negatives
-                        ],
+                        "negative_reference_images": negative_refs,
                         "candidate_labels": [
                             {
                                 "code": candidate_code,
@@ -278,19 +372,43 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/vlm_data/disease_pest"))
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--samples-per-class", type=int, default=1)
+    parser.add_argument("--negative-count", type=int, default=3, help="Number of negative candidate/reference classes per sample")
     parser.add_argument("--reuse-pairs", type=Path, default=None, help="Reuse existing finegrained pairs JSONL (skip PyTorch computation)")
     parser.add_argument("--random-sample-classes", type=int, default=None, help="Randomly sample N classes from all disease+pest classes (for test batches)")
+    parser.add_argument("--random-seed", type=int, default=42, help="Seed for random class and image sampling")
+    parser.add_argument(
+        "--train-split-info",
+        type=Path,
+        default=None,
+        help="Open-domain split_info JSON; when set, keep only classes visible in train and sample query images from train records",
+    )
+    parser.add_argument("--class-list", type=Path, default=None, help="Optional newline-delimited class codes to keep after other class filters.")
     args = parser.parse_args()
 
     wiki_by_code = load_wiki(args.data_root / "wiki.json")
     rows_by_domain = scan_domain_classes(args.data_root / "all", wiki_by_code)
+    train_images_by_class: Optional[Dict[str, List[str]]] = None
+    if args.train_split_info:
+        train_images_by_class = load_train_images_by_class(args.train_split_info)
+        rows_by_domain = filter_rows_to_train_visible(rows_by_domain, train_images_by_class)
+        print(
+            "Filtered to train-visible classes: "
+            f"{len(rows_by_domain['disease'])} disease, {len(rows_by_domain['pest'])} pest"
+        )
+    if args.class_list:
+        class_codes = load_class_list(args.class_list)
+        rows_by_domain = filter_rows_to_codes(rows_by_domain, class_codes)
+        print(
+            "Filtered to class list: "
+            f"{len(rows_by_domain['disease'])} disease, {len(rows_by_domain['pest'])} pest"
+        )
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.random_sample_classes:
         all_rows = rows_by_domain["disease"] + rows_by_domain["pest"]
         if len(all_rows) > args.random_sample_classes:
-            random.seed(42)
-            sampled = random.sample(all_rows, args.random_sample_classes)
+            rng = random.Random(args.random_seed)
+            sampled = rng.sample(all_rows, args.random_sample_classes)
             rows_by_domain = {"disease": [r for r in sampled if r["task_domain"] == "disease"], "pest": [r for r in sampled if r["task_domain"] == "pest"]}
             print(f"Randomly sampled {args.random_sample_classes} classes: {len(rows_by_domain['disease'])} disease, {len(rows_by_domain['pest'])} pest")
 
@@ -353,6 +471,9 @@ def main() -> None:
         representatives=representatives,
         all_root=args.data_root / "all",
         samples_per_class=args.samples_per_class,
+        negative_count=args.negative_count,
+        train_images_by_class=train_images_by_class,
+        random_seed=args.random_seed,
     )
     write_jsonl(args.output_dir / "contrast_samples_vit_base.jsonl", samples)
     (args.output_dir / "sample_warnings.txt").write_text("\n".join(warnings) + ("\n" if warnings else ""), encoding="utf-8")

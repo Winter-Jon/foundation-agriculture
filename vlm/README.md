@@ -25,6 +25,18 @@ Formal SFT expects the large distillation outputs to exist first:
 sbatch --parsable scripts/vlm/sft_qwen3_vl_4b_large.slurm
 ```
 
+RAG-distilled student SFT has a dedicated retry entrypoint with longer context:
+
+```bash
+sbatch --parsable scripts/vlm/sft_qwen3_vl_4b_rag_distill_full_len8192.slurm
+```
+
+If the corpus has been regenerated into single-image rows for Qwen3-VL compatibility:
+
+```bash
+sbatch --parsable scripts/vlm/sft_qwen3_vl_4b_rag_distill_full_singleimg.slurm
+```
+
 The Slurm scripts merge EN and ZH SFT JSONL into `outputs/vlm_sft/.../sft_messages_en_zh.jsonl` before invoking `swift sft`.
 
 After LoRA training, merge the adapter before using the repo-local Transformers evaluation script:

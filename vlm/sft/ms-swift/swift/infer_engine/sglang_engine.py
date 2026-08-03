@@ -261,16 +261,34 @@ class SglangEngine(InferEngine):
 
     async def _infer_full_async(self, inputs: Dict[str, Any], generation_config: Dict[str, Any],
                                 request_config: RequestConfig) -> ChatCompletionResponse:
-        engine_inputs = {k: v for k, v in inputs.items() if k != 'template_inputs'}
-        output = await self.engine.async_generate(**engine_inputs, sampling_params=generation_config)
+        # sglang 0.5.x expects multimodal payloads via GenerateReqInput.image_data/audio_data/video_data,
+        # not top-level `images`/`audios`/`videos` kwargs.
+        engine_inputs = {
+            'input_ids': inputs.get('input_ids'),
+            'input_embeds': inputs.get('input_embeds'),
+            'image_data': inputs.get('images'),
+            'audio_data': inputs.get('audios'),
+            'video_data': inputs.get('videos'),
+            'sampling_params': generation_config,
+        }
+        engine_inputs = {k: v for k, v in engine_inputs.items() if v is not None}
+        output = await self.engine.async_generate(**engine_inputs)
         output['prompt_token_ids'] = inputs['input_ids']
         return self._create_chat_completion_response(output, inputs, request_config.return_details)
 
     async def _infer_stream_async(self, inputs: Dict[str, Any], generation_config: Dict[str, Any],
                                   **kwargs) -> AsyncIterator[ChatCompletionStreamResponse]:
-        engine_inputs = {k: v for k, v in inputs.items() if k != 'template_inputs'}
-        result_generator = await self.engine.async_generate(
-            **engine_inputs, sampling_params=generation_config, stream=True)
+        engine_inputs = {
+            'input_ids': inputs.get('input_ids'),
+            'input_embeds': inputs.get('input_embeds'),
+            'image_data': inputs.get('images'),
+            'audio_data': inputs.get('audios'),
+            'video_data': inputs.get('videos'),
+            'sampling_params': generation_config,
+            'stream': True,
+        }
+        engine_inputs = {k: v for k, v in engine_inputs.items() if v is not None}
+        result_generator = await self.engine.async_generate(**engine_inputs)
         infer_streamer = InferStreamer(self.template, template_inputs=inputs['template_inputs'])
         async for output in result_generator:
             res = self._create_chat_completion_stream_response(output, infer_streamer)
