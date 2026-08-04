@@ -1,101 +1,48 @@
 # AGENTS.md
 
-This repository uses Slurm for long-running, GPU, and data-processing jobs. When operating in this repo, prefer the existing `.slurm` scripts over running training or preprocessing entrypoints directly in the shell.
+This repository runs on a local workstation, not a Slurm cluster. Use the project-root `.venv` and the `agrinet` CLI for current Data, RAG, and VLM workflows.
 
 ## Execution Policy
 
-- Use Slurm first for `vision/pretrain/*` and `preprocess/*` jobs.
-- Run commands from the repository root: `/home/jiangwentao/Repos/foundation-agriculture`.
-- Keep the `slurm/` directory as the canonical place for scheduler logs.
-- Prefer `sbatch --parsable <script>` when submitting a job, so the returned stdout is the job ID.
-- After submission, treat the job ID as the primary handle for all follow-up checks.
+- Run commands from `/data/home/jiangwentao/Repos/foundation-agriculture`.
+- Use `.venv/bin/agrinet` for registered workflows and `.venv/bin/python` for tests or module entrypoints.
+- Prefer a foreground process for short operations.
+- Use the CLI's explicit `--detach` option for long local operations; do not improvise scheduler submission.
+- Store per-run program logs under `outputs/runs/<domain>/<experiment-id>/<run-id>/logs/`.
+- Treat existing `scripts/**/*.slurm` and `slurm/*.out|*.err` as pre-migration history unless a task explicitly concerns those historical jobs.
+- Do not call `sbatch`, `squeue`, or `sacct` for current work.
 
-## Standard Slurm Workflow
+## Local Workflow
 
-1. Inspect the target script and identify its real program arguments.
-2. Submit with `sbatch --parsable <script>`.
-3. Check queue state with `squeue -j <job_id>`.
-4. Check final accounting with `sacct -j <job_id> --format=JobID,JobName,Partition,State,ExitCode,Elapsed`.
-5. Read logs from `slurm/<job_name>_<job_id>.out` and `slurm/<job_name>_<job_id>.err`.
+1. Inspect the registered experiment with `agrinet <domain> show <experiment-id>`.
+2. Preview a long operation with `agrinet <domain> submit <experiment-id> --dry-run`.
+3. Run in the foreground by omitting `--detach`, or start a managed background process with `--detach`.
+4. For a detached run, use the returned PID and run directory for status and bounded log checks.
+5. Keep artifacts under `outputs/`; do not mix them with process logs.
 
-For active jobs, prefer:
+## Credentials
 
-```bash
-tail -n 200 slurm/<job_name>_<job_id>.out
-tail -n 200 slurm/<job_name>_<job_id>.err
-```
+- Yunwu credentials are stored in the existing user-level GPG-encrypted `apikey` store.
+- Current commands may obtain `YUNWU_API_KEY` and `YUNWU_API_BASE_URL` through `~/.apikeys/bin/apikey env yunwu`.
+- Never print, persist, or place decrypted credentials in configs, manifests, command previews, or logs.
+- Explicit environment variables remain valid overrides.
 
-If the user asks to "run", "launch", or "submit" training/validation/preprocessing, assume they want the corresponding Slurm workflow unless they explicitly request a local foreground process.
+## Environment
 
-## Current Slurm Entry Points
-
-### Training
-
-Script: `scripts/vision/pretrain/train.slurm`
-
-- Job name: `agrinet-resnet50`
-- Main program: `vision/pretrain/train.py`
-- Primary input: `--config vision/pretrain/configs/base.yaml`
-- Scheduler outputs:
-  - `slurm/agrinet-resnet50_<job_id>.out`
-  - `slurm/agrinet-resnet50_<job_id>.err`
-- Program outputs are expected under `outputs/` according to the training config and Python code.
-
-### Validation
-
-Script: `scripts/vision/pretrain/validate.slurm`
-
-- Job name: `validate`
-- Main program: `vision/pretrain/validate.py`
-- Primary inputs:
-  - `-c vision/pretrain/configs/validate.yaml`
-  - `--model resnet101`
-  - `--checkpoint outputs/resnet101/resnet101_0/last.pth.tar`
-- Declared result file:
-  - `outputs/resnet101/resnet101_0/metrics_last.csv`
-- Scheduler outputs:
-  - `slurm/validate_<job_id>.out`
-  - `slurm/validate_<job_id>.err`
-
-### Preprocessing
-
-Scripts:
-
-- `scripts/vision/preprocess/pack.slurm`
-- `scripts/vision/preprocess/create_index.slurm`
-
-These are CPU-oriented Slurm jobs with logs in `slurm/` and Python entrypoints under `preprocess/`.
+- Use the single project-root `.venv` managed with uv.
+- Install packages with `uv pip install -p .venv/bin/python ...`.
+- Keep `uv.lock` versioned.
+- Do not introduce Conda absolute paths, `.venv-py312`, or task-specific environments unless explicitly requested.
 
 ## Input And Output Rules
 
-When the user asks for a job's input/output, derive them in this order:
+- Resolve inputs, outputs, runtime profiles, and parameters from `configs/experiments/`.
+- Each current run should use `outputs/runs/<domain>/<experiment-id>/<run-id>/`.
+- Reusable artifacts belong under `outputs/artifacts/<artifact-type>/<artifact-id>/`.
+- Existing `slurm/` logs describe historical scheduler runs and are not current program output locations.
 
-1. Inspect the `.slurm` file.
-2. Extract the Python entrypoint and CLI arguments.
-3. Treat config paths, checkpoints, and explicit result paths as inputs/outputs.
-4. Treat `#SBATCH --output` and `#SBATCH --error` as the scheduler-level stdout/stderr locations.
-5. If needed, inspect the referenced config file or Python script to confirm where artifacts are written.
+## Safety
 
-For this repository, "output" may refer to either:
-
-- Slurm stdout/stderr logs in `slurm/`
-- Model artifacts and metrics under `outputs/`
-
-Do not conflate these two categories when reporting results.
-
-## Editing Rules For Slurm Work
-
-- Prefer adding a new sibling `.slurm` file for materially different resources or entrypoints instead of rewriting the existing one in place.
-- Preserve existing module-loading behavior unless the user asks to change the cluster environment.
-- Do not rotate, delete, or truncate prior `slurm/*.out` or `slurm/*.err` files unless explicitly requested.
-- Treat hard-coded credentials or proxies in existing scripts as sensitive; do not echo them back unnecessarily and do not change them unless asked.
-
-## Useful Commands
-
-```bash
-sbatch --parsable scripts/vision/pretrain/train.slurm
-squeue -j <job_id>
-sacct -j <job_id> --format=JobID,JobName,Partition,State,ExitCode,Elapsed
-tail -n 200 slurm/<job_name>_<job_id>.out
-tail -n 200 slurm/<job_name>_<job_id>.err
-```
+- Do not delete or truncate historical Slurm logs or legacy entrypoints until their replacements have passed migration acceptance.
+- Do not echo credentials or proxy values from legacy scripts.
+- Do not infer that a detached process completed from PID absence alone; inspect its status and logs.

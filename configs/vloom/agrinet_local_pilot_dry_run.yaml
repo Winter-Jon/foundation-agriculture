@@ -1,0 +1,48 @@
+output_root: outputs/migration/vloom-local-pilot/dry-run
+exp_name: agrinet_local_pilot_dry_run
+template_dir: templates/vloom
+max_concurrent: 1
+log_level: INFO
+log_interval: 1
+dry_run: true
+
+imports:
+  - tools.vloom_agrinet
+
+model:
+  model_name: gemini-3.1-pro-preview
+  base_url: https://yunwu.ai/v1
+  api_key: ""
+  dry_run: true
+  generation_kwargs:
+    max_tokens: 256
+    temperature: 0.0
+
+datasets:
+  - type: agrinet_contrast
+    name: agrinet_local_pilot
+    description: One-sample local migration dry run
+    data_root: .
+    class_file: outputs/migration/vloom-local-pilot/classes.jsonl
+    knowledge_file: outputs/migration/vloom-local-pilot/classes.jsonl
+    pairs_file: outputs/migration/vloom-local-pilot/pairs.jsonl
+    sample_file: outputs/migration/vloom-local-pilot/samples.jsonl
+    max_samples: 1
+    candidates_per_item: 4
+    include_references: true
+    include_wiki: true
+    allow_missing_data: false
+    recursive_fallback: false
+
+task_definitions:
+  - type: default
+    name: agrinet_contrast_cot
+    description: One-sample local VLOOM migration dry run
+    agent_type: optional_image_basic
+    templates:
+      usr: task/agrinet_contrast_cot.j2
+    image_config:
+      max_image_size: 1024
+
+run_tasks:
+  - agrinet_contrast_cot

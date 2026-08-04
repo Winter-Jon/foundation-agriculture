@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: data-generate-agrinet-vloom-teacher-v1
+display_name:
+  en: AgriNet VLOOM teacher data generation
+  zh: AgriNet VLOOM 教师数据生成
+domain: data
+task: generate
+description: Generate versioned teacher records from selected AgriNet samples.
+lifecycle: active
+components:
+  data: data/agrinet-disease-pest-v1
+  provider: data/vloom-teacher-v1
+  runtime: runtime/a800-1gpu-data
+runtime_profile: runtime/a800-1gpu-data
+inputs:
+  prepared: outputs/vlm_data/disease_pest_test/contrast_samples_vit_base.jsonl
+outputs:
+  teacher: outputs/vloom/contrast_cot/agrinet_disease_pest_test_batch/agrinet_disease_pest/agrinet_contrast_cot_results.json
+parameters:
+  config_path: configs/vloom/agrinet_disease_pest_test_batch.yaml
+  max_concurrent: 4
+tags: [agrinet, vloom, teacher-data]

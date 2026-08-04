@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: data-prepare-agrinet-bounded-contrast-v1
+display_name:
+  en: Bounded AgriNet disease and pest contrast data
+  zh: 有界 AgriNet 病害与虫害对比数据
+domain: data
+task: prepare
+description: Deterministically select a bounded set of real N04/N05 classes and images from the current wiki schema.
+lifecycle: active
+components:
+  data: data/agrinet-disease-pest-current-v1
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  data_root: datasets/AgriNet-1K
+  wiki: datasets/AgriNet-1K/wiki/base.json
+outputs:
+  prepared_dir: outputs/artifacts/datasets/agrinet-bounded-contrast-v1
+parameters:
+  format: agrinet-bounded-contrast/v1
+  class_count: 8
+  samples_per_class: 1
+  candidate_count: 4
+  seed: 42
+tags: [agrinet, disease, pest, bounded, preparation]

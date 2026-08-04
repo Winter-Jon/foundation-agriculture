@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agrinet"
+version = "0.1.0"
+description = "Unified data, RAG, and VLM workflows for foundation-agriculture"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.10,<3",
+  "pyyaml>=6.0,<7",
+  "typer>=0.15,<1",
+]
+
+[project.optional-dependencies]
+core = []
+data = [
+  "aiofiles>=24.1,<25",
+  "draccus>=0.10,<1",
+  "jinja2>=3.1,<4",
+  "openai>=1.75,<2",
+  "pillow>=11,<13",
+  "pycocotools>=2.0.8,<3",
+  "tenacity>=9,<10",
+]
+rag = [
+  "fastapi>=0.116,<1",
+  "pymilvus>=2.5,<3",
+  "torch>=2.7",
+  "transformers>=4.53,<6",
+  "uvicorn>=0.35,<1",
+]
+vlm-train = ["torch>=2.7", "transformers>=4.53,<6"]
+vlm-eval = [
+  "portalocker>=4,<5",
+  "sty>=1,<2",
+  "termcolor>=3,<4",
+  "timeout-decorator>=0.5,<1",
+  "torch>=2.7",
+  "transformers>=4.53,<6",
+  "validators>=0.35,<1",
+]
+dev = ["pytest>=8.3,<9"]
+
+[project.scripts]
+agrinet = "agrinet.cli.app:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agrinet", "vendor/VLooM/vloom"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

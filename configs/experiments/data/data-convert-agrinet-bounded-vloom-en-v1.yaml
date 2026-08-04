@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: data-convert-agrinet-bounded-vloom-en-v1
+display_name:
+  en: Convert bounded VLOOM teacher results to English SFT
+  zh: 将有界 VLOOM 教师结果转换为英文 SFT
+domain: data
+task: convert
+description: Convert the validated eight-sample Yunwu teacher artifact to agrinet.sft.student/v1.
+lifecycle: active
+components:
+  data: data/agrinet-bounded-vloom-teacher-v1
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  teacher: outputs/artifacts/datasets/agrinet-bounded-vloom-teacher-v1/agrinet_contrast_cot_results.json
+outputs:
+  sft: outputs/artifacts/datasets/agrinet-bounded-vloom-student-en-v1/student_sft_en.versioned.jsonl
+parameters:
+  format: vloom-result/v1
+  source_artifact_id: agrinet-bounded-vloom-teacher-v1
+  language: en
+  min_think_len: 1
+tags: [agrinet, vloom, conversion, sft, bounded]

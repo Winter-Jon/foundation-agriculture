@@ -1455,7 +1455,10 @@ def main() -> int:
     write_jsonl(output_dir / "traces" / "rejected_trajectories.jsonl", rejected_rows)
     write_manifest(output_dir, args, provider_name, len(accepted_rows), len(rejected_rows))
     print(f"Wrote {len(accepted_rows)} accepted and {len(rejected_rows)} rejected trajectories to {output_dir}", flush=True)
-    return 0
+    runtime_failures = sum(
+        1 for row in rejected_rows if "runtime_error" in (row.get("reasons") or [])
+    )
+    return 1 if runtime_failures and runtime_failures == len(samples) else 0
 
 
 if __name__ == "__main__":

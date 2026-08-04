@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-distill-candidate-followup-v6
+display_name:
+  en: Evidence-gated candidate follow-up distillation
+  zh: 证据门控的候选追问蒸馏
+domain: rag
+task: distill
+description: Preserve the current candidate-followup trajectory policy behind stable contracts.
+lifecycle: baseline
+components:
+  retrieval: retrieval/siglip2-milvus-v1
+  runtime: runtime/a800-1gpu-rag
+runtime_profile: runtime/a800-1gpu-rag
+parameters:
+  sample_file: outputs/artifacts/datasets/agrinet-bounded-contrast-v1/samples.jsonl
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/runs/rag-distill/candidate-followup-v6-local-smoke-retry2
+  model: gemini-3.1-pro-preview
+  limit: 1
+  max_concurrent: 1
+tags: [rag, distillation, evidence-gate]

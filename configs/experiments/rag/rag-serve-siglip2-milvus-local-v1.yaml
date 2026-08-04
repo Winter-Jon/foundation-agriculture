@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-serve-siglip2-milvus-local-v1
+display_name:
+  en: Local SigLIP2 Milvus retrieval service
+  zh: 本地 SigLIP2 Milvus 检索服务
+domain: rag
+task: serve
+description: Start the typed retrieval HTTP service without a cluster scheduler.
+lifecycle: active
+components:
+  retrieval: retrieval/siglip2-milvus-v1
+  runtime: runtime/local-rag
+runtime_profile: runtime/local-rag
+inputs:
+  database: outputs/milvus/agrinet_wiki_lite.db
+  model: models/siglip2-so400m-patch16-naflex
+parameters:
+  host: 127.0.0.1
+  port: 8077
+  device: cuda
+tags: [rag, milvus, siglip2, local-service]

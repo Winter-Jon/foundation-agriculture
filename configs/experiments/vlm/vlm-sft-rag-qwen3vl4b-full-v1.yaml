@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-rag-qwen3vl4b-full-v1
+display_name:
+  en: Qwen3-VL-4B full SFT on validated RAG trajectories
+  zh: 基于已验证 RAG 轨迹的 Qwen3-VL-4B 全参数微调
+domain: vlm
+task: sft
+description: Registered baseline associated with checkpoint-224 and the preserved baseline tag.
+lifecycle: baseline
+components:
+  model: models/qwen3-vl-4b-instruct
+  data: data/rag-student-single-image-v1
+  runtime: runtime/a800-4gpu-train
+runtime_profile: runtime/a800-4gpu-train
+inputs:
+  config: vlm/sft/configs/qwen3_vl_4b_rag_distill_student_e5_len8192_liger_lr1e5_singleimg.yaml
+  baseline_model: outputs/artifacts/models/qwen3vl4b-rag-sft-full-v1
+outputs:
+  model: outputs/artifacts/models/qwen3vl4b-rag-sft-full-v1
+parameters:
+  max_length: 8192
+  epochs: 8
+  learning_rate: 1.0e-5
+  tuner: full
+tags: [qwen3-vl, rag-sft, baseline]

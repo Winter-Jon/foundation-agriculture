@@ -1,0 +1,53 @@
+# VLooM Pipeline Configuration Sample
+
+# 1. Pipeline Settings
+output_root: "./outputs"
+exp_name: "demo_reflection_01"
+template_dir: "preprocess/template"
+max_concurrent: 4
+
+# 2. Logic Settings
+log_level: "INFO"
+
+# 3. Model Configuration
+model:
+  model_name: "Qwen/Qwen2.5-VL-7B-Instruct" 
+  base_url: "http://localhost:8000/v1"
+  api_key: "EMPTY"
+  generation_kwargs:
+    max_tokens: 2048
+    temperature: 0.7
+    top_p: 0.9
+
+# 4. Dataset Configuration
+datasets:
+  - name: "demo_dataset"
+    description: "A small demo dataset"
+    # Note: Dataset classes need to be registered or standard ones used. 
+    # Provided code implies custom registry or loading.
+
+# 5. Task Definitions
+task_definitions:
+  - name: "basic_qa"
+    description: "Standard VQA task"
+    agent_type: "basic"
+    templates:
+      usr: "qa_prompt.j2" # Will look in template_dir/qa_prompt.j2
+    image_config:
+      max_image_size: 1024
+      min_pixels: 50176
+
+  - name: "reflective_qa"
+    description: "QA with reflection capability"
+    agent_type: "reflective"
+    templates:
+      usr: "qa_prompt_hard.j2"
+      intervention: "intervention_prompt.j2" # Custom intervention template
+    image_config:
+      max_image_size: 1024
+    agent_kwargs:
+      reflection_trigger: "<reflection>"
+      intervention_text: "Wait, checks failed. Please rethink." # Fallback if template missing
+
+run_tasks:
+  - "reflective_qa"

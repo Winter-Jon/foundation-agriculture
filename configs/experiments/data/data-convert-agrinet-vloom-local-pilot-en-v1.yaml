@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: data-convert-agrinet-vloom-local-pilot-en-v1
+display_name:
+  en: Convert local VLOOM pilot to versioned English SFT
+  zh: 将本地 VLOOM 试运行转换为版本化英文 SFT
+domain: data
+task: convert
+description: Convert the validated one-sample Yunwu result directly to agrinet.sft.student/v1.
+lifecycle: baseline
+components:
+  data: data/agrinet-vloom-local-pilot-teacher-v1
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  teacher: outputs/migration/vloom-local-pilot/credentialed/agrinet_local_pilot/agrinet_local_pilot/agrinet_contrast_cot_results.json
+outputs:
+  sft: outputs/artifacts/datasets/agrinet-vloom-local-pilot-student-en-v1/student_sft_en.versioned.jsonl
+parameters:
+  format: vloom-result/v1
+  source_artifact_id: agrinet-vloom-local-pilot-teacher-v1
+  language: en
+  min_think_len: 1
+tags: [agrinet, vloom, conversion, sft, baseline]

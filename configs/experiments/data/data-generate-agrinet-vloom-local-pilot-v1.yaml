@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: data-generate-agrinet-vloom-local-pilot-v1
+display_name:
+  en: One-sample local VLOOM migration pilot
+  zh: 单样本本地 VLOOM 迁移试运行
+domain: data
+task: generate
+description: Credentialed one-sample pilot used to validate the vendored VLOOM runtime and GPG-backed Yunwu credentials.
+lifecycle: active
+components:
+  data: data/agrinet-vloom-local-pilot-v1
+  provider: data/vloom-teacher-v1
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  prepared: outputs/migration/vloom-local-pilot/samples.jsonl
+outputs:
+  teacher: outputs/migration/vloom-local-pilot/credentialed/agrinet_local_pilot/agrinet_local_pilot/agrinet_contrast_cot_results.json
+parameters:
+  config_path: configs/vloom/agrinet_local_pilot.yaml
+  max_concurrent: 1
+tags: [agrinet, vloom, migration-pilot]

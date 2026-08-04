@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-rag-qwen3vl4b-smoke-v1
+display_name:
+  en: Local two-step Qwen3-VL RAG SFT smoke
+  zh: 本地两步 Qwen3-VL RAG SFT 冒烟测试
+domain: vlm
+task: sft
+description: A bounded local GPU smoke that writes to a distinct non-baseline output.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-instruct
+  data: data/rag-student-single-image-v1
+  runtime: runtime/local-a800-1gpu-smoke
+runtime_profile: runtime/local-a800-1gpu-smoke
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_local_smoke.yaml
+  baseline_model: outputs/runs/vlm-smoke/qwen3vl4b-rag-sft-smoke-v1/v0-20260803-171458/checkpoint-2
+outputs:
+  model: outputs/artifacts/models/qwen3vl4b-rag-sft-smoke-v1
+parameters:
+  max_steps: 2
+tags: [qwen3-vl, rag-sft, local, smoke]

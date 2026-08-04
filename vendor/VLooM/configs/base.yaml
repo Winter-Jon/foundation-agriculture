@@ -1,0 +1,76 @@
+# ==============================================================================
+# PathConfig (基础路径配置)
+# ==============================================================================
+output_root: outputs/preprocess/debug
+# 实验名称，如果不填则使用时间戳
+# exp_name: experiment_v1
+template_dir: preprocess/template
+
+# ==============================================================================
+# PipelineConfig (流程控制配置)
+# ==============================================================================
+# 自动加载任务模板的目录 (Optional)
+auto_task_dir: task
+ 
+# 要执行的任务名称列表 (对应 task_definitions 中的 name)
+run_tasks: 
+  # - example_task_1
+
+# 异步并发请求数量
+max_concurrent: 32
+
+# 日志级别: DEBUG, INFO, WARNING, ERROR
+log_level: INFO
+
+# ==============================================================================
+# ModelConfig (模型与API配置)
+# ==============================================================================
+model:
+  model_name: models/Qwen3-VL-235B-A22B-Thinking
+  base_url: http://127.0.0.1:30000/v1
+  api_key: EMPTY  # 如果不需要可留空
+  
+  # 生成参数 (generation_kwargs 字典)
+  generation_kwargs:
+    max_tokens: 8192
+    temperature: 1.0
+    top_p: 0.9
+    min_pixels: 65536
+    max_pixels: 10035200
+    max_image_size: 1024
+    timeout: 300
+
+# ==============================================================================
+# DatasetConfig List (数据集列表)
+#Draccus 这里的 type 对应 register_subclass 的名称
+# ==============================================================================
+datasets:
+  # --- 示例 2: TN-SCUI (YOLO) 格式 ---
+  # - type: tn-scui
+  #   name: TN-SCUI2020 Train Set
+  #   description: TN-SCUI2020 训练集，包含超声图像及其对应的标签信息
+  #   image_dir: datasets/TN-SCUI2020/train/images
+  #   labels_dir: datasets/TN-SCUI2020/train/labels
+  #   # Candidate/Noisy 标签目录 (Optional)
+  #   candidate_labels_dir: outputs/eval/7B/5
+
+  - type: coco
+    name: Kidney Ultrasound Train Set
+    description: 肾脏超声图像的 COCO 格式训练集
+    data_dir: datasets/ultrasound-20260113/肾脏
+    json_file: train.json
+    img_subdir: images_final
+
+# ==============================================================================
+# TaskConfig List (任务定义列表)
+# ==============================================================================
+task_definitions:
+  # --- 示例: 通用任务 ---
+  - type: default
+    name: example_task_1
+    description: 这是一个通用任务的描述
+    # 模板文件字典: key 为标识符, value 为模板路径
+    template_files:
+      sys: preprocess/template/system_prompt.j2
+      usr: preprocess/template/task/1.1_rec.j2
+      

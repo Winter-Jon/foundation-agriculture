@@ -1,0 +1,63 @@
+# VLooM Vision Tool Configuration Sample
+
+# 1. Pipeline Settings
+output_root: "./outputs"
+exp_name: "vision_tool_demo"
+max_concurrent: 4
+log_level: "INFO"
+
+# 2. Plugin Directories (Optional)
+# custom_agent_dirs: ["./my_custom_agents"]
+# custom_tool_dirs: ["./my_custom_tools"]
+
+# 3. Model Configuration
+model:
+  model_name: "Qwen/Qwen2.5-VL-7B-Instruct"
+  base_url: "http://localhost:8000/v1"
+  api_key: "EMPTY"
+  generation_kwargs:
+    max_tokens: 4096
+    temperature: 0.1 # Lower temperature for tool use
+
+# 4. Dataset Configuration
+datasets:
+  - name: "coco_val_sample" 
+    # Ensure you have a dataset class registered for this, 
+    # or use a generic one if available.
+
+# 5. Task Definitions
+task_definitions:
+  - name: "object_detection_tool_task"
+    description: "Task that allows the model to query object bounding boxes using a tool."
+    # Use the specialized agent type
+    agent_type: "vision_tool"
+    
+    # Enable the vision tool (the agent checks config, but listing it is good practice or redundant depending on implementation)
+    # VisionToolAgent logic manually registers it, but generic ToolAgent logic would look here.
+    tools: 
+      - "vision_tool"
+    
+    # Configure the tool
+    tool_config:
+      vision_tool:
+        # Path to the standard COCO instances json file
+        # Used by the tool to 'simulate' vision capabilities
+        annotation_path: "/path/to/annotations/instances_val2017.json"
+
+    # Inline Templates (New Feature)
+    templates:
+      # Direct string template. 
+      # Note: We provide the tool definitions in the system prompt equivalent 
+      # or assume the agent injects them. The user prompt guides the behavior.
+      usr: |
+        I have an image (id: {{ image_id }}).
+        Please list the bounding boxes for all objects in this image.
+        Use the available 'vision_tool' to get this information.
+        
+        If you get a result, summarize it like: "I found X objects..."
+
+    image_config:
+      max_image_size: 1024
+
+run_tasks:
+  - "object_detection_tool_task"

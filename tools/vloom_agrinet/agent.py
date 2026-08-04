@@ -18,10 +18,28 @@ class OptionalImageBasicAgent(BasicAgent):
         self._extra_image_paths = item.template_vars.get("image_paths", [])
         try:
             result = await super().run(item, model_name, **kwargs)
+            self._normalize_result_shape(result)
             self._repair_markdown_json(result)
             return result
         finally:
             self._extra_image_paths = []
+
+    @staticmethod
+    def _normalize_result_shape(result: Dict[str, Any]) -> None:
+        """Expose stable project fields from the vendored BasicAgent metadata envelope."""
+        for row in result.values():
+            if not row:
+                continue
+            metadata = row.get("metadata") or {}
+            mappings = {
+                "result": "result",
+                "raw_response": "raw_response",
+                "template_vars": "template_vars",
+                "thinking": "think",
+            }
+            for metadata_key, public_key in mappings.items():
+                if public_key not in row and metadata_key in metadata:
+                    row[public_key] = metadata[metadata_key]
 
     async def build_user_message(
         self,
