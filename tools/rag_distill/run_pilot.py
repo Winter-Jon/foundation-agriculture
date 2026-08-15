@@ -291,6 +291,37 @@ def option_contract_retry_prompt(sample: dict[str, Any], previous_final: str) ->
     )
 
 
+def standard_final_contract_retry_prompt(sample: dict[str, Any]) -> str:
+    """Repair a malformed standard final without changing its evidence or choice.
+
+    This is intentionally public-only: the model already has the query image, its
+    own prior answer, and the returned retrieval evidence in context.  Do not add
+    target labels or an answer-key-derived option mapping here.
+    """
+    option_rule = (
+        "For this Option question, preserve the previous public A-D letter exactly in <answer>. "
+        if sample.get("question_type") == "option"
+        else "In <answer>, preserve the previously selected public canonical class name. "
+    )
+    if sample.get("language") == "zh":
+        return (
+            "标准最终答案契约重试：上一条回答的类别语义和公开答案已经保留；只修复最终呈现格式，不要重新判断类别。"
+            "不要调用工具、不要输出 JSON、不要使用私有标签或内部知识。只输出一个完整的 <think>...</think><answer>...</answer>。"
+            "在 <think> 内，以下四个带全角冒号的字段必须各自位于新的一行行首且精确拼写："
+            "预测类别名称：、证据：、排除的候选：、不确定性：。"
+            "证据：必须逐字引用至少一个已返回的公开检索类别名称，并说明其为何支持原来的公开选择。"
+            + option_rule
+        )
+    return (
+        "Standard final-contract retry: preserve the semantic choice and public answer from your previous response; repair only the final rendering, and do not reconsider the class. "
+        "Do not call a tool, do not emit JSON, and do not use private labels or internal knowledge. Output exactly one complete <think>...</think><answer>...</answer> response. "
+        "Inside <think>, put each of these exact colon-terminated labels at the start of its own line: "
+        "Predicted class name:, Evidence:, Rejected alternatives:, Uncertainty:. "
+        "In Evidence:, quote at least one exact public class name already returned by retrieval and explain why it supports the preserved public choice. "
+        + option_rule
+    )
+
+
 def retrieval_budget_finalization_prompt(sample: dict[str, Any]) -> str:
     public_context = ""
     if sample.get("question_type") == "option":
@@ -1941,6 +1972,8 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
     budget_finalization_attempts = 0
     closed_finalization_used = False
     final_contract_retry_attempts = 0
+    standard_final_contract_retry_attempts = 0
+    standard_final_contract_retry_pending = False
 
     for _ in range(args.max_tool_turns + 3):
         try:
@@ -1996,6 +2029,16 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
             rejected = {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
             return None, trace, retrieval_ledgers, rejected
         calls = normalize_tool_calls(message)
+        if calls and standard_final_contract_retry_pending:
+            reasons = ["tool_call_during_standard_final_contract_retry"]
+            trace = {
+                "sample_id": sample.get("sample_id"), "accepted": False,
+                "rejection_reasons": reasons, "sample": sample,
+                "api_messages": api_messages, "raw_responses": raw_responses,
+                "sft_messages": sft_messages, "retrieval_calls": retrieval_ledgers,
+            }
+            rejected = {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
+            return None, trace, retrieval_ledgers, rejected
         if calls and len(retrieval_ledgers) < args.max_tool_turns:
             normalized_calls = []
             for call in calls[:1]:
@@ -2109,6 +2152,17 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                 if sample.get("language") != "zh" else
                 "最终契约重试：上一条最终文本不完整。现在只输出完整最终回答；<think> 中必须将以下字段分别置于新行行首并保留冒号：证据：、排除的候选：、不确定性：，同时保留精确的纠正并修改：和纠正类型：行；随后在 <answer> 中逐字输出检索证据中的类别名称。不要输出工具调用或标签外文字。"
             )})
+            continue
+        if (sample.get("trajectory_mode") == "standard"
+                and standard_final_contract_retry_attempts < 1
+                and (set(parse_final_answer_fields(final_text)) != set(FINAL_REQUIRED_FIELDS)
+                     or not final_answer_has_evidence_anchor(final_text, sft_messages))):
+            standard_final_contract_retry_attempts += 1
+            standard_final_contract_retry_pending = True
+            # Preserve the model's own public final in-context so the retry can
+            # render the same semantic choice rather than infer a new one.
+            api_messages.append({"role": "assistant", "content": final_text})
+            api_messages.append({"role": "user", "content": standard_final_contract_retry_prompt(sample)})
             continue
         if len(retrieval_ledgers) < args.max_tool_turns and needs_more_evidence_before_final(sample, sft_messages, final_text):
             adjacent_args = adjacent_evidence_followup_args(sample, sft_messages, sample_top_k)

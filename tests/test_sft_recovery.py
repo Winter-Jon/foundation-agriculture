@@ -348,6 +348,64 @@ def test_run_sample_retries_public_option_mapping_without_private_hint(tmp_path:
     assert "correct_option" not in retry and "correct answer" not in retry.lower()
 
 
+def test_standard_final_contract_retry_repairs_missing_colons_without_retrieval(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import argparse
+    import tools.rag_distill.run_pilot as pilot
+
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {
+        "sample_id": "standard-contract-retry", "query_image": str(image), "language": "en",
+        "trajectory_mode": "standard", "question_type": "option", "task_domain": "disease",
+        "generation_route": "blind_evidence", "strategy_id": "balanced_stop",
+        "preferred_sequence": ["balanced"], "top_k": 5,
+        "final_label": "PRIVATE_N4", "correct_option": "C", "candidate_labels": [
+            {"code": "N1", "name": "Alpha"}, {"code": "N2", "name": "Beta"},
+            {"code": "PRIVATE_N4", "name": "Target"}, {"code": "N3", "name": "Gamma"},
+        ],
+    }
+    tool = {"name": pilot.TOOL_NAME, "arguments": {"query": "leaf holes", "retrieval_type": "balanced", "image": "query_image", "top_k": 5, "rationale": "Visual Observation: holes; Candidate Analysis: target or alternatives."}}
+    responses = [
+        json.dumps(tool),
+        "<think>Predicted class name Target\nEvidence Target ranked first.\nRejected alternatives Alpha.\nUncertainty low.</think><answer>C</answer>",
+        "<think>Predicted class name: Target\nEvidence: Target ranked first and supports C.\nRejected alternatives: Alpha.\nUncertainty: low.</think><answer>C</answer>",
+    ]
+    seen_messages = []
+    retrieval_calls = []
+
+    def fake_chat(api_key, base_url, model, messages, args):
+        seen_messages.append(json.loads(json.dumps(messages)))
+        return {"choices": [{"message": {"role": "assistant", "content": responses[len(seen_messages) - 1]}}]}
+
+    def fake_append(args, sample, sft_messages, retrieval_ledgers, api_messages, call_args, call_id, assistant_think=None):
+        retrieval_calls.append(call_args)
+        visible_call = {"name": pilot.TOOL_NAME, "arguments": call_args}
+        response = {"status": "success", "results": [{"rank": 1, "score": 0.9, "class_name": "Target"}]}
+        sft_messages.extend([{"role": "tool_call", "content": json.dumps(visible_call)}, {"role": "tool_response", "content": json.dumps(response)}])
+        ledger = {"ok": True, "tool_call": visible_call, "visible_reference_images": []}
+        retrieval_ledgers.append(ledger)
+        api_messages.extend([{"role": "assistant", "content": json.dumps(visible_call)}, {"role": "user", "content": "Tool response: Target rank 1"}])
+        return response, ledger
+
+    monkeypatch.setattr(pilot, "build_initial_messages", lambda *args: [{"role": "user", "content": "mock"}])
+    monkeypatch.setattr(pilot, "chat_completion", fake_chat)
+    monkeypatch.setattr(pilot, "append_tool_execution", fake_append)
+    monkeypatch.setattr(pilot, "needs_more_evidence_before_final", lambda *args: False)
+    monkeypatch.setattr(pilot, "accept_trajectory", lambda *args: (True, []))
+    args = argparse.Namespace(top_k=5, image_max_side=0, max_tool_turns=2, model="mock", rag_api="mock", candidate_followup_mode="retrieved_descriptive")
+    row, trace, _, rejected = pilot.run_sample(sample, args, "key", "base")
+
+    retry = seen_messages[2][-1]["content"]
+    assert row is not None and rejected is None and trace["accepted"] is True
+    assert len(retrieval_calls) == 1
+    assert len(seen_messages) == 3
+    assert seen_messages[2][-2]["role"] == "assistant"
+    assert seen_messages[2][-2]["content"] == responses[1]
+    assert "Predicted class name:" in retry and "Evidence:" in retry
+    assert "correct_option" not in retry and "PRIVATE_N4" not in retry
+    assert pilot.extract_answer_body(row["messages"][-1]["content"]).strip() == "C"
+
+
 def test_run_sample_rejects_mixed_manual_tool_content(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import argparse
     import tools.rag_distill.run_pilot as pilot

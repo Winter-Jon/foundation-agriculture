@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-15 CST
+Last updated: 2026-08-16 00:36:56 CST
 
 ## Current focus
 
@@ -10,7 +10,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A only: an immutable 32 strict `standard` RAG + 32 current-contract Direct corpus, then a separately approved checkpoint-165 SFT and complete forced-off phase evaluation. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Current strict view: 24 RAG total, 22/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 10 Blind standard rows. Luna has accepted English Option (Rounds126/133), Chinese Open (Round131), and Chinese Option (Rounds132/134) Pilots. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
+- Current strict view: 25 RAG total, 23/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 9 Blind standard rows. Luna has accepted English Option (Rounds126/133), Chinese Open (Round131), and Chinese Option (Rounds132/134) Pilots; Round141 is a later accepted Chinese Option/disease row. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
 - Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Training, immutable freeze promotion, and formal evaluation are unauthorized. No sampling, SFT, or evaluation process is running.
@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration's active default is `gpt-5.6-terra`, but further Terra sampling is paused after Round148: SLB endpoint/image preflight and all three retrievals passed, yet the final answer omitted strict field delimiters and was rejected as `missing_final_fields` / `final_answer_not_evidence_anchored`. Round141 remains the only recent strict acceptance, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration's active default is `gpt-5.6-terra`. Micu SLB endpoint preflight currently passes, while Micu main remains HTTP 403. After Round148's malformed final answer, the runner now allows exactly one public-only, no-tool standard final-contract retry; its strict validator is unchanged and a regression covers colonless fields. Rebuild isolation plans, then use a fresh authorized Option target for real-image preflight and one bounded Terra Pilot. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
