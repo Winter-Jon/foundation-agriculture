@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-16 00:36:56 CST
+Last updated: 2026-08-16 01:03:24 CST
 
 ## Current focus
 
@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is complete: Micu SLB + `gpt-5.6-terra` passed real-image preflight and strict Pilot validation for Rounds149--153. The public-only, no-tool standard final-contract retry remains in force and its validator is unchanged. Only Chinese Open disease/pest remain (two rows each); their active plan is explicitly deferred and requires a separate Open-strategy review and sampling authorization. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is complete: Micu SLB + `gpt-5.6-terra` passed real-image preflight and strict Pilot validation for Rounds149--153. The public-only, no-tool standard final-contract retry remains in force and its validator is unchanged. The reviewed Chinese Open re-entry plan is in `docs/logs/plans/2026-W33-0810-0816.md`: first release only one high-evidence disease Pilot, then continue one-at-a-time only after zero-error validation. Its rows remain deferred until a matching Open scope is explicitly authorized and supported by the runner guard. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
