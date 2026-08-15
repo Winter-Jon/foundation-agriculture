@@ -1,6 +1,9 @@
 # Copyright (c) ModelScope Contributors. All rights reserved.
 from .agent import AgentFlanLossScale, AlphaUmiLossScale, HermesLossScale, QwenLossScale, REACTLossScale
 from .base import ALL_BASE_STRATEGY, LossScale
+from .manual_json import ManualJSONLossScale
+from .manual_json_weight5 import ManualJSONWeight5LossScale
+from .manual_json_weight2 import ManualJSONWeight2LossScale
 from .other import IgnoreEmptyThinkLossScale
 
 # Add your loss scale here, use --loss_scale xxx to train
@@ -13,6 +16,9 @@ loss_scale_map = {
     'qwen': QwenLossScale,
     'agentflan': AgentFlanLossScale,
     'alpha_umi': AlphaUmiLossScale,
+    'manual_json': ManualJSONLossScale,
+    'manual_json_weight5': ManualJSONWeight5LossScale,
+    'manual_json_weight2': ManualJSONWeight2LossScale,
 }
 
 

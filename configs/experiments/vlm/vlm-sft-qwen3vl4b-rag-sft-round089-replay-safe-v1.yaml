@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round089-replay-safe-v1
+display_name:
+  en: Round089 replay-safe RAG SFT
+  zh: Round089 replay-safe RAG SFT
+domain: vlm
+task: sft
+description: Low-dose replay-only RAG SFT from checkpoint-165 after Round088 regression; no new sampling.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/agrinet-rag-sft-round089-replay-safe
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round089_replay_safe.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round089-replay-safe/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round089_replay_safe
+parameters:
+  dataset_rows: 7
+  epochs: 1
+  learning_rate: 5.0e-7
+  tuner: full
+tags: [qwen3-vl, rag-sft, round089, replay-safe, low-dose]

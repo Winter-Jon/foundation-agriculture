@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-iteration-r1-min-v1
+display_name:
+  en: Minimal RAG SFT iteration R1 from checkpoint-64
+  zh: 基于 checkpoint-64 的最小 RAG SFT 迭代 R1
+domain: vlm
+task: sft
+description: One-epoch full-parameter SFT on the frozen 78-row base-plus-Round-1 corpus; trajectory hard gates passed before launch.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/agrinet-rag-sft-iteration-r1-17-singleimg
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_iteration_r1_min.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-iteration-r1-17-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_nonrag_init_dual_route_rag_sft_v2/v1-20260808-153951/checkpoint-64
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r1_min
+parameters:
+  dataset_rows: 78
+  incremental_rows: 17
+  max_length: 8192
+  epochs: 1
+  learning_rate: 5.0e-6
+  tuner: full
+tags: [qwen3-vl, rag-sft, iteration-r1, minimal-sft, tool-call]

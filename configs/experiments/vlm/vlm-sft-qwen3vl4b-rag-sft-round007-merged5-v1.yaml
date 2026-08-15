@@ -1,0 +1,32 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round007-merged5-v1
+display_name:
+  en: Round 007 five-row option-coverage diagnostic
+  zh: Round 007 五条选项覆盖诊断
+domain: vlm
+task: sft
+description: Five reviewed trajectories with added English pest option coverage; diagnostic only.
+lifecycle: active
+components:
+  model: qwen3-vl-4b-rag-sft-round007-merged5
+  data: agrinet-rag-sft-round007-merged5-singleimg
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round007_merged5.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round007-merged5-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_targeted_three_diagnostic/v0-20260809-212546/checkpoint-3
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5
+parameters:
+  dataset_rows: 5
+  max_length: 2048
+  epochs: 1
+  learning_rate: 5.0e-7
+  tuner: full
+tags:
+  - qwen3-vl
+  - rag-sft
+  - diagnostic
+  - option-coverage
+  - round007

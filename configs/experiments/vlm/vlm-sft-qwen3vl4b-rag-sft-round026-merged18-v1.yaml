@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round026-merged18-v1
+domain: vlm
+display_name: {en: Round 026 evidence-quality merged18 SFT, zh: Round 026 高证据质量18条 SFT}
+task: sft
+description: Eighteen novel Blind evidence rows from rounds 024 and 026, all accepted by protocol, semantic, artifact, and final-evidence gates.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round026-merged18, data: agrinet-rag-sft-round026-merged18-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round026_merged18.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round026-merged18-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round026_merged18}
+parameters: {dataset_rows: 18, max_length: 2048, epochs: 1, learning_rate: 1.0e-7, tuner: full}
+tags: [qwen3-vl, rag-sft, diagnostic, evidence-quality, blind, round026]

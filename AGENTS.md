@@ -46,3 +46,13 @@ This repository runs on a local workstation, not a Slurm cluster. Use the projec
 - Do not delete or truncate historical Slurm logs or legacy entrypoints until their replacements have passed migration acceptance.
 - Do not echo credentials or proxy values from legacy scripts.
 - Do not infer that a detached process completed from PID absence alone; inspect its status and logs.
+
+## Transport Error Recovery
+
+- Treat `Transport error`, `stream disconnected before completion`, truncated tool output, and response-decoding failures as unknown-delivery conditions.
+- After a failed read, retry with a materially smaller, bounded response. Do not repeat an oversized call unchanged.
+- After an interrupted write or long-running command, inspect the destination, process/session, logs, exit marker, and expected artifact counts before retrying. Never launch a duplicate until the intended effect is confirmed absent.
+- For large documentation, configuration, or generated artifacts, write in bounded segments. Prefer multiple small `apply_patch` operations, each independently validated, over one large patch.
+- After each segment, run a narrow syntax or integrity check and record the last confirmed segment before continuing.
+- Keep resumable state in stable output paths so a lost response can resume from the last confirmed checkpoint.
+- Do not report completion from a lost tool response alone; verify the resulting files and bounded metadata.

@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round030-replay-option-v1
+domain: vlm
+display_name: {en: Round 030 replay-preserving one-option ablation, zh: Round 030 replay 保持单 Option 消融}
+task: sft
+description: Five round007 anchor rows plus one accepted blind Option-B row; diagnostic only.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round030-replay-option, data: agrinet-rag-sft-round030-replay-option-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round030_replay_option.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round030-replay-option-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round030_replay_option}
+parameters: {dataset_rows: 6, anchor_rows: 5, added_option_rows: 1, max_length: 2048, epochs: 1, learning_rate: 1.0e-7, tuner: full}
+tags: [qwen3-vl, rag-sft, diagnostic, replay-preserving, option, round030]

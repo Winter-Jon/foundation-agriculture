@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round008-single-zh-pest-open-v1
+display_name:
+  en: Round 008 single Chinese pest Open ablation
+  zh: Round 008 单条中文害虫开放题消融
+domain: vlm
+task: sft
+description: Single accepted Chinese pest Open trajectory replayed from round007; diagnostic only.
+lifecycle: active
+components:
+  model: qwen3-vl-4b-rag-sft-round008-single-zh-pest-open
+  data: agrinet-rag-sft-round008-single-zh-pest-open-singleimg
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round008_single_zh_pest_open.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round008-single-zh-pest-open-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round008_single_zh_pest_open
+parameters:
+  dataset_rows: 1
+  max_length: 2048
+  epochs: 1
+  learning_rate: 5.0e-7
+  tuner: full

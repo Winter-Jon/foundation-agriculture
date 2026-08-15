@@ -2,6 +2,7 @@
 
 ## Experiments
 
+- 2026-W33 - experiments/2026-W33-0810-0816.md
 - 2026-W26 - experiments/2026-W26-0622-0628.md
 - 2026-W25 - experiments/2026-W25-0615-0621.md
 - 2026-W23 - experiments/2026-W23-0601-0607.md
@@ -9,6 +10,7 @@
 
 ## Changes
 
+- 2026-W33 - changes/2026-W33-0810-0816.md
 - 2026-W32 - changes/2026-W32-0803-0809.md
 - 2026-W26 - changes/2026-W26-0622-0628.md
 - 2026-W25 - changes/2026-W25-0615-0621.md
@@ -17,6 +19,7 @@
 
 ## Plans
 
+- 2026-W33 - plans/2026-W33-0810-0816.md
 - 2026-W24 - plans/2026-W24-0608-0614.md
 
 ## Decisions

@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-bounded-latest-v1
+display_name:
+  en: Qwen3-VL-4B full SFT on latest bounded student data
+  zh: 基于最新 bounded student 数据的 Qwen3-VL-4B 全参数微调
+domain: vlm
+task: sft
+description: Full-parameter local SFT on the latest registered bounded VLOOM student artifact.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-instruct
+  data: data/agrinet-bounded-vloom-student-en-v1
+  runtime: runtime/local-a800-1gpu-train
+runtime_profile: runtime/local-a800-1gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_bounded_latest_sft.yaml
+  baseline_model: models/Qwen3-VL-4B-Instruct
+outputs:
+  model: outputs/artifacts/models/qwen3vl4b-bounded-latest-sft-v1
+parameters:
+  dataset: outputs/artifacts/datasets/agrinet-bounded-vloom-student-en-v1/student_sft_en.versioned.jsonl
+  max_length: 8192
+  epochs: 8
+  learning_rate: 1.0e-5
+  tuner: full
+tags: [qwen3-vl, bounded, sft, latest, disease-pest]

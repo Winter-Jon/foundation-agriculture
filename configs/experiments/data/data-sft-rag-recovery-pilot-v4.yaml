@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: data-sft-rag-recovery-pilot-v4
+display_name: {en: Semantic-gated RAG SFT Pilot v4, zh: 语义门禁 RAG SFT Pilot v4}
+domain: data
+task: prepare
+description: P0 refactor with compact Direct data, image-specific bilingual reasoning, semantic validation, and Milvus preflight.
+lifecycle: active
+components: {data: data/agrinet-disease-pest-current-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+inputs:
+  direct_sft: outputs/vlm_sft/disease_pest_large/sft_messages_en_zh.jsonl
+  rag_sft: outputs/vlm_sft/rag_distill/agent_sft.student.singleimg.jsonl
+  candidate_pool: outputs/vlm_data/disease_pest_large/contrast_samples_vit_base.jsonl
+  strict_split: datasets/AgriNet-1K/open_domain/manifests/split_info_20260527_145700_strict.json
+  eval_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  artifacts_root: outputs/artifacts/datasets
+  pilot_dir: outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v4
+parameters:
+  seed: 20260805
+  rag_primary_per_cell: 4
+  rag_reserve_per_cell: 16
+  milvus_target_rank_max: 5
+  milvus_target_score_min: 0.70
+  training_authorized: false
+tags: [agrinet, sft, rag, semantic-gate, milvus-preflight]

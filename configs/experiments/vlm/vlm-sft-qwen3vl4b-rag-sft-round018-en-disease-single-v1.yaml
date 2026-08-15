@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round018-en-disease-single-v1
+domain: vlm
+display_name: {en: Round 018 English disease single-row ablation, zh: Round 018 英文病害单条消融}
+task: sft
+description: Single reviewed English disease row from round007 for interference diagnosis.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round018-en-disease-single, data: agrinet-rag-sft-round018-en-disease-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round018_en_disease_single.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round018-en-disease-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round018_en_disease_single}
+parameters: {dataset_rows: 1, max_length: 2048, epochs: 1, learning_rate: 5.0e-7, tuner: full}
+tags: [qwen3-vl, rag-sft, diagnostic, ablation, english, disease, round018]

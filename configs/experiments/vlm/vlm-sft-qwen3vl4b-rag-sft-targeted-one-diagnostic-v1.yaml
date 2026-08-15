@@ -1,0 +1,27 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-targeted-one-diagnostic-v1
+display_name:
+  en: Targeted one-sample RAG SFT diagnostic
+  zh: 单条高质量 RAG SFT 诊断
+domain: vlm
+task: sft
+description: One-sample diagnostic SFT; not a production or full-corpus run.
+lifecycle: active
+components:
+  model: qwen3-vl-4b-rag-sft-r13
+  data: agrinet-rag-sft-targeted-one
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_targeted_one_diagnostic.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-targeted-one/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r13_manual_json_promptaligned_strict39/v0-20260809-130955/checkpoint-39
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_targeted_one_diagnostic
+parameters:
+  dataset_rows: 1
+  max_length: 8192
+  epochs: 1
+  learning_rate: 1.5e-6
+  tuner: full
+tags: [qwen3-vl, rag-sft, targeted, diagnostic, manual-json]

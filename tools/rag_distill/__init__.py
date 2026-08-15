@@ -1,2 +1,1 @@
-"""RAG tool-call distillation utilities for AgriNet."""
-
+"""Utilities for building and validating AgriNet RAG distillation data."""

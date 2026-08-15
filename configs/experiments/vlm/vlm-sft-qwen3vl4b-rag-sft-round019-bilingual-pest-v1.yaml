@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round019-bilingual-pest-v1
+domain: vlm
+display_name: {en: Round 019 bilingual pest mix, zh: Round 019 中英文害虫混合}
+task: sft
+description: Two reviewed non-regressing pest rows, one English and one Chinese.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round019-bilingual-pest, data: agrinet-rag-sft-round019-bilingual-pest-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round019_bilingual_pest.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round019-bilingual-pest-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round019_bilingual_pest}
+parameters: {dataset_rows: 2, max_length: 2048, epochs: 1, learning_rate: 5.0e-7, tuner: full}
+tags: [qwen3-vl, rag-sft, diagnostic, bilingual, pest, round019]

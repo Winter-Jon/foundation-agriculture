@@ -1,0 +1,34 @@
+model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+template: qwen3_vl
+agent_template: manual_json
+loss_scale: manual_json
+torch_dtype: bfloat16
+attn_impl: sdpa
+tuner_type: full
+freeze_vit: false
+freeze_llm: false
+freeze_aligner: false
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+vit_gradient_checkpointing: true
+dataset:
+  - outputs/artifacts/datasets/agrinet-rag-sft-round018-merged2-singleimg/data.jsonl
+split_dataset_ratio: 0.0
+streaming: false
+max_length: 2048
+truncation_strategy: left
+num_train_epochs: 1
+per_device_train_batch_size: 1
+learning_rate: 5.0e-7
+gradient_accumulation_steps: 1
+save_steps: 1
+save_total_limit: 2
+save_only_model: true
+logging_steps: 1
+output_dir: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round018_merged2
+warmup_ratio: 0.0
+dataloader_num_workers: 0
+dataset_num_proc: 1
+report_to:
+  - tensorboard

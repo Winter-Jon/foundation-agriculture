@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-iteration-r11-manual-json-lossweight-v1
+display_name:
+  en: Manual JSON tool-call loss-weight pilot SFT
+  zh: 手动 JSON 工具调用加权路由试验 SFT
+domain: vlm
+task: sft
+description: Bounded strict16 SFT with a dedicated loss scale for the bare JSON first call.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/agrinet-rag-sft-iteration-r1-strict16-singleimg
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_iteration_r11_manual_json_lossweight.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-iteration-r1-strict16-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r1_strict16/v0-20260809-105208/checkpoint-16
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r11_manual_json_lossweight
+parameters:
+  dataset_rows: 16
+  max_length: 8192
+  epochs: 1
+  learning_rate: 1.5e-6
+  tuner: full
+  tool_call_loss_scale: 3.0
+tags: [qwen3-vl, rag-sft, iteration-r11, manual-json, loss-weight, routing-pilot]

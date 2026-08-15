@@ -95,6 +95,7 @@ class RagSearchRequest(StrictModel):
     schema_version: Literal["agrinet.rag.search/v1"] = "agrinet.rag.search/v1"
     retrieval_type: str
     query_image: Path
+    query_text: str = ""
     top_k: int = Field(default=5, ge=1)
     ranker: str | None = None
     weights: dict[str, float] = Field(default_factory=dict)

@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round022-replay-safe-toolweight5-v1
+domain: vlm
+display_name: {en: Round 022 replay-safe retrieval-weight ablation, zh: Round 022 回放安全检索损失权重消融}
+task: sft
+description: Same seven-row replay-safe corpus and low learning rate as round021; valid retrieval JSON loss weight increased from 3 to 5.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round022-replay-safe-toolweight5, data: agrinet-rag-sft-round020-replay-safe-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round022_replay_safe_toolweight5.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round020-replay-safe-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round022_replay_safe_toolweight5}
+parameters: {dataset_rows: 7, max_length: 2048, epochs: 1, learning_rate: 1.0e-7, retrieval_json_loss_weight: 5.0, tuner: full}
+tags: [qwen3-vl, rag-sft, diagnostic, replay-safe, tool-weight, round022]

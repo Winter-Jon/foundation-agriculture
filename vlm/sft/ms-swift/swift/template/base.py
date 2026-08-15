@@ -322,6 +322,23 @@ class Template(ProcessorMixin):
                 inputs.tools[i] = agent_template.wrap_tool(tool)
         i = 0
         messages = inputs.messages
+        # Some protocol-facing datasets store the first manual JSON call as an
+        # assistant message because that is the evaluator wire format.  The
+        # ms-swift agent pipeline, however, only applies _format_tool_calls to
+        # role=tool_call.  Convert only an assistant JSON object immediately
+        # followed by a tool response, and only for the explicit manual_json
+        # adapter; final answers and ordinary assistant text remain unchanged.
+        if self._agent_template == 'manual_json':
+            agent_template = self.agent_template
+            for idx, message in enumerate(messages[:-1]):
+                if message.get('role') != 'assistant' or messages[idx + 1].get('role') not in {'tool', 'tool_response'}:
+                    continue
+                try:
+                    parsed = agent_template._parse_tool_call(message.get('content', ''))
+                except (AssertionError, KeyError, TypeError, ValueError):
+                    continue
+                if parsed.get('name'):
+                    message['role'] = 'tool_call'
         while i < len(messages):
             if messages[i]['role'] == 'tool_call':
                 agent_template = self.agent_template
@@ -1163,6 +1180,11 @@ class Template(ProcessorMixin):
             else:
                 start_idx = -1
             for i, message in enumerate(messages):
+                if (self._agent_template == 'manual_json' and message.get('role') == 'assistant'
+                        and i + 1 < len(messages) and messages[i + 1].get('role') == 'tool'):
+                    # The evaluator consumes this assistant turn as a bare
+                    # JSON tool call. Never prepend Qwen thinking markers.
+                    continue
                 if (self._is_add_non_thinking_round(messages, i, start_idx) and isinstance(message['content'], str)
                         and not message['content'].startswith((thinking_prefix, non_thinking_prefix))):
                     # During multi-turn SFT training/validation:

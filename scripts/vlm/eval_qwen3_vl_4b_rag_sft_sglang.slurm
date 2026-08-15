@@ -65,6 +65,7 @@ SGLANG_HOST="${SGLANG_HOST:-127.0.0.1}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3VL-4B-AgriNet-RAG-SFT}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
 MAX_TOOL_TURNS="${MAX_TOOL_TURNS:-3}"
+EVAL_MODE="${EVAL_MODE:-rag}"
 TOP_K="${TOP_K:-3}"
 REQUEST_TIMEOUT="${REQUEST_TIMEOUT:-1200}"
 SGLANG_MEM_FRACTION_STATIC="${SGLANG_MEM_FRACTION_STATIC:-0.7}"
@@ -113,7 +114,10 @@ fi
 echo "Copying lite Milvus DB to job-local path: $JOB_RAG_LITE_DB"
 cp -f "$RAG_LITE_DB" "$JOB_RAG_LITE_DB"
 
-if [[ "$SPLIT" == "large" ]]; then
+if [[ -n "${MANIFEST_OVERRIDE:-}" ]]; then
+    TRACE_EN=""
+    TRACE_ZH=""
+elif [[ "$SPLIT" == "large" ]]; then
     TRACE_EN="outputs/vlm_data/disease_pest_large/teacher_traces_en.jsonl"
     TRACE_ZH="outputs/vlm_data/disease_pest_large/teacher_traces_zh.jsonl"
 else
@@ -121,12 +125,12 @@ else
     TRACE_ZH="outputs/vlm_data/disease_pest_test/teacher_traces_zh.jsonl"
 fi
 
-if [[ ! -f "$TRACE_EN" || ! -f "$TRACE_ZH" ]]; then
+if [[ -z "${MANIFEST_OVERRIDE:-}" && ( ! -f "$TRACE_EN" || ! -f "$TRACE_ZH" ) ]]; then
     echo "Missing eval traces: $TRACE_EN or $TRACE_ZH" >&2
     exit 2
 fi
 
-MANIFEST="$OUT_DIR/manifest.jsonl"
+MANIFEST="${MANIFEST_OVERRIDE:-$OUT_DIR/manifest.jsonl}"
 PREDICTIONS="$OUT_DIR/predictions.jsonl"
 SCORED="$OUT_DIR/scored.jsonl"
 METRICS="$OUT_DIR/metrics.json"
@@ -136,11 +140,13 @@ RAG_STDERR="$OUT_DIR/rag_server.err"
 SGLANG_STDOUT="$OUT_DIR/sglang.out"
 SGLANG_STDERR="$OUT_DIR/sglang.err"
 
-BUILD_ARGS=(--traces "$TRACE_EN" "$TRACE_ZH" --output "$MANIFEST" --repo-root "$REPO_ROOT" --data-dir "$(dirname "$TRACE_EN")")
-if [[ "$LIMIT" != "0" ]]; then
-    BUILD_ARGS+=(--limit "$LIMIT")
+if [[ -z "${MANIFEST_OVERRIDE:-}" ]]; then
+    BUILD_ARGS=(--traces "$TRACE_EN" "$TRACE_ZH" --output "$MANIFEST" --repo-root "$REPO_ROOT" --data-dir "$(dirname "$TRACE_EN")")
+    if [[ "$LIMIT" != "0" ]]; then
+        BUILD_ARGS+=(--limit "$LIMIT")
+    fi
+    "$PYTHON_BIN" vlm/eval/tools/build_eval_manifest.py "${BUILD_ARGS[@]}"
 fi
-"$PYTHON_BIN" vlm/eval/tools/build_eval_manifest.py "${BUILD_ARGS[@]}"
 
 EVAL_ARGS=(
     --manifest "$MANIFEST"
@@ -213,6 +219,7 @@ PY
     return 1
 }
 
+if [[ "$EVAL_MODE" == "rag" ]]; then
 echo "Starting CPU RAG server on ${RAG_PORT}"
 "$PYTHON_BIN" tools/milvus/search_api.py \
     --host 127.0.0.1 \
@@ -232,6 +239,7 @@ import requests
 requests.get('http://127.0.0.1:${RAG_PORT}/health', timeout=5).raise_for_status()
 print('RAG health check passed')
 PY
+fi
 
 echo "Starting sglang server on ${SGLANG_HOST}:${SGLANG_PORT} using GPUs ${CUDA_VISIBLE_DEVICES:-}"
 echo "SGLANG_MEM_FRACTION_STATIC=${SGLANG_MEM_FRACTION_STATIC}"
@@ -278,7 +286,20 @@ print('warmup_status', r.status_code)
 print(r.text[:1000])
 PY
 
-"$PYTHON_BIN" vlm/eval/tools/run_qwen3_vl_rag_sglang_eval.py "${EVAL_ARGS[@]}"
+if [[ "$EVAL_MODE" == "rag" ]]; then
+    "$PYTHON_BIN" vlm/eval/tools/run_qwen3_vl_rag_sglang_eval.py "${EVAL_ARGS[@]}"
+else
+    DIRECT_ARGS=(
+        --manifest "$MANIFEST" --output "$PREDICTIONS" --repo-root "$REPO_ROOT"
+        --model "$SERVED_MODEL_NAME" --api-base "http://${SGLANG_HOST}:${SGLANG_PORT}/v1"
+        --max-new-tokens 128 --request-timeout "$REQUEST_TIMEOUT"
+    )
+    if [[ "$LIMIT" != "0" ]]; then
+        DIRECT_ARGS+=(--limit "$LIMIT")
+    fi
+    "$PYTHON_BIN" vlm/eval/tools/run_qwen3_vl_direct_sglang_eval.py \
+        "${DIRECT_ARGS[@]}"
+fi
 
 "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py \
     --predictions "$PREDICTIONS" \

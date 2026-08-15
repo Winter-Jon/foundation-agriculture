@@ -1,0 +1,27 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-iteration-r2-routing16-v1
+display_name:
+  en: Routing16 RAG SFT augmentation from strict16 checkpoint
+  zh: 基于 strict16 checkpoint 的自主路由增强 SFT
+domain: vlm
+task: sft
+description: One-epoch local full-parameter SFT on 16 protocol- and semantic-valid routing augmentation rows.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/agrinet-rag-sft-iteration-r2-routing16-singleimg
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_iteration_r2_routing16.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-iteration-r2-routing16-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r1_strict16/v0-20260809-105208/checkpoint-16
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_iteration_r2_routing16
+parameters:
+  dataset_rows: 16
+  max_length: 8192
+  epochs: 1
+  learning_rate: 3.0e-6
+  tuner: full
+tags: [qwen3-vl, rag-sft, iteration-r2, autonomous-routing, strict-protocol]

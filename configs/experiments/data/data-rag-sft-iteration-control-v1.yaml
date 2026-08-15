@@ -1,0 +1,66 @@
+schema_version: agrinet.experiment/v1
+id: data-rag-sft-iteration-control-v1
+display_name:
+  en: RAG SFT iteration control and review gates
+  zh: RAG SFT 数据迭代控制与审阅门
+domain: data
+task: iteration_control
+description: Codex-executed bounded data, training, and evaluation iteration control; trajectory compliance is a hard priority.
+lifecycle: active
+components: {data: data/agrinet-disease-pest-current-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+outputs:
+  state_root: outputs/experiments/rag_sft_iteration
+inputs:
+  corrected_eval: outputs/vlm_eval/qwen3_vl_4b_rag_sft/dual_route_v2_checkpoint64_rag_protocol_corrected_20260809
+  nonrag_eval: outputs/vlm_eval/qwen3_vl_4b_rag_sft/nonrag_checkpoint165_direct_full_20260804
+  prior_rag_eval: outputs/vlm_eval/qwen3_vl_4b_rag_sft/nonrag_init_rag_sft_checkpoint224_rag_full_20260805
+  base_dataset: outputs/artifacts/datasets/agrinet-rag-dual-route-sft-v2-singleimg/data.jsonl
+  base_checkpoint: outputs/vlm_sft/qwen3_vl_4b_nonrag_init_dual_route_rag_sft_v2/v1-20260808-153951/checkpoint-64
+priorities: [trajectory_compliance, autonomous_rag_routing, performance]
+hard_gates:
+  protocol_error_count: 0
+  semantic_error_count: 0
+  tool_schema_valid_rate: 1.0
+  retrieval_success_rate: 1.0
+  evidence_supported_rate: 1.0
+  language_mismatch_count: 0
+  option_contract_error_count: 0
+  open_contract_error_count: 0
+  oracle_premature_label_count: 0
+  blind_label_exposure_count: 0
+  eval_image_overlap_count: 0
+  unknown_label_leak_count: 0
+budgets: {micro_pilot_attempts: 16, max_auto_pilot_attempts: 64, min_new_accepted_for_sft: 16, max_auto_new_training_rows: 48, smoke_eval_rows: 32, stratified_eval_rows: 96, full_eval_rows: 618}
+approval_required_for: [pilot_attempts_above_64, new_training_rows_above_48, full_618_evaluation, base_model_or_eval_protocol_change]
+stages:
+  standard_intermediate:
+    required_rag_rows: 32
+    required_direct_rows: 32
+    rag_cells: [standard/open/en/disease, standard/open/en/pest, standard/open/zh/disease, standard/open/zh/pest, standard/option/en/disease, standard/option/en/pest, standard/option/zh/disease, standard/option/zh/pest]
+    display_name: standard_milestone
+    purpose: complete standard-trajectory milestone SFT and phase evaluation from checkpoint-165
+    sft_requires_separate_approval: true
+    required_evaluation: [forced_retrieval_off_protocol_smoke, matched_balanced_subgroup_diagnostic, checkpoint165_baseline_comparison, milestone_review_package]
+    formal_618_request_requires_separate_approval: true
+    post_sft_decision_gate:
+      automatic_stage_b_release: false
+      required_evidence: [forced_retrieval_off_protocol_smoke, matched_checkpoint165_manifest_diagnostic, subgroup_delta_review]
+      outcomes:
+        protocol_hard_gate_failure: repair_standard_protocol_or_template_then_new_standard_pilot
+        autonomous_tool_use_insufficient: add_standard_blind_routing_examples_then_new_standard_pilot
+        answer_quality_insufficient: add_high_evidence_standard_weak_cell_rows_then_new_standard_pilot
+        direct_regression: increase_validated_direct_replay_then_new_standard_freeze
+        clear_positive_result: record_complete_standard_milestone_and_request_direction_for_stop_correction_or_next_standard_revision_or_formal_618
+  full_milestone:
+    required_rag_rows: 48
+    required_direct_rows: 32
+    additional_rag_cells: [stop_correction/open/en/disease, stop_correction/open/en/pest, stop_correction/open/zh/disease, stop_correction/open/zh/pest]
+    purpose: complete RAG milestone after stop-correction is independently stable
+    sft_requires_separate_approval: true
+    formal_618_eligible_only_after_matched_diagnostics: true
+round_1:
+  focus: [autonomous_first_tool_call, option_answer_retention]
+  attempts: 16
+  balanced_dimensions: {language: [en, zh], question_type: [open, option], task_domain: [disease, pest], generation_route: [oracle_grounded, blind_evidence]}
+  training_authorized: false

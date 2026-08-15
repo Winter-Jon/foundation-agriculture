@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round029-accepted17-v1
+domain: vlm
+display_name: {en: Round 029 accepted17 bounded RAG SFT, zh: Round 029 accepted17 bounded RAG SFT}
+task: sft
+description: Seventeen novel Blind evidence rows combining eight Open and nine Option traces; all passed protocol, semantic, artifact, and evidence gates.
+lifecycle: active
+components: {model: qwen3-vl-4b-rag-sft-round029-accepted17, data: agrinet-rag-sft-round029-accepted17-singleimg, runtime: runtime/a800-single-gpu-train}
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round029_accepted17.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-round029-accepted17-singleimg/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round007_merged5/v0-20260809-225251/checkpoint-5
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round029_accepted17}
+parameters: {dataset_rows: 17, open_rows: 8, option_rows: 9, max_length: 2048, epochs: 1, learning_rate: 1.0e-7, tuner: full}
+tags: [qwen3-vl, rag-sft, bounded, blind, option, round029]

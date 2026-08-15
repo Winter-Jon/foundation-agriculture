@@ -8,6 +8,7 @@ from .hermes import HermesAgentTemplate, HunyuanHermesAgentTemplate
 from .hy_v3 import HyV3AgentTemplate
 from .kimi_k25 import KimiK25AgentTemplate
 from .llama import Llama3AgentTemplate, Llama4AgentTemplate
+from .manual_json import ManualJSONAgentTemplate
 from .minicpm5 import MiniCPM5AgentTemplate
 from .minimax_m2 import MinimaxM2AgentTemplate
 from .mistral import MistralAgentTemplate
@@ -52,4 +53,5 @@ agent_template_map = {
     'youtu': YoutuAgentTemplate,
     'kimi_k25': KimiK25AgentTemplate,
     'minicpm5': MiniCPM5AgentTemplate,
+    'manual_json': ManualJSONAgentTemplate,
 }

@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: data-sft-rag-recovery-pilot-v5
+display_name: {en: Strategy-diverse RAG SFT Pilot v5, zh: 多策略 RAG SFT Pilot v5}
+domain: data
+task: prepare
+description: Bounded Pilot with strategy-aware Milvus preflight, candidate-first reasoning, and rejection sampling.
+lifecycle: active
+components: {data: data/agrinet-disease-pest-current-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+inputs:
+  direct_sft: outputs/vlm_sft/disease_pest_large/sft_messages_en_zh.jsonl
+  rag_sft: outputs/vlm_sft/rag_distill/agent_sft.student.singleimg.jsonl
+  candidate_pool: outputs/vlm_data/disease_pest_large/contrast_samples_vit_base.jsonl
+  strict_split: datasets/AgriNet-1K/open_domain/manifests/split_info_20260527_145700_strict.json
+  eval_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  artifacts_root: outputs/artifacts/datasets
+  pilot_dir: outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5
+parameters:
+  seed: 20260807
+  rag_primary_per_cell: 4
+  rag_reserve_per_cell: 16
+  retrieval_top_k: 5
+  milvus_target_score_min: 0.70
+  retrieval_strategies: [visual_then_balanced, balanced_then_name, semantic_then_visual, rrf_then_name, balanced_stop]
+  candidates_per_target: 3
+  training_authorized: false
+tags: [agrinet, sft, rag, strategy-diversity, milvus-preflight, rejection-sampling]

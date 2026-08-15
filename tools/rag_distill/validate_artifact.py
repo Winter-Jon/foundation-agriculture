@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -81,6 +82,18 @@ def is_pre_tool_think(message: dict[str, Any]) -> bool:
     return bool(content.startswith("<think>") and content.endswith("</think>"))
 
 
+def parse_tool_call_message(message: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a tool call encoded in either legacy tool_call or strict assistant role."""
+    content = message.get("content")
+    if not isinstance(content, str):
+        return None
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) and parsed.get("name") == TOOL_NAME and "arguments" in parsed else None
+
+
 def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
     errors = []
     retrieval_types: Counter[str] = Counter()
@@ -106,6 +119,8 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
         errors.append(f"{row_id}: metadata must include label_name/label_aliases for name-based evaluation")
     tool_calls = 0
     tool_responses = 0
+    actual_sequence: list[str] = []
+    actual_top_k: list[int] = []
     for index, message in enumerate(messages):
         role = message.get("role")
         if role == "system":
@@ -117,7 +132,8 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
             errors.append(f"{row_id}: message exposes class code")
         if contains_internal_knowledge_leak(content_text):
             errors.append(f"{row_id}: message exposes private teacher-forcing/internal-label wording")
-        if role == "tool_call":
+        strict_assistant_tool = role == "assistant" and parse_tool_call_message(message) is not None
+        if role == "tool_call" or strict_assistant_tool:
             tool_calls += 1
             parsed, parse_errors = parse_content_json(message, row_id, role)
             errors.extend(parse_errors)
@@ -130,14 +146,21 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
                 errors.append(f"{row_id}: tool_call arguments must be an object")
             else:
                 errors.extend(f"{row_id}: {msg}" for msg in validate_tool_arguments(args))
-                retrieval_types[str(args.get("retrieval_type"))] += 1
+                retrieval_type = str(args.get("retrieval_type"))
+                retrieval_types[retrieval_type] += 1
+                actual_sequence.append(retrieval_type)
+                if isinstance(args.get("top_k"), int):
+                    actual_top_k.append(args["top_k"])
             if "Predicted class name" in content_text or "Evidence" in content_text:
                 errors.append(f"{row_id}: tool_call message mixes final-answer text")
             if index == 0:
-                errors.append(f"{row_id}: tool_call must follow user/tool_response or a pre-tool assistant think")
+                if not strict_assistant_tool:
+                    errors.append(f"{row_id}: tool_call must follow user/tool_response or a pre-tool assistant think")
             else:
                 previous = messages[index - 1]
-                if previous.get("role") == "assistant" and is_pre_tool_think(previous):
+                if strict_assistant_tool and index == 1 and messages[0].get("role") == "user":
+                    pass
+                elif previous.get("role") == "assistant" and is_pre_tool_think(previous):
                     if index < 2 or messages[index - 2].get("role") not in ("user", "tool_response"):
                         errors.append(f"{row_id}: pre-tool assistant think must follow user or tool_response")
                 elif previous.get("role") not in ("user", "tool_response"):
@@ -156,7 +179,12 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
                     for result in results:
                         if isinstance(result, dict) and result.get("source_dataset") == "agrinet_candidate_evidence":
                             errors.append(f"{row_id}: tool_response contains non-retrieved candidate evidence")
-            if index == 0 or messages[index - 1].get("role") != "tool_call":
+                        if isinstance(result, dict):
+                            score_value = result.get("score")
+                            if not isinstance(score_value, str) or not re.fullmatch(r"[-+]?\d+\.\d{2}", score_value):
+                                errors.append(f"{row_id}: visible retrieval score must be a string with exactly two decimals")
+            previous_is_tool_call = index > 0 and (messages[index - 1].get("role") == "tool_call" or parse_tool_call_message(messages[index - 1]) is not None)
+            if not previous_is_tool_call:
                 errors.append(f"{row_id}: tool_response must immediately follow tool_call")
         elif role == "assistant" and index != len(messages) - 1:
             if not is_pre_tool_think(message):
@@ -167,6 +195,32 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
         errors.append(f"{row_id}: at least one tool_call is required")
     if tool_calls != tool_responses:
         errors.append(f"{row_id}: tool_call/tool_response count mismatch")
+    metadata = row.get("metadata", {})
+    strategy_id = str(metadata.get("strategy_id") or "")
+    route = str(metadata.get("generation_route") or "")
+    if route:
+        if route not in {"oracle_grounded", "blind_evidence"}: errors.append(f"{row_id}: invalid generation_route {route}")
+        if bool(metadata.get("label_visible_to_teacher")) != (route == "oracle_grounded"):
+            errors.append(f"{row_id}: label visibility does not match generation_route")
+        audit = metadata.get("label_influence_audit")
+        if not isinstance(audit, dict) or audit.get("premature_target_query") or not audit.get("final_evidence_supported"):
+            errors.append(f"{row_id}: label influence audit failed")
+    preferred = metadata.get("preferred_sequence")
+    if strategy_id and strategy_id != "legacy_visual":
+        if not isinstance(preferred, list) or not preferred:
+            errors.append(f"{row_id}: strategy row must include preferred_sequence")
+        else:
+            expected = [str(value) for value in preferred]
+            compared = min(len(actual_sequence), len(expected))
+            if actual_sequence[:compared] != expected[:compared]:
+                errors.append(f"{row_id}: retrieval sequence {actual_sequence} violates strategy {strategy_id} {expected}")
+        required_top_k = metadata.get("retrieval_top_k")
+        if not isinstance(required_top_k, int) or any(value != required_top_k for value in actual_top_k):
+            errors.append(f"{row_id}: tool top_k values {actual_top_k} do not match retrieval_top_k {required_top_k}")
+        if actual_sequence and actual_sequence[0] == "name":
+            errors.append(f"{row_id}: name retrieval cannot be the discovery call")
+        if "name" in actual_sequence and actual_sequence[-1] != "name":
+            errors.append(f"{row_id}: name confirmation must be the final retrieval call")
     final_content = str(messages[-1].get("content", "")) if messages else ""
     if messages[-1].get("role") != "assistant" or not final_content.strip():
         errors.append(f"{row_id}: final message must be a non-empty assistant answer")
@@ -178,6 +232,16 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
             if not fields.get(field):
                 errors.append(f"{row_id}: final answer missing field {field}")
         predicted = predicted_class_name(final_content)
+        metadata = row.get("metadata", {})
+        if metadata.get("question_type") == "option":
+            choices = dict(re.findall(r"^([A-D])\. (.+)$", str(messages[0].get("content", "")), re.MULTILINE))
+            answer = extract_answer_body(final_content).strip()
+            expected = str(metadata.get("correct_option") or "")
+            if answer not in {"A", "B", "C", "D"}:
+                errors.append(f"{row_id}: Option <answer> must contain one A-D letter")
+            elif answer != expected:
+                errors.append(f"{row_id}: Option answer {answer} does not match correct option {expected}")
+            predicted = choices.get(answer, answer)
         answer_body = extract_answer_body(final_content)
         if any(label in answer_body for label in ("Evidence:", "Rejected alternatives:", "Uncertainty:", "Predicted class name:")):
             errors.append(f"{row_id}: <answer> must contain only the canonical class name")
@@ -191,6 +255,14 @@ def validate_sft_row(row: dict[str, Any]) -> tuple[list[str], Counter[str]]:
             errors.append(f"{row_id}: final answer is not anchored to retrieved class names, aliases, or reference image IDs")
         if label_aliases and premature_target_name_query(messages, label_aliases):
             errors.append(f"{row_id}: target class name was queried before retrieval evidence supported it")
+        if metadata.get("trajectory_mode") == "stop_correction" and not (
+            "Correction changed:" in final_content or "纠正并修改：" in final_content
+        ):
+            errors.append(f"{row_id}: stop/correction trajectory lacks explicit correction behavior")
+        if metadata.get("trajectory_mode") == "stop_correction":
+            correction = metadata.get("correction_audit")
+            if not isinstance(correction, dict) or not all(correction.get(key) for key in ("initial_hypothesis", "revised_hypothesis", "change_type", "change_reason", "supporting_retrieval_turn")):
+                errors.append(f"{row_id}: typed correction audit is incomplete")
     return errors, retrieval_types
 
 
@@ -210,7 +282,14 @@ def final_label_accuracy(rows: list[dict[str, Any]]) -> float:
         metadata = row.get("metadata", {}) if isinstance(row.get("metadata"), dict) else {}
         aliases = metadata.get("label_aliases") if isinstance(metadata.get("label_aliases"), list) else []
         aliases = [value for value in [metadata.get("label_name"), metadata.get("label_name_zh"), *aliases] if isinstance(value, str) and value.strip()]
-        if aliases and class_name_matches(predicted_class_name(final), aliases):
+        predicted = predicted_class_name(final)
+        if metadata.get("question_type") == "option":
+            import re
+            user = str(messages[0].get("content", "")) if messages else ""
+            choices = dict(re.findall(r"^([A-D])\. (.+)$", user, re.MULTILINE))
+            answer = extract_answer_body(final).strip()
+            predicted = choices.get(answer, answer)
+        if aliases and class_name_matches(predicted, aliases):
             correct += 1
     return correct / len(rows)
 
@@ -248,8 +327,11 @@ def main() -> int:
     rejected_path = artifact_dir / "traces" / "rejected_trajectories.jsonl"
 
     accepted_rows, accepted_parse_errors = read_jsonl(accepted_path)
-    retrieval_rows, retrieval_errors = read_jsonl(retrieval_path)
-    rejected_rows, rejected_errors = read_jsonl(rejected_path)
+    # Frozen SFT datasets intentionally contain only the immutable training
+    # JSONL and manifest files; pilot trace sidecars are optional. Validate
+    # them when present, but do not make their absence invalidate a freeze.
+    retrieval_rows, retrieval_errors = (read_jsonl(retrieval_path) if retrieval_path.exists() else ([], []))
+    rejected_rows, rejected_errors = (read_jsonl(rejected_path) if rejected_path.exists() else ([], []))
     errors = list(accepted_parse_errors)
     errors.extend(retrieval_errors)
     errors.extend(rejected_errors)

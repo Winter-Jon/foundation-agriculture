@@ -33,6 +33,7 @@ rag = [
 ]
 vlm-train = ["torch>=2.7", "transformers>=4.53,<6"]
 vlm-eval = [
+  "dacite>=1.9,<2",
   "portalocker>=4,<5",
   "sty>=1,<2",
   "termcolor>=3,<4",

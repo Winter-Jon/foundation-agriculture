@@ -23,6 +23,7 @@ from agrinet.data.prepare import prepare_records
 from agrinet.data.agrinet import prepare_bounded_contrast, validate_bounded_contrast
 from agrinet.data.providers.vloom import VloomTeacherDataProvider
 from agrinet.data.validate import SchemaKind, validate_records
+from agrinet.data.sft_recovery import prepare_recovery_pilot
 
 app = domain_app(Domain.DATA)
 Overrides = Annotated[list[str] | None, typer.Option("--config-override")]
@@ -148,6 +149,30 @@ def validate_command(
         raise typer.Exit(1) from exc
 
 
+@app.command("prepare-sft-recovery")
+def prepare_sft_recovery_command(
+    experiment_id: str, config_override: Overrides = None
+) -> None:
+    """Freeze existing SFT corpora and construct the review-gated recovery Pilot."""
+    try:
+        config = _resolved(experiment_id, config_override)
+        root = repository_root()
+        summary = prepare_recovery_pilot(
+            direct_source=_path(config, "inputs", "direct_sft"),
+            rag_source=_path(config, "inputs", "rag_sft"),
+            candidates=_path(config, "inputs", "candidate_pool"),
+            split=_path(config, "inputs", "strict_split"),
+            eval_manifest=_path(config, "inputs", "eval_manifest"),
+            artifacts_root=_path(config, "outputs", "artifacts_root"),
+            pilot_dir=_path(config, "outputs", "pilot_dir"),
+            repository=root,
+        )
+        typer.echo(json.dumps(summary["validation"], ensure_ascii=False, sort_keys=True))
+    except (DataError, OSError, ValueError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+
 @app.command("submit")
 def submit_command(
     experiment_id: str,
@@ -157,7 +182,7 @@ def submit_command(
 ) -> None:
     """Run one Data operation locally, optionally as a detached process."""
     resolved = _resolved(experiment_id, None)
-    if operation not in {"prepare", "generate", "convert"}:
+    if operation not in {"prepare", "generate", "convert", "prepare-sft-recovery"}:
         typer.echo(f"error: unsupported data operation: {operation}", err=True)
         raise typer.Exit(2)
     command = [

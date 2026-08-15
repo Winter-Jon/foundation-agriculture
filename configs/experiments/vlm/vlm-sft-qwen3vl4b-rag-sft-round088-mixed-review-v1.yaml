@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-rag-sft-round088-mixed-review-v1
+display_name:
+  en: Round088 mixed RAG+Direct SFT review run
+  zh: Round088 RAG+Direct 混合 SFT 审阅运行
+domain: vlm
+task: sft
+description: One-epoch bounded SFT candidate from the immutable 80-row Round088 mixed freeze; submission remains gated by review authorization.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/agrinet-rag-direct-mixed-round088-review
+  runtime: runtime/a800-single-gpu-train
+runtime_profile: runtime/a800-single-gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_rag_sft_round088_mixed_review.yaml
+  dataset: outputs/artifacts/datasets/agrinet-rag-direct-mixed-round088-review/data.jsonl
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_rag_sft_round088_mixed_review
+parameters:
+  dataset_rows: 80
+  rag_rows: 48
+  direct_rows: 32
+  max_length: 8192
+  epochs: 1
+  learning_rate: 5.0e-6
+  tuner: full
+tags: [qwen3-vl, rag-sft, round088, mixed-freeze, review-gated]

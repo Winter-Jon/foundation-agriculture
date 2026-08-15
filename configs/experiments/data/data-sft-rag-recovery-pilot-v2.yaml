@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: data-sft-rag-recovery-pilot-v2
+display_name:
+  en: Candidate-first RAG SFT recovery Pilot v2
+  zh: 候选优先的 RAG SFT 恢复小样本试验 v2
+domain: data
+task: prepare
+description: Review-gated Pilot with candidate-first RAG, rounded scores, correction trajectories, and quality selection.
+lifecycle: active
+components:
+  data: data/agrinet-disease-pest-current-v1
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  direct_sft: outputs/vlm_sft/disease_pest_large/sft_messages_en_zh.jsonl
+  rag_sft: outputs/vlm_sft/rag_distill/agent_sft.student.singleimg.jsonl
+  candidate_pool: outputs/vlm_data/disease_pest_large/contrast_samples_vit_base.jsonl
+  strict_split: datasets/AgriNet-1K/open_domain/manifests/split_info_20260527_145700_strict.json
+  eval_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  artifacts_root: outputs/artifacts/datasets
+  pilot_dir: outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v2
+parameters:
+  seed: 20260805
+  accepted_train_samples: 80
+  rag_candidates_per_target: 3
+  score_decimals: 2
+  candidate_before_rag: true
+  full_generation_authorized: false
+  training_authorized: false
+tags: [agrinet, disease, pest, sft, rag, pilot, rejection-sampling, candidate-first]
