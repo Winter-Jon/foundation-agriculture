@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is authorized, but collection is paused after Round138's first completion POST returned an ambiguous HTTP 502. This is `unknown_delivery`: do not replay Round138 or launch another target, even via a different endpoint, until provider/request status is independently resolved or a new explicit authorization is given. Round135 stopped before delivery because its endpoint was network-unreachable; Round136 completed at API3 but was correctly rejected on the final-answer contract. The reserve allocates exactly by remaining cell deficit, then uses seed `20260815` for uniform selection within each fresh eligible cell. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is authorized, but collection is paused after two ambiguous teacher deliveries: Round138's API3 completion POST returned HTTP 502, and Round140's new-target API3 real-image preflight timed out after POST. Both are `unknown_delivery`; do not replay either target or launch another target via another endpoint until provider/request status is independently resolved or new explicit authorization is given. APIPlus is TCP-reachable but returned HTTP 403 to the current credential's preflight. Round135 stopped before delivery because its endpoint was network-unreachable; Round136 completed at API3 but was correctly rejected on the final-answer contract. The reserve allocates exactly by remaining cell deficit, then uses seed `20260815` for uniform selection within each fresh eligible cell. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
