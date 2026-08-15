@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Build the bulk-candidate distillation/rejection-sampling plan.
-
-This is a teacher-free planner.  It deliberately creates a larger candidate
-pool than the final 31-row quota deficit.  Calibration uses one attempt on
-three distinct targets per deficient cell; retries remain a reserve and are
-released only from observed yield and failure type.  The resulting pool is
-reviewed and rejection-sampled; it is not itself training data.
-"""
+"""Build the Stage-A-only calibration/rejection-sampling approval package."""
 from __future__ import annotations
 
 import hashlib
@@ -19,13 +12,15 @@ from agrinet.data.retrieval_strategies import assign_attempt_strategy
 from tools.rag_distill.catalog_and_isolation import evaluation_images, exposed_images
 
 ROOT = Path(__file__).resolve().parents[2]
-PREFLIGHT = ROOT / "outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5/plan/milvus_preflight.json.jsonl"
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
+STAGE_A = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/standard_targets.jsonl"
 OUT = ROOT / "outputs/experiments/rag_sft_iteration/approval/bulk_distill_plan_v1"
 
 REQUIRED = {
-    **{f"standard/{q}/{lang}/{domain}": 4 for q in ("open", "option") for lang in ("en", "zh") for domain in ("disease", "pest")},
-    **{f"stop_correction/open/{lang}/{domain}": 4 for lang in ("en", "zh") for domain in ("disease", "pest")},
+    f"standard/{q}/{lang}/{domain}": 4
+    for q in ("open", "option")
+    for lang in ("en", "zh")
+    for domain in ("disease", "pest")
 }
 
 def read(path: Path) -> list[dict[str, Any]]:
@@ -42,7 +37,6 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text("".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows), encoding="utf-8")
 
 def main() -> None:
-    preflight = read(PREFLIGHT)
     current_rag = read(STRICT / "rag.current_contract.jsonl")
     current_direct = read(STRICT / "direct.current_contract.jsonl")
     current = current_rag + current_direct
@@ -53,7 +47,7 @@ def main() -> None:
     deficient_cells = {name for name, deficit in deficits.items() if deficit}
 
     fresh = [
-        row for row in preflight
+        row for row in read(STAGE_A)
         if cell(row) in deficient_cells
         and image(row) not in forbidden
         and row.get("preflight_eligible")
@@ -74,7 +68,7 @@ def main() -> None:
         targets.append(target)
         for candidate_index in range(1, 4):
             attempt = assign_attempt_strategy(dict(target), candidate_index)
-            attempt["bulk_attempt_id"] = f"bulk-{target_order:03d}-candidate-{candidate_index}"
+            attempt["bulk_attempt_id"] = f"stage-a-{target_order:03d}-candidate-{candidate_index}"
             attempt["rejection_sampling_candidate"] = True
             attempts.append(attempt)
 
@@ -103,14 +97,15 @@ def main() -> None:
             "candidate_attempts": len(shard),
         })
     report = {
-        "schema_version": "agrinet.bulk-distill-rejection-plan/v1",
-        "status": "bulk_candidate_pool_ready_for_approval",
+        "schema_version": "agrinet.stage-a-calibration-plan/v1",
+        "status": "stage_a_calibration_ready_for_explicit_approval",
         "pilot_entry_gate": {
-            "required": "bounded Pilots show auditable transport, no systemic hard-gate failure, nonzero acceptance in each active contract family, and enough accepted rows for raw review",
-            "observed": "Rounds113-114 provide clean Option evidence; stop-correction population stability is still unproven",
-            "passed": False,
+            "required": "auditable transport, no current systemic hard-gate failure, and nonzero strict Blind acceptance in every family released for calibration",
+            "observed": "Rounds126/132/133/134 strictly accept all four standard Option language/domain cells; Round131 accepts Chinese Open, while Round127/128 remain concentrated Chinese Open finalization negatives before the closed-terminal repair",
+            "passed_for_option_calibration_review": True,
+            "passed_for_open_calibration_review": False,
         },
-        "source_preflight": str(PREFLIGHT.relative_to(ROOT)),
+        "source_targets": str(STAGE_A.relative_to(ROOT)),
         "fresh_exclusion_policy": "exposed plans/candidates + evaluation images + current RAG/Direct images",
         "current_rag_rows": len(current_rag),
         "current_direct_rows": len(current_direct),
@@ -119,24 +114,25 @@ def main() -> None:
         "deficient_cells": sorted(deficient_cells),
         "fresh_preflight_eligible_targets": len(targets),
         "candidate_attempts_per_target": 3,
-        "bulk_teacher_attempts_max": len(attempts),
+        "stage_a_teacher_attempts_max": len(attempts),
         "initial_release_attempts": initial_release_attempts,
         "initial_release_by_cell": initial_by_cell,
-        "conditional_release_shard_cap": 64,
+        "conditional_release_shard_cap": 10,
         "adaptive_release_policy": {
-            "phase_0": "Do not release bulk attempts until the Pilot stability review passes.",
-            "phase_1": "Release one attempt on three independent targets per deficient cell; audit acceptance and rejection causes.",
-            "phase_2": "Harvest cells with acceptable expected cost; use small probes for uncertain cells; return repeated, concentrated failures to a targeted Pilot.",
-            "stop": "Stop when 48 quota-usable RAG rows are frozen, or when the approved maximum is exhausted, or when a hard-gate regression repeats.",
+            "phase_0": "Do not release any attempt without explicit Stage-A calibration approval.",
+            "phase_1": "For approved cells only, release one attempt per fresh target, audit acceptance and rejection causes after every completed attempt, and stop a cell at four accepted rows.",
+            "phase_2": "Release reserve attempts only for the approved cell deficits and only while the observed hard-gate rate remains zero.",
+            "stop": "Stop when 32 quota-usable standard RAG rows are frozen, when a cell reaches four accepted rows, when the approved cap is exhausted, or when a hard-gate regression repeats.",
             "estimator": "Track accepted/attempted, uncertainty, expected attempts per accepted row, and dominant rejection cause; preflight eligibility is not teacher acceptance.",
         },
         "shards": shards,
         "acceptance_policy": "collect the full candidate pool, then retain only strict protocol- and semantic-clean rows; no post-hoc rewriting and no quota substitution",
-        "target_pool_policy": "use all fresh, current-preflight-eligible targets in deficient cells as rejection-sampling reserves",
-        "route_policy": "Blind-first; Oracle may be added only under a separately recorded route decision and the same visible-boundary gates",
+        "target_pool_policy": "use only the current Stage-A fresh, isolated, preflight-eligible targets in remaining deficit cells",
+        "route_policy": "Blind-only for Stage A; Oracle and stop-correction are out of scope",
+        "sampling_authorized": False,
         "training_authorized": False,
         "formal_eval_authorized": False,
-        "next_gate": "pilot stability review -> explicit conditional bulk approval -> current local preflight -> calibration release -> adaptive bulk rejection sampling -> raw trajectory review -> strict 48+32 freeze -> milestone SFT",
+        "next_gate": "explicit Stage-A calibration approval -> current real-image preflight -> one attempt per approved fresh target -> per-attempt audit -> strict 32+32 freeze review -> separate milestone SFT approval",
     }
     OUT.mkdir(parents=True, exist_ok=True)
     write_jsonl(OUT / "targets.jsonl", targets)
