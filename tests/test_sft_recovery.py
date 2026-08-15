@@ -368,8 +368,8 @@ def test_budget_finalization_allows_final_answer_after_third_retrieval(tmp_path:
     responses = [json.dumps(tool), json.dumps(tool), json.dumps(tool), json.dumps(tool), final]
     seen = []
 
-    def fake_chat(*args):
-        seen.append(json.loads(json.dumps(args[3])))
+    def fake_chat(*args, **kwargs):
+        seen.append((json.loads(json.dumps(args[3])), kwargs))
         return {"choices": [{"message": {"role": "assistant", "content": responses[len(seen) - 1]}}]}
 
     calls = []
@@ -391,11 +391,12 @@ def test_budget_finalization_allows_final_answer_after_third_retrieval(tmp_path:
     assert row is not None and rejected is None and trace["accepted"] is True
     assert len(calls) == len(ledgers) == 3
     assert len(seen) == 5
-    finalization = seen[4]
+    finalization, final_kwargs = seen[4]
     assert len(finalization) == 2
     assert "此会话没有工具" in finalization[0]["content"]
     assert "公开检索证据" in finalization[1]["content"][0]["text"]
     assert all(message.get("role") != "assistant" for message in finalization)
+    assert final_kwargs == {"final_only": True}
     assert trace["closed_finalization_used"] is True
     assert row["messages"][-1]["content"] == final
 

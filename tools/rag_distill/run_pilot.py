@@ -1915,7 +1915,12 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
 
     for _ in range(args.max_tool_turns + 3):
         try:
-            response = chat_completion(api_key, base_url, args.model, api_messages, args)
+            if closed_finalization_used:
+                response = chat_completion(
+                    api_key, base_url, args.model, api_messages, args, final_only=True
+                )
+            else:
+                response = chat_completion(api_key, base_url, args.model, api_messages, args)
         except UnknownTeacherDelivery as exc:
             trace = {
                 "sample_id": sample.get("sample_id"),
