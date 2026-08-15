@@ -159,6 +159,20 @@ def test_approval_only_rows_require_matching_stage_a_option_scope() -> None:
     with pytest.raises(RuntimeError, match="violates Stage-A Option"):
         validate_approval_scope([row], "stage_a_option_calibration")
 
+    open_row = {
+        "target_id": "open-1", "approval_only": True,
+        "approval_scope": "deferred_open_strategy_review",
+        "trajectory_mode": "standard", "generation_route": "blind_evidence",
+        "label_visible_to_teacher": False, "question_type": "open", "language": "zh",
+        "candidate_index": 1,
+    }
+    with pytest.raises(RuntimeError, match="plan row is not released"):
+        validate_approval_scope([open_row], "stage_a_option_calibration")
+    validate_approval_scope([open_row], "stage_a_open_reentry")
+    open_row["language"] = "en"
+    with pytest.raises(RuntimeError, match="violates Stage-A Open re-entry"):
+        validate_approval_scope([open_row], "stage_a_open_reentry")
+
 
 def test_publish_frozen_dataset_is_idempotent_and_immutable(tmp_path: Path) -> None:
     source = tmp_path / "source.jsonl"

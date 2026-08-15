@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--approval-scope",
         default="none",
-        choices=("none", "stage_a_option_calibration"),
+        choices=("none", "stage_a_option_calibration", "stage_a_open_reentry"),
         help=("Explicit authorization scope required before any approval-only plan row may contact the teacher. "
               "This is an execution guard, not a substitute for user approval."),
     )
@@ -152,19 +152,29 @@ def validate_approval_scope(samples: list[dict[str, Any]], approval_scope: str) 
         return
     if approval_scope == "none":
         raise RuntimeError("approval-only plan rows require an explicit --approval-scope before teacher access")
-    if approval_scope != "stage_a_option_calibration":
+    if approval_scope not in {"stage_a_option_calibration", "stage_a_open_reentry"}:
         raise RuntimeError(f"unsupported approval scope: {approval_scope}")
     for sample in controlled:
-        if sample.get("approval_scope") != approval_scope:
+        expected_plan_scope = (
+            "stage_a_option_calibration"
+            if approval_scope == "stage_a_option_calibration"
+            else "deferred_open_strategy_review"
+        )
+        if sample.get("approval_scope") != expected_plan_scope:
             raise RuntimeError(f"plan row is not released for {approval_scope}: {sample.get('target_id')}")
-        if any((
+        common_invalid = any((
             sample.get("trajectory_mode") != "standard",
             sample.get("generation_route") != "blind_evidence",
             sample.get("label_visible_to_teacher") is not False,
-            sample.get("question_type") != "option",
             int(sample.get("candidate_index") or 0) != 1,
-        )):
-            raise RuntimeError(f"plan row violates Stage-A Option calibration contract: {sample.get('target_id')}")
+        ))
+        expected_question_type = "option" if approval_scope == "stage_a_option_calibration" else "open"
+        expected_language = None if approval_scope == "stage_a_option_calibration" else "zh"
+        if common_invalid or sample.get("question_type") != expected_question_type or (
+            expected_language is not None and sample.get("language") != expected_language
+        ):
+            name = "Option calibration" if approval_scope == "stage_a_option_calibration" else "Open re-entry"
+            raise RuntimeError(f"plan row violates Stage-A {name} contract: {sample.get('target_id')}")
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
