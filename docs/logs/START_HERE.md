@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-16 01:03:24 CST
+Last updated: 2026-08-16 01:09:21 CST
 
 ## Current focus
 
@@ -9,11 +9,11 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 ## Verified state
 
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
-- The active scope is Stage A only: an immutable 32 strict `standard` RAG + 32 current-contract Direct corpus, then a separately approved checkpoint-165 SFT and complete forced-off phase evaluation. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Current strict view: 30 RAG total, 28/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 4 Blind standard rows. Luna has accepted English Option (Rounds126/133), Chinese Open (Round131), and Chinese Option (Rounds132/134) Pilots; Round141 is a later accepted Chinese Option/disease row, and Terra Rounds149--153 strictly accept the remaining Option rows. All four Option cells are now full at four strict rows each. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
+- The active scope is Stage A standard/Blind only. Its 32 strict `standard` RAG + 32 current-contract Direct corpus is a protocol-and-signal validation SFT, not the final training scale. A robust positive matched result automatically releases a larger balanced Blind rejection-sampling loop and one final internal SFT; formal 618 evaluation remains separately approved. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
+- Round154 strictly accepts Chinese Open/disease on Terra, pending strict-source rebuild: its 3/3 retrievals, final-label accuracy, and all boundary checks passed. The prior verified gate was 30 RAG / 28 of 32 quota-usable with 32/32 Direct; after inclusion, three standard rows should remain. All four Option cells are full. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
 - Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
-- Training, immutable freeze promotion, and formal evaluation are unauthorized. No sampling, SFT, or evaluation process is running.
+- Sampling and the two internal SFT stages are authorized by the active control loop. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
 
 ## Stable evidence
 
@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is complete: Micu SLB + `gpt-5.6-terra` passed real-image preflight and strict Pilot validation for Rounds149--153. The public-only, no-tool standard final-contract retry remains in force and its validator is unchanged. The reviewed Chinese Open re-entry plan is in `docs/logs/plans/2026-W33-0810-0816.md`: first release only one high-evidence disease Pilot, then continue one-at-a-time only after zero-error validation. Its rows remain deferred until a matching Open scope is explicitly authorized and supported by the runner guard. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is complete. Under the now-authorized Chinese Open re-entry scope, Round154 passed real-image preflight and strict Pilot validation on Micu SLB + `gpt-5.6-terra`; rebuild the strict view, fill the last three standard deficits one at a time, and run the 64-row validation SFT. Scale only if the 192-row matched diagnostic has zero hard-gate errors, at least +3pp RAG-targeted gain, a positive paired-bootstrap 95% lower bound, and no unacceptable subgroup or Direct regression. Retain only individually strict rows; raw teacher acceptance may be below 100% and is a cost/continuation signal. Formal 618 remains separately approved.
 
 ## Records and archive
 
