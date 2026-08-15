@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is authorized for the six current first-attempt targets. Round135's first preflight stopped before any teacher request because its endpoint was network-unreachable; Round136 then completed at the reachable API3 endpoint but was correctly rejected on the final-answer contract. The reserve allocates exactly by remaining cell deficit, then uses seed `20260815` for uniform selection within each fresh eligible cell. A source-pool `reserve` flag is provenance, not a retry: all released calibration rows remain `candidate_index=1`. Option and deferred Open files remain physically separated, and the runner enforces their scopes before provider access. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is authorized, but collection is paused after Round138's first completion POST returned an ambiguous HTTP 502. This is `unknown_delivery`: do not replay Round138 or launch another target, even via a different endpoint, until provider/request status is independently resolved or a new explicit authorization is given. Round135 stopped before delivery because its endpoint was network-unreachable; Round136 completed at API3 but was correctly rejected on the final-answer contract. The reserve allocates exactly by remaining cell deficit, then uses seed `20260815` for uniform selection within each fresh eligible cell. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
