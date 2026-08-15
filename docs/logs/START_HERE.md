@@ -10,7 +10,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A only: an immutable 32 strict `standard` RAG + 32 current-contract Direct corpus, then a separately approved checkpoint-165 SFT and complete forced-off phase evaluation. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Current strict view: 20 RAG total, 18/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 14 Blind standard rows. Luna has one accepted Option Pilot, but Chinese Open finalization failed twice, including after a tested prompt repair. Round129 reached the new closed final-answer path but exposed a local JSON-mode defect; the fixed path has passed offline regression and still needs a fresh teacher Pilot.
+- Current strict view: 20 RAG total, 18/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 14 Blind standard rows. Luna has one accepted Option Pilot. Round129 reached the closed final-answer path but exposed a fixed local JSON-mode defect; Round130 was an ordinary Blind semantic mismatch before budget closure. The corrected closed path still needs one fresh teacher validation.
 - Terra is suspended from future sampling: it passed API3 real-image preflight but failed two Blind `stop_correction` Pilots and one Stage-A `standard` Option Pilot after budget finalization. Use `gpt-5.6-luna` only through a new-ID strict preflight and bounded Pilot; historical unknown Luna requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Training, immutable freeze promotion, and formal evaluation are unauthorized. No sampling, SFT, or evaluation process is running.
@@ -20,12 +20,12 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 - State and strict gate: `outputs/experiments/rag_sft_iteration/state.json`, `outputs/experiments/rag_sft_iteration/reviews/strict_candidate_view_v1_gate.json`
 - Stage-A targets and approval report: `outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/standard_targets.jsonl`, `outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/report.json`
 - Terra negative evidence: `outputs/runs/rag/rag-sft-round121-terra-preflight/logs/preflight_report.json`, `outputs/experiments/rag_sft_iteration/candidates/round122-terra-shard3-pilot/pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round123-terra-finalization-repair-pilot/pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round125-standard-option-en-disease-pilot/pilot/`
-- Luna standard Pilot: `outputs/runs/rag/rag-sft-round126-standard-option-en-disease-luna-preflight/logs/preflight_report.json`, `outputs/experiments/rag_sft_iteration/candidates/round126-standard-option-en-disease-luna-pilot/pilot/`; Round129 completed rejection evidence: `outputs/experiments/rag_sft_iteration/candidates/round129-standard-open-zh-pest-luna-closed-pilot/`
+- Luna standard Pilot: `outputs/runs/rag/rag-sft-round126-standard-option-en-disease-luna-preflight/logs/preflight_report.json`, `outputs/experiments/rag_sft_iteration/candidates/round126-standard-option-en-disease-luna-pilot/pilot/`; completed rejection evidence: `outputs/experiments/rag_sft_iteration/candidates/round129-standard-open-zh-pest-luna-closed-pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round130-standard-open-zh-pest-luna-closed-pilot/`
 - Current controls and active builders: `configs/experiments/data/data-rag-sft-iteration-control-v1.yaml`, `tools/rag_distill/run_pilot.py`, `tools/rag_distill/build_rag_expansion_plan.py`, `tools/rag_distill/catalog_and_isolation.py`
 
 ## Next safe action
 
-Use the corrected closed-final-answer payload with a fresh new-ID Luna/API3 strict preflight and one bounded Chinese Open Pilot. Retain Rounds124/125/127/128/129 as negative evidence; release no adaptive sampling, freeze, SFT, or formal evaluation.
+Use the corrected closed-final-answer payload with a fresh new-ID Luna/API3 strict preflight and one bounded Chinese Open Pilot. Retain Rounds124/125/127/128/129/130 as negative evidence; release no adaptive sampling, freeze, SFT, or formal evaluation.
 
 ## Records and archive
 
