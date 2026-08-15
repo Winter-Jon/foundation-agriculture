@@ -26,4 +26,7 @@ parameters:
   learning_rate: 1.0e-5
   tuner: full
   allowed_sft_runs_for_freeze_hash: 1
+  local_launch:
+    cuda_visible_devices: "0,1,2,3"
+    nproc_per_node: 4
 tags: [qwen3-vl, rag-sft, stage-a, validation, checkpoint-165, immutable-freeze]

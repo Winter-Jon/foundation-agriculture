@@ -26,7 +26,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-The validation SFT is stopped by a configuration hard gate. Preserve freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` as single-use and do not sample, retrain, scale, or run formal 618. The only bounded next investigation is to verify a true distributed local ms-swift launch or a reviewed non-DeepSpeed profile before proposing a genuinely new future freeze.
+The validation SFT is stopped by a configuration hard gate. The local launcher now has a tested explicit-DPP contract (equal visible GPUs and workers) for future freezes, but freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` is mechanically single-use and cannot be retrained. Do not sample, retrain, scale, or run formal 618; a future training proposal must use a genuinely new reviewed freeze.
 
 ## Records and archive
 
