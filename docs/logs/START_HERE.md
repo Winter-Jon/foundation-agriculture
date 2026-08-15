@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-The Stage-A-only calibration package is ready but remains unauthorized. Its first release is physically split into six Option-only candidates (eligible for a scoped review) and four Open candidates explicitly deferred for strategy review. The runner rejects `approval_only` rows before provider access unless a matching explicit scope is supplied, so an Option release cannot execute Open or reserve rows. Retain Rounds124/125/127/128/129/130 as negative evidence. Do not freeze, SFT, or formally evaluate without their separate approvals.
+The Stage-A-only calibration package is ready but remains unauthorized. It allocates exactly by remaining cell deficit, then uses a documented seed (`20260815`) for uniform selection within each fresh eligible cell; it does not treat preflight rank as a quality preference. Its first release is physically split into six Option-only candidates (eligible for a scoped review) and four Open candidates explicitly deferred for strategy review. The runner rejects `approval_only` rows before provider access unless a matching explicit scope is supplied, so an Option release cannot execute Open or reserve rows. Retain Rounds124/125/127/128/129/130 as negative evidence. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 

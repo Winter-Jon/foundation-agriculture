@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import random
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ SUPPLEMENTAL_PREFLIGHT = ROOT / "outputs/experiments/rag_sft_iteration/approval/
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
 OUT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1"
 TEACHER_MODEL = "gpt-5.6-luna"
+SELECTION_SEED = 20260815
 
 # This active builder serves only the approved Stage-A standard milestone.
 # Deferred stop-correction work is intentionally outside the current goal and
@@ -76,7 +78,11 @@ def main() -> None:
     used_images: set[str] = set()
     for name in sorted(CELLS):
         need = deficits[name]
-        pool = sorted(pools.get(name, []), key=lambda r: (int(r.get("preflight_target_rank") or 99), -float(r.get("preflight_target_score") or 0), str(r.get("target_id"))))
+        # Quota allocation is deterministic by remaining deficit, but selection
+        # within an eligible cell is a reproducible random draw.  This avoids
+        # silently treating preflight score/rank as a teacher-quality proxy.
+        pool = sorted(pools.get(name, []), key=lambda r: str(r.get("target_id")))
+        random.Random(f"{SELECTION_SEED}:{name}").shuffle(pool)
         chosen = []
         if need:
             for row in pool:
@@ -120,6 +126,8 @@ def main() -> None:
         cell_report[name] = {
             "required": CELLS[name], "existing": existing_cells.get(name, 0),
             "deficit": need, "fresh_eligible_pool": len(pool), "selected": len(chosen),
+            "selection_policy": "seeded_uniform_random_within_fresh_eligible_cell",
+            "selection_seed": SELECTION_SEED,
             "shortfall": max(0, need - len(chosen)),
         }
     selected.sort(key=lambda r: (cell(r), str(r.get("target_id"))))
@@ -140,6 +148,8 @@ def main() -> None:
         "fresh_exclusion_policy": "exposed plans/candidates + evaluation images + current RAG/Direct images",
         "preflight_rows": len(preflight), "fresh_preflight_eligible_rows": len(fresh),
         "selected_target_rows": len(selected), "required_target_rows": sum(deficits.values()),
+        "within_cell_selection": "seeded_uniform_random_within_fresh_eligible_cell",
+        "selection_seed": SELECTION_SEED,
         "teacher_model": TEACHER_MODEL,
         "cell_report": cell_report, "shards": shards,
         "requested_teacher_attempt_cap": 64,
