@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-The Stage-A-only calibration package is ready but remains unauthorized. It allocates exactly by remaining cell deficit, then uses a documented seed (`20260815`) for uniform selection within each fresh eligible cell; it does not treat preflight rank as a quality preference. Its first release is physically split into six Option-only candidates (eligible for a scoped review) and four Open candidates explicitly deferred for strategy review. The runner rejects `approval_only` rows before provider access unless a matching explicit scope is supplied, so an Option release cannot execute Open or reserve rows. Retain Rounds124/125/127/128/129/130 as negative evidence. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is authorized for the six current first-attempt targets, but Round135's first real-image preflight stopped before any teacher request because the configured endpoint was network-unreachable. It is a complete transport failure, not unknown delivery and not a Pilot result; do not replay it until endpoint connectivity is independently restored. The reserve still allocates exactly by remaining cell deficit, then uses a documented seed (`20260815`) for uniform selection within each fresh eligible cell. Option and deferred Open files remain physically separated, and the runner enforces their scopes before provider access. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
