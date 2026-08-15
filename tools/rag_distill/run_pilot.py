@@ -268,16 +268,18 @@ def retrieval_budget_finalization_prompt(sample: dict[str, Any]) -> str:
         public_context = "\nPublic question and choices:\n" + public_option_question(sample)
     if sample.get("language") == "zh":
         return (
-            "检索预算已耗尽，上一条继续调用工具的响应无效。下一条响应不得包含任何工具调用；仅根据已经返回的公开检索证据完成最终回答。"
-            "关键格式检查：下一条消息必须以 <think> 开始，绝不能以 {、[ 或工具调用 JSON 开始。现在立即输出最终回答，不得提出检索请求。"
+            "检索预算已耗尽，上一条继续调用工具的响应无效。工具已经永久关闭：不要再请求、建议、计划或输出任何检索/工具调用；不要输出 JSON。"
+            "你已经拥有完成答案所需的公开检索结果。下一条且唯一允许的响应必须立即以 <think> 开始，并以 </think><answer>...</answer> 结束；绝不能以 {、[ 或工具调用 JSON 开始。"
+            "即使仍有不确定性，也必须在不确定性：字段中说明，而不是请求更多检索。"
             "输出完整的 <think>...</think><answer>...</answer>，并在 <think> 中使用以下带冒号的精确字段标签：证据：、排除的候选：、不确定性：；每个字段标签必须各自位于新的一行行首。"
             "在证据：字段中必须逐字引用至少一个已经返回的公开检索类别名称，并说明它如何支持所选公开选项。"
             "对于选项题，<answer> 必须且只能包含所选公开类别对应的一个字母 A、B、C 或 D，不得包含类别名。"
             + public_context
         )
     return (
-        "The retrieval budget is exhausted and the previous tool call is invalid. The next response must contain no tool call; finalize using only the public retrieval evidence already returned. "
-        "CRITICAL FORMAT CHECK: your next message must begin with <think>; it must never begin with {, [, or a tool-call JSON object. Finalize now and do not request another retrieval. "
+        "The retrieval budget is exhausted and the previous tool call is invalid. Tools are permanently closed: do not request, suggest, plan, or emit any retrieval/tool call, and do not emit JSON. "
+        "You already have the public retrieval results needed to answer. The next and only permitted response must begin with <think> and end with </think><answer>...</answer>; it must never begin with {, [, or a tool-call JSON object. "
+        "If uncertainty remains, state it in Uncertainty: rather than requesting another retrieval. "
         "Output the complete <think>...</think><answer>...</answer> response with these exact colon-terminated field labels: Evidence:, Rejected alternatives:, Uncertainty:. Put each field label at the start of its own new line. "
         "In Evidence:, quote at least one exact class name already returned by the public retrieval evidence and explain how it supports the selected public option. "
         "For an Option question, <answer> must contain exactly one letter A, B, C, or D corresponding to the selected public class, with no class name."

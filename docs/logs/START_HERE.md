@@ -10,7 +10,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A only: an immutable 32 strict `standard` RAG + 32 current-contract Direct corpus, then a separately approved checkpoint-165 SFT and complete forced-off phase evaluation. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Current strict view: 20 RAG total, 18/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 14 Blind standard rows.
+- Current strict view: 20 RAG total, 18/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 14 Blind standard rows. Luna has one accepted Option Pilot but a Chinese Open third-retrieval finalization failure, so batch collection remains closed pending an offline repair.
 - Terra is suspended from future sampling: it passed API3 real-image preflight but failed two Blind `stop_correction` Pilots and one Stage-A `standard` Option Pilot after budget finalization. Use `gpt-5.6-luna` only through a new-ID strict preflight and bounded Pilot; historical unknown Luna requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Training, immutable freeze promotion, and formal evaluation are unauthorized. No sampling, SFT, or evaluation process is running.
@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Select a fresh Stage-A target for a new-ID Luna API3 strict preflight, then run one bounded standard Pilot only if it passes. Retain Round124/125 as negative evidence and release no adaptive sampling until a reviewed nonzero strict acceptance.
+Repair and offline-test finalization after a third retrieval for Chinese Open trajectories; then run one new-ID Luna/API3 strict preflight and one bounded repair Pilot. Retain Rounds124/125/127 as negative evidence and release no adaptive sampling.
 
 ## Records and archive
 

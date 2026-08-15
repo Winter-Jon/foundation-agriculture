@@ -352,6 +352,50 @@ def test_run_sample_rejects_mixed_manual_tool_content(tmp_path: Path, monkeypatc
     assert rejected and rejected["reasons"] == ["mixed_manual_tool_content"]
 
 
+def test_budget_finalization_allows_final_answer_after_third_retrieval(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import argparse
+    import tools.rag_distill.run_pilot as pilot
+
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {
+        "sample_id": "zh-finalization", "query_image": str(image), "language": "zh",
+        "question_type": "open", "task_domain": "disease", "generation_route": "blind_evidence",
+        "strategy_id": "balanced_stop", "preferred_sequence": ["balanced"], "top_k": 5,
+    }
+    tool = {"name": pilot.TOOL_NAME, "arguments": {"query": "leaf spot", "retrieval_type": "balanced", "image": "query_image", "top_k": 5, "rationale": "Visual Observation: green leaf; Candidate Analysis: leaf spot or healthy leaf."}}
+    final = "<think>\n证据：已返回 Target，且与图像一致。\n排除的候选：Other。\n不确定性：低。\n</think><answer>Target</answer>"
+    responses = [json.dumps(tool), json.dumps(tool), json.dumps(tool), json.dumps(tool), final]
+    seen = []
+
+    def fake_chat(*args):
+        seen.append(json.loads(json.dumps(args[3])))
+        return {"choices": [{"message": {"role": "assistant", "content": responses[len(seen) - 1]}}]}
+
+    calls = []
+    def fake_append(args, sample, sft_messages, retrieval_ledgers, api_messages, call_args, call_id, assistant_think=None):
+        calls.append(call_args)
+        visible = {"name": pilot.TOOL_NAME, "arguments": call_args}
+        sft_messages.extend([{"role": "tool_call", "content": json.dumps(visible)}, {"role": "tool_response", "content": json.dumps({"status": "success", "results": [{"rank": 1, "class_name": "Target"}]})}])
+        retrieval_ledgers.append({"ok": True, "tool_call": visible, "visible_reference_images": []})
+        api_messages.extend([{"role": "assistant", "content": json.dumps(visible)}, {"role": "user", "content": "Tool response: Target rank 1"}])
+        return {"status": "success", "results": [{"rank": 1, "class_name": "Target"}]}, retrieval_ledgers[-1]
+
+    monkeypatch.setattr(pilot, "build_initial_messages", lambda *args: [{"role": "user", "content": "mock"}])
+    monkeypatch.setattr(pilot, "chat_completion", fake_chat)
+    monkeypatch.setattr(pilot, "append_tool_execution", fake_append)
+    monkeypatch.setattr(pilot, "needs_more_evidence_before_final", lambda *args: False)
+    monkeypatch.setattr(pilot, "accept_trajectory", lambda *args: (True, []))
+    args = argparse.Namespace(top_k=5, image_max_side=0, max_tool_turns=3, model="mock", rag_api="mock", candidate_followup_mode="retrieved_descriptive")
+    row, trace, ledgers, rejected = pilot.run_sample(sample, args, "key", "base")
+    assert row is not None and rejected is None and trace["accepted"] is True
+    assert len(calls) == len(ledgers) == 3
+    assert len(seen) == 5
+    finalization = seen[4][-1]["content"]
+    assert "工具已经永久关闭" in finalization and "不确定性：字段" in finalization
+    assert row["messages"][-1]["content"] == final
+
+
 def test_preflight_evidence_is_bounded_and_omits_content() -> None:
     from tools.rag_distill.run_pilot import bounded_preflight_message_evidence
 
@@ -459,6 +503,9 @@ def test_budget_finalization_is_public_blind_safe() -> None:
     assert "证据：" in zh_prompt and "排除的候选：" in zh_prompt and "不确定性：" in zh_prompt
     assert "每个字段标签必须各自位于新的一行行首" in zh_prompt
     assert "逐字引用至少一个已经返回的公开检索类别名称" in zh_prompt
+    assert "工具已经永久关闭" in zh_prompt and "不要再请求、建议、计划或输出任何检索/工具调用" in zh_prompt
+    assert "即使仍有不确定性" in zh_prompt
+    assert "Tools are permanently closed" in prompt and "do not request, suggest, plan, or emit" in prompt
 
 
 def test_shared_exposed_images_include_prior_preflight_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
