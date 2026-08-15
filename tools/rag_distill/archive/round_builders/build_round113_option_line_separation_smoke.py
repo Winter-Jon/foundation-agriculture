@@ -7,8 +7,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.rag_distill.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
-from tools.rag_distill.build_round111_option_coverage import exposed_images, write_jsonl
+from tools.rag_distill.archive.round_builders.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
+from tools.rag_distill.archive.round_builders.build_round111_option_coverage import exposed_images, write_jsonl
 
 ROUND = 113
 CODE, LANGUAGE, DOMAIN, LETTER = "N05013", "en", "pest", "C"

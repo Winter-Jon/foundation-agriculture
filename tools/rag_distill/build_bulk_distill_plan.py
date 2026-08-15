@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from agrinet.data.retrieval_strategies import assign_attempt_strategy
-from tools.rag_distill.build_round111_option_coverage import evaluation_images, exposed_images
+from tools.rag_distill.catalog_and_isolation import evaluation_images, exposed_images
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT = ROOT / "outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5/plan/milvus_preflight.json.jsonl"

@@ -8,8 +8,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from tools.rag_distill.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
-from tools.rag_distill.build_round111_option_coverage import exposed_images, write_jsonl
+from tools.rag_distill.archive.round_builders.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
+from tools.rag_distill.archive.round_builders.build_round111_option_coverage import exposed_images, write_jsonl
 
 ROUND = 112
 TEACHER_TEMPERATURE = 0.0

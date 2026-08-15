@@ -3,8 +3,8 @@
 from __future__ import annotations
 import hashlib, json
 from pathlib import Path
-from tools.rag_distill.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
-from tools.rag_distill.build_round111_option_coverage import exposed_images, write_jsonl
+from tools.rag_distill.archive.round_builders.build_round098_option_coverage import ROOT, audited_catalog, candidate_labels
+from tools.rag_distill.archive.round_builders.build_round111_option_coverage import exposed_images, write_jsonl
 ROUND=114; LETTER="B"; TEACHER_TEMPERATURE=0.0
 OUT=ROOT/"outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/round114_b_chinese_route_smoke"
 ARTIFACT=ROOT/"outputs/experiments/rag_sft_iteration/candidates/round114_b_chinese_route_smoke"

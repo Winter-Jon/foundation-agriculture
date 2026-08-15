@@ -12,8 +12,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from tools.rag_distill.build_round111_option_coverage import exposed_images, evaluation_images
-from tools.rag_distill.build_round098_option_coverage import audited_catalog, candidate_labels
+from tools.rag_distill.catalog_and_isolation import audited_catalog, candidate_labels, evaluation_images, exposed_images
 from src.agrinet.data.retrieval_strategies import assign_attempt_strategy
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -5,7 +5,7 @@ import hashlib,json,re
 from collections import Counter
 from pathlib import Path
 from agrinet.data.sft_recovery import build_direct_pilot,read_jsonl,write_jsonl
-from tools.rag_distill.build_round098_option_coverage import ROOT,evaluation_images,normalized
+from tools.rag_distill.catalog_and_isolation import ROOT,evaluation_images,normalized
 from tools.rag_distill.validate_semantic_quality import semantic_row_errors
 OUT=ROOT/"outputs/experiments/rag_sft_iteration/strict_candidate_view_v1/direct_current_build"
 DATA=ROOT/"outputs/experiments/rag_sft_iteration/strict_candidate_view_v1/direct.current_contract.jsonl"

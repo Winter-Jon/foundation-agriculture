@@ -6,8 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.rag_distill.build_round111_option_coverage import exposed_images, write_jsonl
-from tools.rag_distill.build_round098_option_coverage import ROOT
+from tools.rag_distill.catalog_and_isolation import ROOT, exposed_images, write_jsonl
 
 ROUND = 115
 POOL = ROOT / "outputs/experiments/rag_sft_iteration/approval/bulk_distill_plan_v1/targets.jsonl"

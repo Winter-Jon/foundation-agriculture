@@ -461,8 +461,8 @@ def test_budget_finalization_is_public_blind_safe() -> None:
     assert "逐字引用至少一个已经返回的公开检索类别名称" in zh_prompt
 
 
-def test_option_smoke_forbidden_images_include_prior_preflight_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import tools.rag_distill.build_round099_option_contract_smoke as builder
+def test_shared_exposed_images_include_prior_preflight_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tools.rag_distill.catalog_and_isolation as isolation
 
     root = tmp_path
     plan_dir = root / "outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/round102_option_contract_smoke"
@@ -471,53 +471,9 @@ def test_option_smoke_forbidden_images_include_prior_preflight_plans(tmp_path: P
     freeze = root / "outputs/artifacts/datasets/agrinet-rag-sft-round097-candidate-freeze/data.jsonl"
     freeze.parent.mkdir(parents=True)
     freeze.write_text("", encoding="utf-8")
-    monkeypatch.setattr(builder, "ROOT", root)
-    monkeypatch.setattr(builder, "evaluation_images", lambda: set())
-    assert "datasets/AgriNet-1K/all/N04062/preflight.jpg" in builder.forbidden_images()
-
-
-def test_option_contract_smoke_declares_deterministic_teacher_temperature() -> None:
-    import tools.rag_distill.build_round099_option_contract_smoke as builder
-    assert builder.TEACHER_TEMPERATURE == 0.0
-
-
-def test_round111_option_coverage_is_balanced_and_deterministic() -> None:
-    import tools.rag_distill.build_round111_option_coverage as builder
-
-    assert builder.TEACHER_TEMPERATURE == 0.0
-    assert {spec[3] for spec in builder.SPECS} == {"A", "B", "C", "D"}
-    assert sum(spec[1] == "en" for spec in builder.SPECS) == 2
-    assert sum(spec[1] == "zh" for spec in builder.SPECS) == 2
-    assert sum(spec[2] == "disease" for spec in builder.SPECS) == 2
-    assert sum(spec[2] == "pest" for spec in builder.SPECS) == 2
-    assert len({spec[0] for spec in builder.SPECS}) == 4
-
-
-def test_round111_exposed_images_include_prior_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    import tools.rag_distill.build_round111_option_coverage as builder
-
-    plan = tmp_path / "outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/round110_option_contract_smoke/plan.jsonl"
-    plan.parent.mkdir(parents=True)
-    write_jsonl(plan, [{"query_image": "datasets/AgriNet-1K/all/N04062/exposed.jpg"}])
-    monkeypatch.setattr(builder, "ROOT", tmp_path)
-    monkeypatch.setattr(builder, "evaluation_images", lambda: set())
-    assert "datasets/AgriNet-1K/all/N04062/exposed.jpg" in builder.exposed_images()
-
-
-def test_round112_smoke_targets_a_and_c_on_two_domains() -> None:
-    import tools.rag_distill.build_round112_option_finalization_smoke as builder
-
-    assert builder.TEACHER_TEMPERATURE == 0.0
-    assert {spec[3] for spec in builder.SPECS} == {"A", "C"}
-    assert {spec[2] for spec in builder.SPECS} == {"disease", "pest"}
-    assert all(spec[1] == "en" for spec in builder.SPECS)
-
-
-def test_round113_smoke_targets_only_c() -> None:
-    import tools.rag_distill.build_round113_option_line_separation_smoke as builder
-
-    assert builder.LETTER == "C" and builder.LANGUAGE == "en" and builder.DOMAIN == "pest"
-    assert builder.TEACHER_TEMPERATURE == 0.0
+    monkeypatch.setattr(isolation, "ROOT", root)
+    monkeypatch.setattr(isolation, "evaluation_images", lambda: set())
+    assert "datasets/AgriNet-1K/all/N04062/preflight.jpg" in isolation.exposed_images()
 
 
 def test_strict_candidate_view_excludes_stale_option_sources() -> None:
@@ -527,12 +483,6 @@ def test_strict_candidate_view_excludes_stale_option_sources() -> None:
     assert "round097" not in joined and "round098" not in joined and "round101" not in joined
     assert "round110" in joined and "round114" in joined
     assert builder.DIRECT_CURRENT.name == "direct.current_contract.jsonl"
-
-def test_round114_balances_blind_and_oracle_for_chinese_b() -> None:
-    import tools.rag_distill.build_round114_b_chinese_route_smoke as builder
-    assert builder.LETTER == "B" and builder.TEACHER_TEMPERATURE == 0.0
-    assert {x[1] for x in builder.SPECS} == {"disease", "pest"}
-    assert {x[2] for x in builder.SPECS} == {"blind_evidence", "oracle_grounded"}
 
 def test_current_direct_builder_uses_current_eval_and_rag_exclusions() -> None:
     import tools.rag_distill.build_current_direct_candidates as builder

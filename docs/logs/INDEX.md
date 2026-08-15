@@ -42,3 +42,11 @@ No weekly records yet.
 - Plans: plans/agrivlm_agent_leadership_plan.md
 - Plans: plans/agrivlm_agent_proposal.md
 - Handoffs: handoffs/semseg_vit_handoff.md
+
+## RAG SFT Archive
+
+- Current entrypoint: START_HERE.md
+- Active method: ../plan/rag_sft_refactor.md
+- Superseded narratives: ../archive/rag_sft/README.md
+- Historical configurations: ../../configs/archive/rag_sft/README.md
+- Historical round builders: ../../tools/rag_distill/archive/README.md
