@@ -85,6 +85,10 @@ def main() -> None:
             calibration.append(attempt)
     option_calibration = [row for row in calibration if row.get("question_type") == "option"]
     open_deferred = [row for row in calibration if row.get("question_type") == "open"]
+    for row in option_calibration:
+        row["approval_scope"] = "stage_a_option_calibration"
+    for row in open_deferred:
+        row["approval_scope"] = "deferred_open_strategy_review"
     calibration_ids = {(row["target_id"], row["candidate_index"]) for row in calibration}
     reserve = [row for row in attempts if (row["target_id"], row["candidate_index"]) not in calibration_ids]
     initial_by_cell = dict(Counter(cell(row) for row in calibration))

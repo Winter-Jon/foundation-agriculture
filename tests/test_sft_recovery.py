@@ -142,6 +142,24 @@ def test_plan_hydration_accepts_source_sample_id(tmp_path: Path) -> None:
     assert rows[0]["query_image"] == "image.jpg"
 
 
+def test_approval_only_rows_require_matching_stage_a_option_scope() -> None:
+    from tools.rag_distill.run_pilot import validate_approval_scope
+
+    row = {
+        "target_id": "option-1", "approval_only": True,
+        "approval_scope": "stage_a_option_calibration",
+        "trajectory_mode": "standard", "generation_route": "blind_evidence",
+        "label_visible_to_teacher": False, "question_type": "option",
+        "candidate_index": 1, "reserve": False,
+    }
+    with pytest.raises(RuntimeError, match="explicit --approval-scope"):
+        validate_approval_scope([row], "none")
+    validate_approval_scope([row], "stage_a_option_calibration")
+    row["question_type"] = "open"
+    with pytest.raises(RuntimeError, match="violates Stage-A Option"):
+        validate_approval_scope([row], "stage_a_option_calibration")
+
+
 def test_publish_frozen_dataset_is_idempotent_and_immutable(tmp_path: Path) -> None:
     source = tmp_path / "source.jsonl"
     write_jsonl(source, [{"images": ["/all/N04001/x.jpg"], "messages": []}])

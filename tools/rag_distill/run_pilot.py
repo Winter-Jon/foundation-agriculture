@@ -69,6 +69,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sample-file", default="outputs/vlm_data/disease_pest_test/contrast_samples_vit_base.jsonl")
     parser.add_argument("--plan-file", help="Optional recovery Pilot candidate-attempt JSONL.")
     parser.add_argument("--candidate-source", help="Source JSONL used to hydrate plan rows.")
+    parser.add_argument(
+        "--approval-scope",
+        default="none",
+        choices=("none", "stage_a_option_calibration"),
+        help=("Explicit authorization scope required before any approval-only plan row may contact the teacher. "
+              "This is an execution guard, not a substitute for user approval."),
+    )
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--offset", type=int, default=0, help="Number of sample rows to skip before applying --limit.")
     parser.add_argument("--rag-api", default="http://127.0.0.1:8077")
@@ -136,6 +143,29 @@ def read_plan_samples(args: argparse.Namespace) -> list[dict[str, Any]]:
         sample["sample_id"] = str(plan.get("sample_id") or f"{plan['target_id']}-candidate-{candidate_index}")
         samples.append(sample)
     return samples
+
+
+def validate_approval_scope(samples: list[dict[str, Any]], approval_scope: str) -> None:
+    """Fail before provider access when a release-controlled plan is mis-scoped."""
+    controlled = [sample for sample in samples if sample.get("approval_only")]
+    if not controlled:
+        return
+    if approval_scope == "none":
+        raise RuntimeError("approval-only plan rows require an explicit --approval-scope before teacher access")
+    if approval_scope != "stage_a_option_calibration":
+        raise RuntimeError(f"unsupported approval scope: {approval_scope}")
+    for sample in controlled:
+        if sample.get("approval_scope") != approval_scope:
+            raise RuntimeError(f"plan row is not released for {approval_scope}: {sample.get('target_id')}")
+        if any((
+            sample.get("trajectory_mode") != "standard",
+            sample.get("generation_route") != "blind_evidence",
+            sample.get("label_visible_to_teacher") is not False,
+            sample.get("question_type") != "option",
+            int(sample.get("candidate_index") or 0) != 1,
+            bool(sample.get("reserve", False)),
+        )):
+            raise RuntimeError(f"plan row violates Stage-A Option calibration contract: {sample.get('target_id')}")
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -2249,6 +2279,8 @@ def main() -> int:
     )
     install_interrupt_status_handler(output_dir)
     (output_dir / "tools" / "agrinet_rag_search.schema.json").write_text(json.dumps(tool_schema(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    samples = read_plan_samples(args)
+    validate_approval_scope(samples, args.approval_scope)
     api_key, base_url, provider_name = resolve_api_config()
     if args.preflight_only:
         report: dict[str, Any] = {
@@ -2311,8 +2343,6 @@ def main() -> int:
                 exception_type=type(exc).__name__,
             )
             raise
-    samples = read_plan_samples(args)
-
     accepted_rows: list[dict[str, Any]] = []
     raw_traces: list[dict[str, Any]] = []
     retrieval_rows: list[dict[str, Any]] = []
