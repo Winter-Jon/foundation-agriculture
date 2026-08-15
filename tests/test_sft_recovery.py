@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -649,6 +650,56 @@ def test_strict_candidate_view_excludes_stale_option_sources() -> None:
     assert "round097" not in joined and "round098" not in joined and "round101" not in joined
     assert "round110" in joined and "round114" in joined
     assert builder.DIRECT_CURRENT.name == "direct.current_contract.jsonl"
+
+
+def test_validation_freeze_is_balanced_deterministic_and_immutable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tools.rag_distill.build_validation_freeze as builder
+
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    monkeypatch.setattr(builder, "evaluation_images", lambda: set())
+    monkeypatch.setattr(builder, "validate_sft_row", lambda row: ([], Counter()))
+    monkeypatch.setattr(builder, "direct_errors", lambda row, index: [])
+    rag_path, direct_path = tmp_path / "rag.jsonl", tmp_path / "direct.jsonl"
+    rag = []
+    for cell in builder.STANDARD_CELLS:
+        mode, question_type, language, domain = cell.split("/")
+        for index in range(5 if cell.endswith("/disease") and question_type == "open" and language == "en" else 4):
+            rag.append({"sample_id": f"{cell}-{index}", "images": [f"q/{cell}/{index}.jpg"], "metadata": {"trajectory_mode": mode, "question_type": question_type, "language": language, "task_domain": domain}})
+    direct = [{"sample_id": f"direct-{index}", "images": [f"direct/{index}.jpg"], "metadata": {"language": "en", "task_domain": "disease", "question_type": "open"}} for index in range(32)]
+    write_jsonl(rag_path, list(reversed(rag)))
+    write_jsonl(direct_path, direct)
+    destination = tmp_path / "freeze"
+    result = builder.build(rag_path, direct_path, destination)
+    report = json.loads((destination / "selection_report.json").read_text())
+    assert result["reused_existing_immutable_freeze"] is False
+    assert report["rag_selected_rows"] == 32 and len(report["excluded_rag_surplus"]) == 1
+    assert all(len(cell["selected_sample_ids"]) == 4 for cell in report["rag_cell_coverage"].values())
+    assert builder.build(rag_path, direct_path, destination)["reused_existing_immutable_freeze"] is True
+    rag[0]["sample_id"] = "000-changed"
+    write_jsonl(rag_path, rag)
+    with pytest.raises(FileExistsError):
+        builder.build(rag_path, direct_path, destination)
+
+
+def test_validation_freeze_rejects_evaluation_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tools.rag_distill.build_validation_freeze as builder
+
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    monkeypatch.setattr(builder, "validate_sft_row", lambda row: ([], Counter()))
+    monkeypatch.setattr(builder, "direct_errors", lambda row, index: [])
+    shared = "q/evaluation.jpg"
+    monkeypatch.setattr(builder, "evaluation_images", lambda: {shared})
+    rag_path, direct_path = tmp_path / "rag.jsonl", tmp_path / "direct.jsonl"
+    rag = []
+    for cell in builder.STANDARD_CELLS:
+        mode, question_type, language, domain = cell.split("/")
+        for index in range(4):
+            image = shared if not rag else f"q/{len(rag)}.jpg"
+            rag.append({"sample_id": f"r-{len(rag)}", "images": [image], "metadata": {"trajectory_mode": mode, "question_type": question_type, "language": language, "task_domain": domain}})
+    direct = [{"sample_id": f"d-{index}", "images": [f"d/{index}.jpg"], "metadata": {}} for index in range(32)]
+    write_jsonl(rag_path, rag); write_jsonl(direct_path, direct)
+    with pytest.raises(ValueError, match="evaluation image overlap"):
+        builder.build(rag_path, direct_path, tmp_path / "freeze")
 
 def test_current_direct_builder_uses_current_eval_and_rag_exclusions() -> None:
     import tools.rag_distill.build_current_direct_candidates as builder

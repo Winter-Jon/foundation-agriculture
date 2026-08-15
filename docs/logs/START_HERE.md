@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-16 01:09:21 CST
+Last updated: 2026-08-16 02:01:11 CST
 
 ## Current focus
 
@@ -10,7 +10,8 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A standard/Blind only. Its 32 strict `standard` RAG + 32 current-contract Direct corpus is a protocol-and-signal validation SFT, not the final training scale. A robust positive matched result automatically releases a larger balanced Blind rejection-sampling loop and one final internal SFT; formal 618 evaluation remains separately approved. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Round154 strictly accepts Chinese Open/disease on Terra, pending strict-source rebuild: its 3/3 retrievals, final-label accuracy, and all boundary checks passed. The prior verified gate was 30 RAG / 28 of 32 quota-usable with 32/32 Direct; after inclusion, three standard rows should remain. All four Option cells are full. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
+- Rounds154--157 strictly accept the four remaining Chinese Open rows on Terra. The strict view has 34 raw current-contract RAG candidates, exactly 32 quota-usable standard RAG rows (four in every cell), and 32 Direct rows. The immutable 64-row freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` passed RAG and Direct validation.
+- Its one permitted checkpoint-165 SFT launch failed before dataset loading because local ms-swift combined `deepspeed: zero3` with an eight-GPU `device_map` process. No model checkpoint was produced; this freeze must not be retrained.
 - Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Sampling and the two internal SFT stages are authorized by the active control loop. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
@@ -25,7 +26,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is complete. Under the now-authorized Chinese Open re-entry scope, Round154 passed real-image preflight and strict Pilot validation on Micu SLB + `gpt-5.6-terra`; rebuild the strict view, fill the last three standard deficits one at a time, and run the 64-row validation SFT. Scale only if the 192-row matched diagnostic has zero hard-gate errors, at least +3pp RAG-targeted gain, a positive paired-bootstrap 95% lower bound, and no unacceptable subgroup or Direct regression. The scaled target is 512 strict RAG + 256 Direct: each of eight cells has 64 RAG rows, at least 16 canonical classes, and at most four rows per class. Retain only individually strict rows; raw teacher acceptance may be below 100% and is a cost/continuation signal. Formal 618 remains separately approved.
+The validation SFT is stopped by a configuration hard gate. Preserve freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` as single-use and do not sample, retrain, scale, or run formal 618. The only bounded next investigation is to verify a true distributed local ms-swift launch or a reviewed non-DeepSpeed profile before proposing a genuinely new future freeze.
 
 ## Records and archive
 

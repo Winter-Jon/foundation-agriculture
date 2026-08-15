@@ -36,6 +36,9 @@ RAG_SOURCES = (
     "outputs/experiments/rag_sft_iteration/candidates/round152-standard-option-zh-disease-terra-pilot/train/agent_sft.accepted.jsonl",
     "outputs/experiments/rag_sft_iteration/candidates/round153-standard-option-zh-pest-terra-pilot/train/agent_sft.accepted.jsonl",
     "outputs/experiments/rag_sft_iteration/candidates/round154-standard-open-zh-disease-terra-pilot/train/agent_sft.accepted.jsonl",
+    "outputs/experiments/rag_sft_iteration/candidates/round155-standard-open-zh-disease-terra-pilot/train/agent_sft.accepted.jsonl",
+    "outputs/experiments/rag_sft_iteration/candidates/round156-standard-open-zh-pest-terra-pilot/train/agent_sft.accepted.jsonl",
+    "outputs/experiments/rag_sft_iteration/candidates/round157-standard-open-zh-pest-terra-pilot/train/agent_sft.accepted.jsonl",
 )
 DIRECT_CURRENT = OUT / "direct.current_contract.jsonl"
 

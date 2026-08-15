@@ -16,7 +16,7 @@ inputs:
   nonrag_eval: outputs/vlm_eval/qwen3_vl_4b_rag_sft/nonrag_checkpoint165_direct_full_20260804
   prior_rag_eval: outputs/vlm_eval/qwen3_vl_4b_rag_sft/nonrag_init_rag_sft_checkpoint224_rag_full_20260805
   base_dataset: outputs/artifacts/datasets/agrinet-rag-dual-route-sft-v2-singleimg/data.jsonl
-  base_checkpoint: outputs/vlm_sft/qwen3_vl_4b_nonrag_init_dual_route_rag_sft_v2/v1-20260808-153951/checkpoint-64
+  base_checkpoint: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
 parameters:
   priorities: [trajectory_compliance, autonomous_rag_routing, performance]
   hard_gates:

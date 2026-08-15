@@ -39,8 +39,12 @@ def main() -> int:
     args = ap.parse_args(); mixed = read_jsonl(args.artifact_dir / "data.jsonl"); rag = read_jsonl(args.rag_file); direct = mixed[len(rag):]
     derrors = [e for i, r in enumerate(direct) for e in direct_errors(r, i)]
     images = [image_key(r) for r in mixed]
-    stats = json.loads((args.artifact_dir / "statistics.json").read_text())
-    report = {"artifact_dir":str(args.artifact_dir), "rows":len(mixed), "rag_rows":len(rag), "direct_rows":len(direct), "mixed_unique_images":len(set(images)), "direct_errors":derrors, "direct_error_count":len(derrors), "direct_coverage":stats.get("direct_coverage", {}), "rag_validation":"run separately with validate_artifact on the 48-row RAG artifact", "mixed_rag_domain_validator_misuse_avoided":True, "training_authorized":False, "formal_eval_authorized":False, "valid_structure":len(mixed)==80 and len(set(images))==80 and len(derrors)==0}
+    stats_path = args.artifact_dir / "statistics.json"
+    if not stats_path.exists():
+        stats_path = args.artifact_dir / "selection_report.json"
+    stats = json.loads(stats_path.read_text())
+    expected_rows = int(stats.get("rows", stats.get("rag_selected_rows", 48) + stats.get("direct_selected_rows", 32)))
+    report = {"artifact_dir":str(args.artifact_dir), "rows":len(mixed), "rag_rows":len(rag), "direct_rows":len(direct), "mixed_unique_images":len(set(images)), "direct_errors":derrors, "direct_error_count":len(derrors), "direct_coverage":stats.get("direct_coverage", {}), "rag_validation":"run separately with validate_artifact on the RAG artifact", "mixed_rag_domain_validator_misuse_avoided":True, "training_authorized":False, "formal_eval_authorized":False, "valid_structure":len(mixed)==expected_rows and len(set(images))==expected_rows and len(derrors)==0}
     args.report.parent.mkdir(parents=True, exist_ok=True); args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({"report":str(args.report), "valid_structure":report["valid_structure"], "direct_error_count":len(derrors), "rows":len(mixed)}, ensure_ascii=False)); return 0 if report["valid_structure"] else 1
 
