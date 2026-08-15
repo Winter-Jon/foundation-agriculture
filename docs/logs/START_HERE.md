@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration uses `gpt-5.6-terra` going forward. Round146 shows the Micu SLB route is reachable and decryptable but was rate-limited for the prior Luna route (HTTP 503 after the real-image POST), therefore its target is another non-replayable unknown delivery. Round143 remains the third API3 unknown delivery; Round141 is the only verified recent success, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Micu main and APIPlus return 403, Round135 stopped before delivery, and Round136/Round142 were correctly rejected by strict validators. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration's active default is `gpt-5.6-terra`, but further Terra sampling is paused after Round148: SLB endpoint/image preflight and all three retrievals passed, yet the final answer omitted strict field delimiters and was rejected as `missing_final_fields` / `final_answer_not_evidence_anchored`. Round141 remains the only recent strict acceptance, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
