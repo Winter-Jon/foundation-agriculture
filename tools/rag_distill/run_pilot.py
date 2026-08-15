@@ -28,7 +28,7 @@ from .schema import TOOL_NAME, tool_schema, tools_json, tools_list, validate_too
 
 PROMPT_VERSION = "agrinet_rag_toolcall_v6_visual_observation_candidate_followup"
 ACCEPTANCE_POLICY = "rag_toolcall_v5_think_answer_evidence_gated_private_gt_student_safe"
-DEFAULT_TEACHER_MODEL = "gpt-5.6-luna"
+DEFAULT_TEACHER_MODEL = "gpt-5.6-terra"
 
 
 class UnknownTeacherDelivery(RuntimeError):

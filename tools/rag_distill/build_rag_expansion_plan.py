@@ -21,7 +21,7 @@ PRE = ROOT / "outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5/plan/milv
 SUPPLEMENTAL_PREFLIGHT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/zh_open_pest_catalog_supplement_preflight.jsonl"
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
 OUT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1"
-TEACHER_MODEL = "gpt-5.6-luna"
+TEACHER_MODEL = "gpt-5.6-terra"
 SELECTION_SEED = 20260815
 
 # This active builder serves only the approved Stage-A standard milestone.

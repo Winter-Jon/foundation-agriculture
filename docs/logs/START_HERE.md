@@ -11,7 +11,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A only: an immutable 32 strict `standard` RAG + 32 current-contract Direct corpus, then a separately approved checkpoint-165 SFT and complete forced-off phase evaluation. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
 - Current strict view: 24 RAG total, 22/32 Stage-A quota usable; Direct is 32/32 valid. Stage A needs 10 Blind standard rows. Luna has accepted English Option (Rounds126/133), Chinese Open (Round131), and Chinese Option (Rounds132/134) Pilots. Closed terminal finalization is strictly accepted in Chinese Option/disease, English Option/pest, and Chinese Option/pest; Round129 remains the fixed local JSON-mode defect and Round130 an ordinary Blind semantic mismatch.
-- Terra is suspended from future sampling: it passed API3 real-image preflight but failed two Blind `stop_correction` Pilots and one Stage-A `standard` Option Pilot after budget finalization. Use `gpt-5.6-luna` only through a new-ID strict preflight and bounded Pilot; historical unknown Luna requests remain non-replayable.
+- Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Training, immutable freeze promotion, and formal evaluation are unauthorized. No sampling, SFT, or evaluation process is running.
 
@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is paused. Round146 shows the Micu SLB route is reachable and decryptable but currently rate-limited for `gpt-5.6-luna` (HTTP 503 after the real-image POST), therefore it is another non-replayable unknown delivery. Round143 remains the third API3 unknown delivery; Round141 is the only verified recent success, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Micu main and APIPlus return 403, Round135 stopped before delivery, and Round136/Round142 were correctly rejected by strict validators. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration uses `gpt-5.6-terra` going forward. Round146 shows the Micu SLB route is reachable and decryptable but was rate-limited for the prior Luna route (HTTP 503 after the real-image POST), therefore its target is another non-replayable unknown delivery. Round143 remains the third API3 unknown delivery; Round141 is the only verified recent success, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Micu main and APIPlus return 403, Round135 stopped before delivery, and Round136/Round142 were correctly rejected by strict validators. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 

@@ -11,9 +11,9 @@ from agrinet.data.sft_recovery import publish_frozen_dataset, validate_pilot, wr
 from agrinet.data.retrieval_strategies import STRATEGIES, assign_attempt_strategy, strategy_for_candidate, strategy_preferences, strategy_spec
 
 
-def test_distillation_teacher_default_is_gpt_5_6_luna() -> None:
+def test_distillation_teacher_default_is_gpt_5_6_terra() -> None:
     from tools.rag_distill.run_pilot import DEFAULT_TEACHER_MODEL
-    assert DEFAULT_TEACHER_MODEL == "gpt-5.6-luna"
+    assert DEFAULT_TEACHER_MODEL == "gpt-5.6-terra"
 
 
 def test_unknown_teacher_delivery_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
