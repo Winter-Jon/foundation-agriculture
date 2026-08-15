@@ -17,13 +17,19 @@ from src.agrinet.data.retrieval_strategies import assign_attempt_strategy
 
 ROOT = Path(__file__).resolve().parents[2]
 PRE = ROOT / "outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5/plan/milvus_preflight.json.jsonl"
+SUPPLEMENTAL_PREFLIGHT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/zh_open_pest_catalog_supplement_preflight.jsonl"
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
 OUT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1"
 TEACHER_MODEL = "gpt-5.6-luna"
 
+# This active builder serves only the approved Stage-A standard milestone.
+# Deferred stop-correction work is intentionally outside the current goal and
+# must not be made to look like a pending sampling release.
 CELLS = {
-    **{f"standard/{q}/{lang}/{domain}": 4 for q in ("open", "option") for lang in ("en", "zh") for domain in ("disease", "pest")},
-    **{f"stop_correction/open/{lang}/{domain}": 4 for lang in ("en", "zh") for domain in ("disease", "pest")},
+    f"standard/{q}/{lang}/{domain}": 4
+    for q in ("open", "option")
+    for lang in ("en", "zh")
+    for domain in ("disease", "pest")
 }
 
 def read(path: Path) -> list[dict[str, Any]]:
@@ -41,6 +47,8 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def main() -> None:
     preflight = read(PRE)
+    if SUPPLEMENTAL_PREFLIGHT.exists():
+        preflight.extend(read(SUPPLEMENTAL_PREFLIGHT))
     classes = audited_catalog()
     # The preflight audit may contain valid catalog rows not present in the
     # compact historical plans. Use only its class names/domain metadata to
@@ -125,7 +133,10 @@ def main() -> None:
     report = {
         "schema_version": "agrinet.rag-expansion-approval/v1",
         "status": "teacher_free_plan_ready_for_approval",
-        "source_preflight": str(PRE.relative_to(ROOT)),
+        "source_preflight": [
+            str(PRE.relative_to(ROOT)),
+            str(SUPPLEMENTAL_PREFLIGHT.relative_to(ROOT)) if SUPPLEMENTAL_PREFLIGHT.exists() else None,
+        ],
         "fresh_exclusion_policy": "exposed plans/candidates + evaluation images + current RAG/Direct images",
         "preflight_rows": len(preflight), "fresh_preflight_eligible_rows": len(fresh),
         "selected_target_rows": len(selected), "required_target_rows": sum(deficits.values()),
@@ -139,10 +150,8 @@ def main() -> None:
     }
     OUT.mkdir(parents=True, exist_ok=True)
     write_jsonl(OUT / "targets.jsonl", selected)
-    standard_targets = [row for row in selected if str(row.get("trajectory_mode")) == "standard"]
-    deferred_stop_correction_targets = [row for row in selected if str(row.get("trajectory_mode")) == "stop_correction"]
+    standard_targets = selected
     write_jsonl(OUT / "standard_targets.jsonl", standard_targets)
-    write_jsonl(OUT / "deferred_stop_correction_targets.jsonl", deferred_stop_correction_targets)
     report["stages"] = {
         "standard_intermediate": {
             "display_name": "standard_milestone",
@@ -153,16 +162,6 @@ def main() -> None:
             "sft_authorized": False,
             "formal_eval_authorized": False,
             "next_gate": "stable standard-family Pilot -> adaptive rejection sampling -> immutable 32+32 freeze -> separate milestone SFT approval -> complete phase evaluation -> explicit result decision",
-        },
-        "full_milestone": {
-            "targets": "targets.jsonl",
-            "deferred_stop_correction_targets": "deferred_stop_correction_targets.jsonl",
-            "deferred_target_rows": len(deferred_stop_correction_targets),
-            "required_strict_rag_rows": 48,
-            "required_direct_rows": 32,
-            "sft_authorized": False,
-            "formal_eval_authorized": False,
-            "next_gate": "repair and validate stop-correction -> fill remaining 16 rows -> immutable 48+32 freeze -> separate milestone SFT approval",
         },
     }
     (OUT / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

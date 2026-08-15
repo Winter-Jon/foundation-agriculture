@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Rebuild the current-contract strict view including Round131, then review per-cell coverage and the bounded Round129-131 results before any new Pilot. Retain Rounds124/125/127/128/129/130 as negative evidence; release no adaptive sampling, freeze, SFT, or formal evaluation.
+The strict view and a complete 13-target Stage-A-only fresh reserve are rebuilt. Review per-cell Pilot stability and obtain explicit authorization before a new teacher preflight or Pilot. Retain Rounds124/125/127/128/129/130 as negative evidence; release no adaptive sampling, freeze, SFT, or formal evaluation.
 
 ## Records and archive
 
