@@ -6,13 +6,15 @@ Status: active, training blocked
 
 Build a protocol-first AgriNet RAG SFT corpus and model whose trajectories remain compliant while improving over retained non-RAG checkpoint-165. The final claim still requires a separately approved, forced-retrieval-off 618-row Milvus evaluation above 65.21% without major-group regression.
 
-## Current iteration cycle
+## Current Stage-A operating goal
 
-1. **Reuse before distilling.** Revalidate historical data against the current contract. Use compact historical/rerendered Direct data as replay; reuse historical RAG only when its raw trajectory passes the current protocol. Everything else remains audit evidence.
-2. **Pilot before scale.** A bounded Pilot must show auditable transport, no systemic hard-gate failure, and nonzero acceptance in every active contract family. A concentrated failure returns to a targeted Pilot; ordinary semantic misses remain rejection-sampling evidence.
-3. **Calibrate, then harvest.** Start with one attempt on three independent targets in each deficient cell. Continue cells with reasonable expected cost per accepted row, probe uncertain cells narrowly, and stop spending on repeated concentrated failures until repaired.
-4. **Freeze and train in two milestones.** First stabilize the eight standard cells, then freeze 32 strict standard RAG plus 32 current-contract Direct rows for one separately approved standard milestone SFT from checkpoint-165. Complete its phase evaluation: forced-retrieval-off protocol smoke, balanced matched subgroup diagnostic, checkpoint-165 baseline comparison, and milestone review package. The result determines the next revision. After stop-correction independently passes its Pilot gate, freeze the complete 48 strict RAG plus 32 Direct milestone; each unique freeze hash trains once.
-5. **Evaluate and redirect.** Run forced-off contract smoke and a matched subgroup diagnostic. Use the observed change in accuracy, autonomous tool use, over-retrieval, and subgroup behavior to choose the next data revision. Formal 618 remains a separate approval.
+Only the `standard_milestone` is active. Its training corpus is fixed at **64 rows**: 32 strict `standard` RAG rows and 32 revalidated current-contract Direct replay rows. The RAG portion is **stratified and balanced**, not sampled in aggregate proportion: Open/Option × English/Chinese × disease/pest gives eight cells with exactly four accepted rows each. Within a cell, fresh eligible targets may be randomized; across cells, collection always follows the remaining cell deficits. Stop collecting a cell immediately at four accepted rows.
+
+1. **Reuse first.** Revalidate historical data against the current contract. Direct may be deterministically rerendered as replay; historical RAG is reusable only when its raw trajectory passes the current protocol.
+2. **Pilot before bulk.** Use a bounded fresh-image Blind Pilot to verify transport, tool protocol, evidence, language, answer contract, label boundary, and image isolation. It is a stability check, not a quota fill: ordinary semantic/retrieval misses remain rejection evidence, while repeated hard-gate failures return to targeted repair.
+3. **Harvest by deficit.** After a reviewed Pilot and explicit sampling authorization, collect candidates by remaining cell deficit. Keep raw trajectories and rejection reasons; release subsequent fresh targets only where yield is acceptable, pause a cell with repeated concentrated hard failures, and do not spend merely to exhaust a cap. The active Stage-A target list is a 15-row first reserve; any replacement-target release needs the same fresh-image and review gates.
+4. **Freeze once.** Only rows passing every current protocol, semantic, evidence, language, boundary, deduplication, and evaluation-isolation check may enter the immutable 32+32 freeze. The freeze hash trains once, from checkpoint-165, only after separate SFT approval.
+5. **Evaluate and decide.** Complete forced-retrieval-off smoke, matched balanced diagnostic on the checkpoint-165 manifest, baseline comparison, and milestone review. The result explicitly selects the next repair or a separately approved formal-618 request; nothing starts automatically.
 
 ### Standard-milestone result gate
 
@@ -26,21 +28,19 @@ Stage A ends at its complete milestone review; it never automatically advances t
 | Direct capability regresses | Increase validated historical Direct replay; build a materially revised standard freeze. |
 | Hard gates pass and matched diagnostics show a clear positive result | Record the standard milestone result and request direction: repair/defer stop-correction, make a materially justified standard revision, or separately request formal 618. Do not automatically start Stage B. |
 
-The complete 48+32 path opens only after an explicit post-Stage-A decision and an independently stable stop-correction Pilot family. A new SFT always requires a new immutable freeze hash and separate approval.
+Any later 48+32 path is out of the current operating scope. It may be reconsidered only after an explicit post-Stage-A decision and a new, independently stable protocol family. A new SFT always requires a new immutable freeze hash and separate approval.
 
 Only four measurements drive the loop: accepted rows per teacher attempt, hard-gate error counts, coverage remaining by cell, and matched SFT delta versus checkpoint-165.
 
 The 32+32 standard milestone is a complete phase result, not merely a small ablation and not a substitute for the later complete 48+32 corpus. If its diagnostics are positive, retain the full milestone package and explicitly decide whether to revise standard data, repair the deferred stop-correction family, or separately request formal 618. If it does not, revise standard data or training before another SFT.
 
-Milestone state transitions are explicit:
+Current Stage-A state transitions are explicit:
 
 1. `protocol_unstable`: a hard-gate failure is systemic or repeats with the same cause. Return to a bounded Pilot.
 2. `bulk_distill_ready`: the Pilot stability gate has passed, the bulk target pool and rejection-sampling budget are reviewed, and material teacher sampling receives explicit authorization.
 3. `standard_milestone_ready`: the immutable 32 standard RAG + 32 Direct freeze passes its stage gate and receives separate SFT authorization.
 4. `standard_milestone_validating`: run one SFT for the newly versioned standard freeze, then complete forced-off phase evaluation: protocol smoke, matched subgroup diagnostic, checkpoint-165 baseline comparison, and milestone review package.
-5. `milestone_ready`: the immutable 48 RAG + 32 Direct freeze passes every complete Training Gate item, strict validators agree, and the review package receives human authorization.
-6. `milestone_validating`: run one full-corpus SFT for the newly versioned complete freeze, then forced-off protocol smoke, subgroup diagnostic evaluation, and baseline comparison.
-7. `formal_618_ready`: complete-milestone diagnostics show all hard gates passing, stable autonomous Milvus calls, and sufficient answer quality to justify the formal comparison. Formal 618 evaluation remains a separate approval point.
+5. `formal_618_ready`: Stage-A diagnostics show all hard gates passing, stable autonomous Milvus calls, and sufficient answer quality to justify a formal comparison request. Formal 618 evaluation remains a separate approval point.
 
 If milestone validation fails, retain the artifacts as negative evidence and revise the next bounded Pilot from the review. A later milestone is allowed only after a material corpus/protocol revision passes the gates again. Do not weaken trajectory rules or repeatedly launch SFT on the same freeze. Use a soft budget of at most three milestone SFT runs before an explicit strategy review; also pause after two consecutive failed milestones even when the soft budget is not exhausted. This budget is a review trigger rather than a permanent project limit.
 
@@ -48,7 +48,7 @@ If milestone validation fails, retain the artifacts as negative evidence and rev
 
 The term “Loop” in task instructions refers to the Codex execution loop, not to a project runtime or model component. Project artifacts use the name `RAG SFT iteration control` and live under `outputs/experiments/rag_sft_iteration/`. The control plan is dynamic: each Pilot review may change the next sampling focus, route mixture, correction quota, or training dose.
 
-The current teacher-free reserve contains 75 fresh preflight-eligible targets and at most 225 attempts. Its first release is 30 independent calibration attempts; later attempts are conditional. This remains a proposal until material-sampling approval. The same freeze is trained once, and formal 618 remains separately gated.
+The current teacher-free Stage-A plan names 15 fresh targets, exactly matching the current 15-row deficit. It is a reviewed first reserve rather than an authorization: a rejected target is not silently retried or converted into a training row, and any replacement target must be selected under the same isolation and review policy.
 
 Current iteration control: [data-rag-sft-iteration-control-v1](../../configs/experiments/data/data-rag-sft-iteration-control-v1.yaml). Current Round 0 review: `outputs/experiments/rag_sft_iteration/baseline/review.md`.
 
