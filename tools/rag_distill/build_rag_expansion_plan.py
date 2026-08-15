@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PRE = ROOT / "outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5/plan/milvus_preflight.json.jsonl"
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
 OUT = ROOT / "outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1"
-TEACHER_MODEL = "gpt-5.6-terra"
+TEACHER_MODEL = "gpt-5.6-luna"
 
 CELLS = {
     **{f"standard/{q}/{lang}/{domain}": 4 for q in ("open", "option") for lang in ("en", "zh") for domain in ("disease", "pest")},

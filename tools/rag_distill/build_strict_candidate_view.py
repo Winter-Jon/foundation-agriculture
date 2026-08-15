@@ -24,6 +24,7 @@ RAG_SOURCES = (
     "outputs/experiments/rag_sft_iteration/candidates/round112-option-finalization-smoke/pilot/train/agent_sft.accepted.jsonl",
     "outputs/experiments/rag_sft_iteration/candidates/round113-option-line-separation-smoke/pilot/train/agent_sft.accepted.jsonl",
     "outputs/experiments/rag_sft_iteration/candidates/round114-b-chinese-route-smoke/pilot/train/agent_sft.accepted.jsonl",
+    "outputs/experiments/rag_sft_iteration/candidates/round126-standard-option-en-disease-luna-pilot/pilot/train/agent_sft.accepted.jsonl",
 )
 DIRECT_CURRENT = OUT / "direct.current_contract.jsonl"
 
