@@ -83,6 +83,8 @@ def main() -> None:
             attempt["release_stage"] = "calibration"
             attempt["rejection_sampling_candidate"] = True
             calibration.append(attempt)
+    option_calibration = [row for row in calibration if row.get("question_type") == "option"]
+    open_deferred = [row for row in calibration if row.get("question_type") == "open"]
     calibration_ids = {(row["target_id"], row["candidate_index"]) for row in calibration}
     reserve = [row for row in attempts if (row["target_id"], row["candidate_index"]) not in calibration_ids]
     initial_by_cell = dict(Counter(cell(row) for row in calibration))
@@ -117,6 +119,12 @@ def main() -> None:
         "stage_a_teacher_attempts_max": len(attempts),
         "initial_release_attempts": initial_release_attempts,
         "initial_release_by_cell": initial_by_cell,
+        "option_calibration_attempts": len(option_calibration),
+        "open_deferred_calibration_attempts": len(open_deferred),
+        "release_artifacts": {
+            "option_ready": "calibration_option_ready_attempts.jsonl",
+            "open_deferred": "calibration_open_deferred_attempts.jsonl",
+        },
         "conditional_release_shard_cap": 10,
         "adaptive_release_policy": {
             "phase_0": "Do not release any attempt without explicit Stage-A calibration approval.",
@@ -138,9 +146,11 @@ def main() -> None:
     write_jsonl(OUT / "targets.jsonl", targets)
     write_jsonl(OUT / "attempts.jsonl", attempts)
     write_jsonl(OUT / "calibration_attempts.jsonl", calibration)
+    write_jsonl(OUT / "calibration_option_ready_attempts.jsonl", option_calibration)
+    write_jsonl(OUT / "calibration_open_deferred_attempts.jsonl", open_deferred)
     write_jsonl(OUT / "reserve_attempts.jsonl", reserve)
     (OUT / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"report": str(OUT / "report.json"), "targets": len(targets), "attempts_max": len(attempts), "initial_release": initial_release_attempts, "shards": len(shards), "deficits": deficits}, ensure_ascii=False))
+    print(json.dumps({"report": str(OUT / "report.json"), "targets": len(targets), "attempts_max": len(attempts), "option_calibration": len(option_calibration), "open_deferred": len(open_deferred), "shards": len(shards), "deficits": deficits}, ensure_ascii=False))
 
 if __name__ == "__main__":
     main()
