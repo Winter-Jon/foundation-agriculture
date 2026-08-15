@@ -36,9 +36,11 @@ parameters:
     micro_pilot_attempts: 16
     validation_sft_rag_rows: 32
     validation_sft_direct_rows: 32
-    scaled_rag_rows: 256
-    scaled_rag_rows_per_cell: 32
-    scaled_direct_rows: 128
+    scaled_rag_rows: 512
+    scaled_rag_rows_per_cell: 64
+    scaled_direct_rows: 256
+    scaled_min_unique_classes_per_cell: 16
+    scaled_max_rows_per_class_per_cell: 4
     max_teacher_attempts_per_cell: 192
     calibration_attempts_per_cell: 12
     minimum_calibration_acceptance_rate: 0.25
@@ -79,7 +81,8 @@ parameters:
         accepted_data_policy: retain_only_individually_strict_accepted_rows
         raw_attempt_policy: rejection_sampling; raw_attempt_acceptance_need_not_be_100_percent
         allocation: balanced_floor_then_weak_cell_adaptive_allocation
-        balanced_floor: 32_strict_rag_rows_per_open_option_language_domain_cell
+        balanced_floor: 64_strict_rag_rows_per_open_option_language_domain_cell
+        class_balance: at_least_16_unique_canonical_classes_and_at_most_4_rows_per_class_in_each_cell
         continuation_gate: at_least_3_strict_accepts_and_at_least_25_percent_acceptance_in_12_attempt_calibration_per_cell
         stop_conditions: [repeated_protocol_or_boundary_hard_gate, cell_attempt_cap, cell_target_reached, no_fresh_isolated_targets]
         final_internal_sft: one_run_per_unique_scaled_freeze_from_checkpoint165

@@ -15,7 +15,7 @@ Only the `standard` family is active. The first 64 rows are a **protocol-and-sig
 3. **Harvest by deficit, then rejection-sample by yield.** All teacher calls may fail ordinary semantic/retrieval gates; only individual rows passing every strict validator may enter training. Retain rejected/unknown evidence for audit, never as training data. A 12-attempt cell calibration must yield at least three strict accepts and at least 25% raw-attempt acceptance before that cell receives its scaled budget. Repeated protocol/boundary hard gates pause the cell regardless of yield.
 4. **Validation freeze and SFT.** Freeze the strict 32+32 milestone and run one validation SFT from checkpoint-165. No per-run authorization is required inside this control loop; every freeze hash remains single-use.
 5. **Positive-signal gate.** On a fixed 192-row matched diagnostic, require zero protocol/boundary hard gates, stable autonomous tool use, at least +3 percentage points on the RAG-targeted slice, and a paired-bootstrap 95% lower confidence bound above zero against checkpoint-165. No major language/domain/answer-type subgroup may show an unacceptable regression, and Direct retention must remain within its predeclared tolerance. A tiny unpaired aggregate increase is insufficient.
-6. **Scale only after signal.** A passing validation SFT automatically first builds and locally preflights a new, isolated candidate pool, then releases balanced Blind rejection sampling toward 256 strict RAG rows (32 per standard cell) and 128 unique revalidated Direct rows. Begin with equal per-cell floors; spend any remaining budget only on weak matched-diagnostic cells. The final internally reported SFT is one run per unique scaled freeze, from checkpoint-165.
+6. **Scale only after signal.** A passing validation SFT automatically first builds and locally preflights a new, isolated candidate pool, then releases balanced Blind rejection sampling toward 512 strict RAG rows (64 per standard cell) and 256 unique revalidated Direct rows. Each RAG cell must cover at least 16 canonical classes and may retain at most four accepted images per class, so a high-yield class cannot dominate the scaled corpus. Begin with equal cell and class floors; spend any remaining budget only on weak matched-diagnostic cells. The final internally reported SFT is one run per unique scaled freeze, from checkpoint-165.
 7. **Formal evaluation remains separate.** The forced-retrieval-off 618-row Milvus evaluation never auto-starts.
 
 ### Validation-SFT and scaled-SFT result gates
@@ -30,7 +30,7 @@ The 64-row review decides whether the data route is worth scaling, not whether t
 | Direct capability regresses | Increase validated historical Direct replay; build a materially revised standard freeze. |
 | Hard gates pass and matched diagnostics show a robust positive result | Automatically release scaled Blind rejection sampling, then train one final internal SFT on the scaled immutable freeze. |
 
-The scaled route is still standard/Blind only: it does not advance to stop-correction or relax any validator. Every SFT requires a new immutable freeze hash, but validation and scaled internal SFTs are authorized by this loop; only the formal 618 evaluation requires separate approval.
+The scaled route is still standard/Blind only: it does not advance to stop-correction or relax any validator. It is balanced both across Open/Option × English/Chinese × disease/pest cells and within each cell across canonical classes. Every SFT requires a new immutable freeze hash, but validation and scaled internal SFTs are authorized by this loop; only the formal 618 evaluation requires separate approval.
 
 ### Budget-closure terminal trajectory
 
@@ -46,7 +46,7 @@ Current Stage-A state transitions are explicit:
 2. `validation_milestone_ready`: the immutable 32 standard RAG + 32 Direct freeze passes its strict gate and can enter the autonomous validation SFT.
 3. `validation_milestone_validating`: run one SFT for the validation freeze, then complete forced-off smoke, a 192-row matched diagnostic, checkpoint-165 comparison, and Direct-retention review.
 4. `scaled_collection_ready`: only a robust positive validation result releases a newly built, isolated Blind rejection-sampling pool; cell yield gates control spend, while strict row validation controls inclusion.
-5. `scaled_internal_sft_ready`: the 256-RAG + 128-Direct scaled freeze passes all hard gates and trains once from checkpoint-165.
+5. `scaled_internal_sft_ready`: the 512-RAG + 256-Direct class-balanced scaled freeze passes all hard gates and trains once from checkpoint-165.
 6. `formal_618_ready`: the scaled internal review shows all hard gates passing, stable autonomous Milvus calls, and sufficient answer quality to justify a separate formal comparison request.
 
 If milestone validation fails, retain the artifacts as negative evidence and revise the next bounded Pilot from the review. A later milestone is allowed only after a material corpus/protocol revision passes the gates again. Do not weaken trajectory rules or repeatedly launch SFT on the same freeze. Use a soft budget of at most three milestone SFT runs before an explicit strategy review; also pause after two consecutive failed milestones even when the soft budget is not exhausted. This budget is a review trigger rather than a permanent project limit.

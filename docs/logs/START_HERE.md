@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is complete. Under the now-authorized Chinese Open re-entry scope, Round154 passed real-image preflight and strict Pilot validation on Micu SLB + `gpt-5.6-terra`; rebuild the strict view, fill the last three standard deficits one at a time, and run the 64-row validation SFT. Scale only if the 192-row matched diagnostic has zero hard-gate errors, at least +3pp RAG-targeted gain, a positive paired-bootstrap 95% lower bound, and no unacceptable subgroup or Direct regression. Retain only individually strict rows; raw teacher acceptance may be below 100% and is a cost/continuation signal. Formal 618 remains separately approved.
+Stage-A Option calibration is complete. Under the now-authorized Chinese Open re-entry scope, Round154 passed real-image preflight and strict Pilot validation on Micu SLB + `gpt-5.6-terra`; rebuild the strict view, fill the last three standard deficits one at a time, and run the 64-row validation SFT. Scale only if the 192-row matched diagnostic has zero hard-gate errors, at least +3pp RAG-targeted gain, a positive paired-bootstrap 95% lower bound, and no unacceptable subgroup or Direct regression. The scaled target is 512 strict RAG + 256 Direct: each of eight cells has 64 RAG rows, at least 16 canonical classes, and at most four rows per class. Retain only individually strict rows; raw teacher acceptance may be below 100% and is a cost/continuation signal. Formal 618 remains separately approved.
 
 ## Records and archive
 
