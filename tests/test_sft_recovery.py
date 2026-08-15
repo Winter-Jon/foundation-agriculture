@@ -391,8 +391,12 @@ def test_budget_finalization_allows_final_answer_after_third_retrieval(tmp_path:
     assert row is not None and rejected is None and trace["accepted"] is True
     assert len(calls) == len(ledgers) == 3
     assert len(seen) == 5
-    finalization = seen[4][-1]["content"]
-    assert "工具已经永久关闭" in finalization and "不确定性：字段" in finalization
+    finalization = seen[4]
+    assert len(finalization) == 2
+    assert "此会话没有工具" in finalization[0]["content"]
+    assert "公开检索证据" in finalization[1]["content"][0]["text"]
+    assert all(message.get("role") != "assistant" for message in finalization)
+    assert trace["closed_finalization_used"] is True
     assert row["messages"][-1]["content"] == final
 
 
@@ -506,6 +510,30 @@ def test_budget_finalization_is_public_blind_safe() -> None:
     assert "工具已经永久关闭" in zh_prompt and "不要再请求、建议、计划或输出任何检索/工具调用" in zh_prompt
     assert "即使仍有不确定性" in zh_prompt
     assert "Tools are permanently closed" in prompt and "do not request, suggest, plan, or emit" in prompt
+
+
+def test_closed_finalization_uses_only_public_evidence(tmp_path: Path) -> None:
+    from tools.rag_distill.run_pilot import closed_finalization_messages
+
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {
+        "language": "zh", "question_type": "option", "generation_route": "blind_evidence",
+        "final_label": "PRIVATE_CODE", "correct_option": "D",
+        "candidate_labels": [
+            {"code": "PRIVATE_CODE", "name": "Target"}, {"code": "N1", "name": "Alpha"},
+            {"code": "N2", "name": "Beta"}, {"code": "N3", "name": "Gamma"},
+        ],
+    }
+    sft_messages = [
+        {"role": "tool_response", "content": json.dumps({"status": "success", "results": [{"class_name": "Target"}]})},
+    ]
+    messages = closed_finalization_messages(sample, image, sft_messages)
+    serialized = json.dumps(messages, ensure_ascii=False)
+    assert len(messages) == 2 and all(message.get("role") != "assistant" for message in messages)
+    assert "PRIVATE_CODE" not in serialized and "correct_option" not in serialized
+    assert "A. Alpha" in serialized and "D. Target" in serialized
+    assert "此会话没有工具" in serialized and "公开检索证据" in serialized
 
 
 def test_shared_exposed_images_include_prior_preflight_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
