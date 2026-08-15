@@ -13,7 +13,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from tools.rag_distill.catalog_and_isolation import audited_catalog, candidate_labels, evaluation_images, exposed_images
+from tools.rag_distill.catalog_and_isolation import audited_catalog, candidate_labels, evaluation_images, exposed_images, unknown_delivery_image_hashes
 from src.agrinet.data.retrieval_strategies import assign_attempt_strategy
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,9 +67,15 @@ def main() -> None:
             })
     current = read(STRICT / "rag.current_contract.jsonl") + read(STRICT / "direct.current_contract.jsonl")
     forbidden = set(exposed_images()) | set(evaluation_images()) | {image(row) for row in current}
+    unknown_hashes = unknown_delivery_image_hashes()
     existing_cells = Counter(cell(row) for row in read(STRICT / "rag.current_contract.jsonl"))
     deficits = {name: max(0, required - existing_cells.get(name, 0)) for name, required in CELLS.items()}
-    fresh = [row for row in preflight if image(row) not in forbidden and row.get("preflight_eligible")]
+    fresh = [
+        row for row in preflight
+        if image(row) not in forbidden
+        and row.get("preflight_eligible")
+        and hashlib.sha256((ROOT / image(row)).read_bytes()).hexdigest() not in unknown_hashes
+    ]
     pools: dict[str, list[dict[str, Any]]] = {}
     for row in fresh:
         pools.setdefault(cell(row), []).append(row)
@@ -150,6 +156,7 @@ def main() -> None:
             str(SUPPLEMENTAL_PREFLIGHT.relative_to(ROOT)) if SUPPLEMENTAL_PREFLIGHT.exists() else None,
         ],
         "fresh_exclusion_policy": "exposed plans/candidates + evaluation images + current RAG/Direct images",
+        "unknown_delivery_image_hashes_excluded": len(unknown_hashes),
         "preflight_rows": len(preflight), "fresh_preflight_eligible_rows": len(fresh),
         "selected_target_rows": len(selected), "required_target_rows": sum(deficits.values()),
         "within_cell_selection": "seeded_uniform_random_within_fresh_eligible_cell",

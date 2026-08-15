@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is authorized. Round141 successfully accepted one fresh Chinese Option/disease trajectory at API3 after its real-image preflight passed, bringing the strict view to 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct to 32/32; 9 RAG rows remain. Round138 and Round140 remain non-replayable `unknown_delivery` evidence, APIPlus returns HTTP 403 to the current credential, Round135 stopped before delivery, and Round136 was correctly rejected on the final-answer contract. The reserve allocates by remaining cell deficit with seed `20260815` within each fresh eligible cell. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is authorized. Round141 successfully accepted one fresh Chinese Option/disease trajectory at API3 after its real-image preflight passed, bringing the strict view to 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct to 32/32; 9 RAG rows remain. Rebuilt plans now permanently exclude query-image hashes from every unknown delivery, including preflight-only unknowns, so Round138/140 cannot silently re-enter the reserve. APIPlus returns HTTP 403 to the current credential, Round135 stopped before delivery, and Round136 was correctly rejected on the final-answer contract. The reserve allocates by remaining cell deficit with seed `20260815` within each fresh eligible cell. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 

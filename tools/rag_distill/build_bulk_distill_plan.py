@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from agrinet.data.retrieval_strategies import assign_attempt_strategy
-from tools.rag_distill.catalog_and_isolation import evaluation_images, exposed_images
+from tools.rag_distill.catalog_and_isolation import evaluation_images, exposed_images, unknown_delivery_image_hashes
 
 ROOT = Path(__file__).resolve().parents[2]
 STRICT = ROOT / "outputs/experiments/rag_sft_iteration/strict_candidate_view_v1"
@@ -42,6 +42,7 @@ def main() -> None:
     current = current_rag + current_direct
     current_images = {image(row) for row in current}
     forbidden = set(exposed_images()) | set(evaluation_images()) | current_images
+    unknown_hashes = unknown_delivery_image_hashes()
     counts = Counter(cell(row) for row in current_rag)
     deficits = {name: max(0, required - counts.get(name, 0)) for name, required in REQUIRED.items()}
     deficient_cells = {name for name, deficit in deficits.items() if deficit}
@@ -51,6 +52,7 @@ def main() -> None:
         if cell(row) in deficient_cells
         and image(row) not in forbidden
         and row.get("preflight_eligible")
+        and hashlib.sha256((ROOT / image(row)).read_bytes()).hexdigest() not in unknown_hashes
     ]
     fresh.sort(key=lambda row: (cell(row), int(row.get("preflight_target_rank") or 99), -float(row.get("preflight_target_score") or 0), str(row.get("target_id"))))
     if len({image(row) for row in fresh}) != len(fresh):
@@ -113,6 +115,7 @@ def main() -> None:
         },
         "source_targets": str(STAGE_A.relative_to(ROOT)),
         "fresh_exclusion_policy": "exposed plans/candidates + evaluation images + current RAG/Direct images",
+        "unknown_delivery_image_hashes_excluded": len(unknown_hashes),
         "current_rag_rows": len(current_rag),
         "current_direct_rows": len(current_direct),
         "final_rag_rows_needed": sum(deficits.values()),

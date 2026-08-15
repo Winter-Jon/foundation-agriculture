@@ -7,6 +7,7 @@ not call a teacher, Milvus, or mutate a corpus.
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -93,6 +94,35 @@ def exposed_images() -> set[str]:
             if image := sample_image(row):
                 images.add(image)
     return images
+
+
+def unknown_delivery_image_hashes() -> set[str]:
+    """Return query-image hashes from every non-replayable unknown delivery.
+
+    A Pilot records its image in raw traces, but an unknown real-image
+    preflight has no trajectory JSONL.  Its bounded preflight report still
+    records the query SHA-256, which is sufficient to keep that image out of
+    every regenerated target plan.
+    """
+    hashes: set[str] = set()
+    candidates = ROOT / "outputs/experiments/rag_sft_iteration/candidates"
+    for status_path in candidates.glob("*/run_status.json"):
+        try:
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if status.get("delivery_status") != "unknown":
+            continue
+        run_id = status_path.parent.name.split("-standard-", 1)[0]
+        for report_path in (ROOT / "outputs/runs/rag").glob(f"*{run_id}*/logs/preflight_report.json"):
+            try:
+                report = json.loads(report_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            image_hash = str(report.get("query_image_sha256") or "")
+            if image_hash:
+                hashes.add(image_hash)
+    return hashes
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
