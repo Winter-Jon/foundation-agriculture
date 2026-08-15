@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is paused after Round143 added a third API3 unknown delivery: its fresh English Option/disease real-image preflight returned HTTP 502 after POST. Its target is non-replayable and will be excluded by the hash guard. Round141 remains one verified success, bringing the strict view to 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct to 32/32; 9 RAG rows remain. The newly configured Micu main route is network-reachable and decryptable but its endpoint preflight returns HTTP 403 to the supplied key; it did not send an image or create an unknown delivery. APIPlus likewise returns 403, Round135 stopped before delivery, and Round136/Round142 were correctly rejected by strict validators. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is paused. Round146 shows the Micu SLB route is reachable and decryptable but currently rate-limited for `gpt-5.6-luna` (HTTP 503 after the real-image POST), therefore it is another non-replayable unknown delivery. Round143 remains the third API3 unknown delivery; Round141 is the only verified recent success, leaving 25 RAG rows / 23 of 32 Stage-A quota-usable and Direct 32/32. Micu main and APIPlus return 403, Round135 stopped before delivery, and Round136/Round142 were correctly rejected by strict validators. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 
