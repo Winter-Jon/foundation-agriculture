@@ -150,7 +150,7 @@ def test_approval_only_rows_require_matching_stage_a_option_scope() -> None:
         "approval_scope": "stage_a_option_calibration",
         "trajectory_mode": "standard", "generation_route": "blind_evidence",
         "label_visible_to_teacher": False, "question_type": "option",
-        "candidate_index": 1, "reserve": False,
+        "candidate_index": 1, "reserve": True,
     }
     with pytest.raises(RuntimeError, match="explicit --approval-scope"):
         validate_approval_scope([row], "none")

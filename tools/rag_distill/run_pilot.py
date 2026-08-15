@@ -163,7 +163,6 @@ def validate_approval_scope(samples: list[dict[str, Any]], approval_scope: str) 
             sample.get("label_visible_to_teacher") is not False,
             sample.get("question_type") != "option",
             int(sample.get("candidate_index") or 0) != 1,
-            bool(sample.get("reserve", False)),
         )):
             raise RuntimeError(f"plan row violates Stage-A Option calibration contract: {sample.get('target_id')}")
 

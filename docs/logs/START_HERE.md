@@ -25,7 +25,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-Stage-A Option calibration is authorized for the six current first-attempt targets, but Round135's first real-image preflight stopped before any teacher request because the configured endpoint was network-unreachable. It is a complete transport failure, not unknown delivery and not a Pilot result; do not replay it until endpoint connectivity is independently restored. The reserve still allocates exactly by remaining cell deficit, then uses a documented seed (`20260815`) for uniform selection within each fresh eligible cell. Option and deferred Open files remain physically separated, and the runner enforces their scopes before provider access. Do not freeze, SFT, or formally evaluate without their separate approvals.
+Stage-A Option calibration is authorized for the six current first-attempt targets. Round135's first preflight stopped before any teacher request because its endpoint was network-unreachable; Round136 then completed at the reachable API3 endpoint but was correctly rejected on the final-answer contract. The reserve allocates exactly by remaining cell deficit, then uses seed `20260815` for uniform selection within each fresh eligible cell. A source-pool `reserve` flag is provenance, not a retry: all released calibration rows remain `candidate_index=1`. Option and deferred Open files remain physically separated, and the runner enforces their scopes before provider access. Do not freeze, SFT, or formally evaluate without their separate approvals.
 
 ## Records and archive
 

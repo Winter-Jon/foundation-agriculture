@@ -92,7 +92,7 @@ def main() -> None:
                 used_images.add(image(row))
                 if len(chosen) >= need:
                     break
-        for index, row in enumerate(chosen, 1):
+        for selection_order, row in enumerate(chosen, 1):
             enriched = dict(row)
             # The Milvus preflight audit is retrieval-only and does not carry
             # the public answer contract. Reconstruct that contract here from
@@ -105,7 +105,7 @@ def main() -> None:
                 if correct_option not in "ABCD":
                     # Deterministic per-cell balancing is assigned in the
                     # selected order; do not infer or rewrite it later.
-                    correct_option = "ABCD"[(index - 1) % 4]
+                    correct_option = "ABCD"[(selection_order - 1) % 4]
                 enriched["candidate_labels"] = candidate_labels(
                     classes, target_code, str(enriched.get("task_domain") or ""), correct_option
                 )
@@ -120,8 +120,12 @@ def main() -> None:
             enriched["generation_route"] = "blind_evidence"
             enriched["label_visible_to_teacher"] = False
             enriched["approval_only"] = True
-            enriched["candidate_index"] = index
-            enriched = assign_attempt_strategy(enriched, index)
+            # Target selection order and teacher attempt index are different
+            # axes.  Every target emitted here is the first teacher attempt;
+            # retries are materialized later by the bulk planner.
+            enriched["target_selection_order"] = selection_order
+            enriched["candidate_index"] = 1
+            enriched = assign_attempt_strategy(enriched, 1)
             selected.append(enriched)
         cell_report[name] = {
             "required": CELLS[name], "existing": existing_cells.get(name, 0),
