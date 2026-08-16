@@ -106,6 +106,36 @@ def assert_single_use_freeze_available(config: dict) -> None:
         )
 
 
+def rag_diagnostic_command(config: dict) -> list[str]:
+    """Build a bounded local RAG diagnostic command from explicit parameters.
+
+    The legacy runner owns its local Milvus/SGLang lifecycle.  Keeping its
+    parameters in the registered experiment makes a diagnostic auditable while
+    avoiding an ambiguous ad-hoc shell launch.
+    """
+    parameters = config.get("parameters", {})
+    required = ("model", "manifest", "output_dir", "cuda_visible_devices")
+    missing = [key for key in required if not isinstance(parameters.get(key), str) or not parameters[key]]
+    if missing:
+        raise ConfigError(f"rag diagnostic missing parameters: {', '.join(missing)}")
+    environment = {
+        "MODEL_PATH": parameters["model"],
+        "MANIFEST": parameters["manifest"],
+        "OUT_DIR": parameters["output_dir"],
+        "CUDA_VISIBLE_DEVICES": parameters["cuda_visible_devices"],
+        "DISABLE_FORCED_FIRST_CALL": "1",
+    }
+    optional = {
+        "limit": "LIMIT", "offset": "OFFSET", "max_new_tokens": "MAX_NEW_TOKENS",
+        "max_tool_turns": "MAX_TOOL_TURNS", "top_k": "TOP_K", "request_timeout": "REQUEST_TIMEOUT",
+        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
+    }
+    for key, env_key in optional.items():
+        if key in parameters:
+            environment[env_key] = str(parameters[key])
+    return ["env", *[f"{key}={value}" for key, value in environment.items()], "bash", "scripts/vlm/run_local_rag_sft_eval.sh"]
+
+
 @app.command("train")
 def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) -> None:
     """Run or preview ms-swift training from a registered explicit config."""
@@ -176,6 +206,11 @@ def submit(
         if not selected:
             typer.echo("error: evaluate requires --dataset or parameters.dataset", err=True); raise typer.Exit(2)
         command = VLMEvalKitAdapter().evaluate_command(str(root / config["inputs"]["baseline_model"]), str(selected), root / "outputs/evaluations" / experiment_id)
+    elif operation == "rag-diagnostic":
+        try:
+            command = rag_diagnostic_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
     env = local_training_env(config) if operation == "train" else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
