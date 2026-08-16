@@ -57,7 +57,7 @@ def row_key(row: dict[str, Any]) -> tuple[str, str]:
     return (str(row.get("sample_id") or ""), row_image(row))
 
 
-def choose_rag(rows: list[dict[str, Any]], per_cell: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+def choose_rag(rows: list[dict[str, Any]], per_cell: int, surplus_offset: int = 0) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         buckets[row_cell(row)].append(row)
@@ -68,10 +68,15 @@ def choose_rag(rows: list[dict[str, Any]], per_cell: int) -> tuple[list[dict[str
         candidates = sorted(buckets[cell], key=row_key)
         if len(candidates) < per_cell:
             raise ValueError(f"RAG cell {cell} has {len(candidates)} rows; need {per_cell}")
-        chosen, surplus = candidates[:per_cell], candidates[per_cell:]
+        # An authorized nonzero offset rotates only cells that genuinely have
+        # surplus.  It cannot alter sparse cells, quotas, or validators.
+        offset = surplus_offset % len(candidates) if len(candidates) > per_cell else 0
+        rotated = candidates[offset:] + candidates[:offset]
+        chosen, surplus = rotated[:per_cell], rotated[per_cell:]
         selected.extend(chosen)
         coverage[cell] = {
             "available": len(candidates),
+            "selection_offset": offset,
             "selected_sample_ids": [str(row.get("sample_id")) for row in chosen],
             "excluded_sample_ids": [str(row.get("sample_id")) for row in surplus],
         }
@@ -102,14 +107,14 @@ def validate_selected(rag: list[dict[str, Any]], direct: list[dict[str, Any]]) -
     return errors
 
 
-def build(rag_path: Path, direct_path: Path, destination: Path, per_cell: int = 4) -> dict[str, Any]:
+def build(rag_path: Path, direct_path: Path, destination: Path, per_cell: int = 4, surplus_offset: int = 0) -> dict[str, Any]:
     rag_path = rag_path.resolve()
     direct_path = direct_path.resolve()
     destination = destination.resolve()
     rag_input, direct = read_jsonl(rag_path), read_jsonl(direct_path)
     if len(direct) != 32:
         raise ValueError(f"Direct input must have exactly 32 rows, got {len(direct)}")
-    rag, excluded, coverage = choose_rag(rag_input, per_cell)
+    rag, excluded, coverage = choose_rag(rag_input, per_cell, surplus_offset)
     if len(rag) != len(STANDARD_CELLS) * per_cell:
         raise ValueError(f"selected RAG has {len(rag)} rows, expected 32")
     errors = validate_selected(rag, direct)
@@ -123,7 +128,8 @@ def build(rag_path: Path, direct_path: Path, destination: Path, per_cell: int = 
         "artifact_id": destination.name,
         "data_sha256": data_hash,
         "rows": 64, "rag_rows": 32, "direct_rows": 32,
-        "selection_policy": "four rows per standard cell, deterministic sample_id then query-image sort",
+        "selection_policy": "four rows per standard cell, deterministic sample_id then query-image sort with authorized surplus rotation",
+        "surplus_offset": surplus_offset,
         "source_rag": str(rag_path.relative_to(ROOT)),
         "source_direct": str(direct_path.relative_to(ROOT)),
         "source_rag_sha256": sha256_bytes(rag_path.read_bytes()),
@@ -166,8 +172,9 @@ def main() -> int:
     parser.add_argument("--rag-file", type=Path, required=True)
     parser.add_argument("--direct-file", type=Path, required=True)
     parser.add_argument("--destination", type=Path, required=True)
+    parser.add_argument("--surplus-offset", type=int, default=0, help="Authorized deterministic rotation for cells with surplus rows only.")
     args = parser.parse_args()
-    print(json.dumps(build(args.rag_file, args.direct_file, args.destination), ensure_ascii=False))
+    print(json.dumps(build(args.rag_file, args.direct_file, args.destination, surplus_offset=args.surplus_offset), ensure_ascii=False))
     return 0
 
 

@@ -681,6 +681,29 @@ def test_validation_freeze_is_balanced_deterministic_and_immutable(tmp_path: Pat
         builder.build(rag_path, direct_path, destination)
 
 
+def test_validation_freeze_surplus_rotation_changes_only_surplus_cells(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tools.rag_distill.build_validation_freeze as builder
+
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    monkeypatch.setattr(builder, "evaluation_images", lambda: set())
+    monkeypatch.setattr(builder, "validate_sft_row", lambda row: ([], Counter()))
+    monkeypatch.setattr(builder, "direct_errors", lambda row, index: [])
+    rag_path, direct_path = tmp_path / "rag.jsonl", tmp_path / "direct.jsonl"
+    rag = []
+    for cell in builder.STANDARD_CELLS:
+        mode, question_type, language, domain = cell.split("/")
+        for index in range(5 if cell == "standard/open/en/disease" else 4):
+            rag.append({"sample_id": f"{cell}-{index}", "images": [f"q/{cell}/{index}.jpg"], "metadata": {"trajectory_mode": mode, "question_type": question_type, "language": language, "task_domain": domain}})
+    direct = [{"sample_id": f"direct-{index}", "images": [f"direct/{index}.jpg"], "metadata": {}} for index in range(32)]
+    write_jsonl(rag_path, rag); write_jsonl(direct_path, direct)
+    first = builder.build(rag_path, direct_path, tmp_path / "freeze0")
+    second = builder.build(rag_path, direct_path, tmp_path / "freeze1", surplus_offset=1)
+    assert first["data_sha256"] != second["data_sha256"]
+    report = json.loads((tmp_path / "freeze1" / "selection_report.json").read_text())
+    assert report["rag_cell_coverage"]["standard/open/en/disease"]["selection_offset"] == 1
+    assert all(details["selection_offset"] == 0 for cell, details in report["rag_cell_coverage"].items() if cell != "standard/open/en/disease")
+
+
 def test_validation_freeze_rejects_evaluation_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import tools.rag_distill.build_validation_freeze as builder
 
