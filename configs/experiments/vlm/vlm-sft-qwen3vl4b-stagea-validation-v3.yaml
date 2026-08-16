@@ -1,0 +1,32 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-stagea-validation-v3
+display_name:
+  en: Stage-A v3 64-row RAG and Direct validation SFT
+  zh: Stage-A v3 64 行 RAG 与 Direct 验证 SFT
+domain: vlm
+task: sft
+description: One SFT only for immutable Stage-A validation freeze 557d1880e7382ce3e47d27755caf0d108255a3f538785eccc7a3ad86941e5300.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-disease-pest-sft
+  data: data/rag-sft-stagea-validation-v3
+  runtime: runtime/local-a800-4gpu-train
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_stagea_validation_v3_sft.yaml
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  immutable_freeze: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/manifest.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880
+parameters:
+  dataset: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/data.jsonl
+  freeze_sha256: 557d1880e7382ce3e47d27755caf0d108255a3f538785eccc7a3ad86941e5300
+  max_length: 8192
+  epochs: 8
+  learning_rate: 1.0e-5
+  tuner: full
+  allowed_sft_runs_for_freeze_hash: 1
+  local_launch:
+    cuda_visible_devices: "0,1,2,3"
+    nproc_per_node: 4
+tags: [qwen3-vl, rag-sft, stage-a, validation, checkpoint-165, immutable-freeze]
