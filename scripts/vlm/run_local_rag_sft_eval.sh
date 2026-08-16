@@ -62,8 +62,12 @@ cleanup() {
   # `wait`/signal cleanup must never replace a successful metrics-producing run
   # with a spurious non-zero wrapper status.
   trap - EXIT INT TERM
+  # ``swift deploy --infer_backend sglang`` creates scheduler children.  A
+  # parent-only kill can leave those children resident on the GPUs and make a
+  # later diagnostic fail its memory-balance check.  Each service is started in
+  # its own session below, so terminate the full service process group.
   for pid in "${SGLANG_PID:-}" "${RAG_PID:-}"; do
-    [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
+    [[ -n "$pid" ]] && kill -TERM -- "-$pid" 2>/dev/null || true
   done
   wait "${SGLANG_PID:-}" 2>/dev/null || true
   wait "${RAG_PID:-}" 2>/dev/null || true
@@ -91,14 +95,14 @@ wait_ok() {
 }
 
 echo "Starting CPU Milvus RAG service on $RAG_PORT"
-"$PYTHON_BIN" tools/milvus/search_api.py --host 127.0.0.1 --port "$RAG_PORT" \
+setsid "$PYTHON_BIN" tools/milvus/search_api.py --host 127.0.0.1 --port "$RAG_PORT" \
   --device cpu --mode lite --lite-db "$JOB_DB" --model-name "$RAG_MODEL" \
   >"$RAG_STDOUT" 2>"$RAG_STDERR" &
 RAG_PID=$!
 wait_ok RAG "http://127.0.0.1:$RAG_PORT/health" "$RAG_PID" 180
 
 echo "Starting SGLang on GPUs $CUDA_VISIBLE_DEVICES at $SGLANG_PORT"
-"$PYTHON_BIN" -m swift.cli.main deploy --model "$MODEL_PATH" --infer_backend sglang \
+setsid "$PYTHON_BIN" -m swift.cli.main deploy --model "$MODEL_PATH" --infer_backend sglang \
   --sglang_tp_size "$SGLANG_TP_SIZE" --sglang_context_length 8192 \
   --sglang_mem_fraction_static "$SGLANG_MEM_FRACTION_STATIC" \
   --sglang_disable_cuda_graph true --max_new_tokens "$MAX_NEW_TOKENS" \
