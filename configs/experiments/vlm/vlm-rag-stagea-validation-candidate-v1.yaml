@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: vlm-rag-stagea-validation-candidate-v1
+display_name:
+  en: Stage-A v3 candidate 192-row forced-off RAG diagnostic
+  zh: Stage-A v3 候选模型 192 行关闭强制检索 RAG 诊断
+domain: vlm
+task: rag_diagnostic
+description: Fixed internal matched diagnostic for checkpoint-16; not the formal 618-row evaluation.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-stagea-validation-v3
+  data: data/rag-sft-stagea-matched-diagnostic-v1
+  runtime: runtime/local-a800-2gpu-eval
+runtime_profile: runtime/local-a800-2gpu-eval
+inputs:
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880/v0-20260816-105246/checkpoint-16
+  diagnostic_manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+outputs:
+  evaluation: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_candidate192
+parameters:
+  model: outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880/v0-20260816-105246/checkpoint-16
+  manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+  output_dir: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_candidate192
+  cuda_visible_devices: "0,1"
+  max_new_tokens: 512
+  max_tool_turns: 3
+  top_k: 3
+  request_timeout: 1200
+  sglang_tp_size: 2
+  sglang_mem_fraction_static: 0.7
+tags: [qwen3-vl, rag-sft, stage-a, matched-diagnostic, forced-retrieval-off, checkpoint-16]
