@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-stagea-validation-baseline-v1
+display_name:
+  en: Stage-A checkpoint-165 192-row Direct retention baseline
+  zh: Stage-A checkpoint-165 192 行 Direct 保留基线
+domain: vlm
+task: direct_retention
+description: Matched public-image-only checkpoint-165 Direct baseline; start after candidate Direct audit passes.
+lifecycle: active
+components:
+  model: models/qwen3-vl-4b-checkpoint-165
+  data: data/rag-sft-stagea-matched-diagnostic-v1
+  runtime: runtime/local-a800-2gpu-eval
+runtime_profile: runtime/local-a800-2gpu-eval
+inputs:
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  diagnostic_manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+outputs:
+  evaluation: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_checkpoint165_direct192
+parameters:
+  model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+  output_dir: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_checkpoint165_direct192
+  cuda_visible_devices: "2,3"
+  max_new_tokens: 512
+  request_timeout: 1200
+  sglang_tp_size: 2
+  sglang_mem_fraction_static: 0.7
+tags: [qwen3-vl, rag-sft, stage-a, checkpoint-165, direct-retention, no-tool]
