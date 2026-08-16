@@ -16,11 +16,11 @@ inputs:
   baseline_model: outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880/v0-20260816-105246/checkpoint-16
   diagnostic_manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
 outputs:
-  evaluation: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_direct_candidate192
+  evaluation: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_direct_candidate192_v2
 parameters:
   model: outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880/v0-20260816-105246/checkpoint-16
   manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
-  output_dir: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_direct_candidate192
+  output_dir: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_v3_direct_candidate192_v2
   cuda_visible_devices: "2,3"
   max_new_tokens: 512
   request_timeout: 1200

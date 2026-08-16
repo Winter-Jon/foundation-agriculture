@@ -70,8 +70,12 @@ def _resolve(path: str, repo_root: Path) -> Path:
 def _eval_sample(row: dict[str, Any], image_path: Path) -> dict[str, Any]:
     label_aliases = [str(x).strip() for x in (row.get("label_aliases") or []) if str(x).strip()]
     label_name_zh = next((x for x in label_aliases if any('\u4e00' <= ch <= '\u9fff' for ch in x)), "")
-    candidate_names = [str(x).strip() for x in (row.get("candidate_names") or []) if str(x).strip()]
-    candidate_codes = [str(x).strip() for x in (row.get("candidate_codes") or []) if str(x).strip()]
+    # Evaluation manifests store public Option choices as option_* fields,
+    # whereas distillation plans use candidate_* fields.  Preserve the public
+    # manifest order exactly; never derive or rearrange choices from a hidden
+    # label at evaluation time.
+    candidate_names = [str(x).strip() for x in (row.get("candidate_names") or row.get("option_names") or []) if str(x).strip()]
+    candidate_codes = [str(x).strip() for x in (row.get("candidate_codes") or row.get("option_codes") or []) if str(x).strip()]
     candidate_labels = [
         {"code": code, "name": name}
         for code, name in zip(candidate_codes, candidate_names)
