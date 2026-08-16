@@ -57,6 +57,21 @@ def row_key(row: dict[str, Any]) -> tuple[str, str]:
     return (str(row.get("sample_id") or ""), row_image(row))
 
 
+def serialize_rag_for_training(row: dict[str, Any]) -> dict[str, Any]:
+    """Retain only the query image required by the sole user placeholder.
+
+    Retrieved reference evidence remains in the audited tool-response messages.
+    Passing reference image paths without corresponding ``<image>`` placeholders
+    violates Qwen3-VL's multimodal position-index contract.
+    """
+    item = dict(row)
+    item["images"] = [row_image(row)]
+    metadata = dict(item.get("metadata") or {})
+    metadata["training_image_serialization"] = "query_image_only_matches_one_user_placeholder"
+    item["metadata"] = metadata
+    return item
+
+
 def choose_rag(rows: list[dict[str, Any]], per_cell: int, surplus_offset: int = 0) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -101,6 +116,16 @@ def validate_selected(rag: list[dict[str, Any]], direct: list[dict[str, Any]]) -
         errors.append("duplicate query image in freeze")
     if len(sample_ids) != len(set(sample_ids)):
         errors.append("duplicate RAG sample_id in freeze")
+    for row in rag + direct:
+        messages = row.get("messages")
+        # The strict RAG and Direct validators independently require the
+        # messages contract.  This conditional keeps the structural helper
+        # usable with minimal synthetic rows in tests.
+        if not isinstance(messages, list) or not messages:
+            continue
+        placeholders = sum(str(message.get("content") or "").count("<image>") for message in messages if isinstance(message, dict))
+        if len(row.get("images") or []) != placeholders:
+            errors.append(f"image placeholder mismatch for {row.get('sample_id')}")
     overlap = set(images) & evaluation_images()
     if overlap:
         errors.append(f"evaluation image overlap: {sorted(overlap)[:5]}")
@@ -115,6 +140,7 @@ def build(rag_path: Path, direct_path: Path, destination: Path, per_cell: int = 
     if len(direct) != 32:
         raise ValueError(f"Direct input must have exactly 32 rows, got {len(direct)}")
     rag, excluded, coverage = choose_rag(rag_input, per_cell, surplus_offset)
+    rag = [serialize_rag_for_training(row) for row in rag]
     if len(rag) != len(STANDARD_CELLS) * per_cell:
         raise ValueError(f"selected RAG has {len(rag)} rows, expected 32")
     errors = validate_selected(rag, direct)

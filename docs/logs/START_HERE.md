@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-16 02:01:11 CST
+Last updated: 2026-08-16 08:31:12 CST
 
 ## Current focus
 
@@ -11,7 +11,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 - Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
 - The active scope is Stage A standard/Blind only. Its 32 strict `standard` RAG + 32 current-contract Direct corpus is a protocol-and-signal validation SFT, not the final training scale. A robust positive matched result automatically releases a larger balanced Blind rejection-sampling loop and one final internal SFT; formal 618 evaluation remains separately approved. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
 - Rounds154--157 strictly accept the four remaining Chinese Open rows on Terra. The strict view has 34 raw current-contract RAG candidates, exactly 32 quota-usable standard RAG rows (four in every cell), and 32 Direct rows. The immutable 64-row freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` passed RAG and Direct validation.
-- Its one permitted checkpoint-165 SFT launch failed before dataset loading because local ms-swift combined `deepspeed: zero3` with an eight-GPU `device_map` process. No model checkpoint was produced; this freeze must not be retrained.
+- The first freeze failed before data loading due to local DeepSpeed/device-map startup and remains non-replayable. The explicitly authorized v2 freeze `0676f670442b8d773883c5e385670771235ee1dccd66c88b1d9276d3c70f262c` fixed that launch path but failed at its first Qwen3-VL multimodal batch (`Train 0/16`) with a RoPE position-index shape mismatch. Neither freeze produced a checkpoint; both are non-replayable.
 - Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
 - Sampling and the two internal SFT stages are authorized by the active control loop. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
@@ -26,7 +26,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-The validation SFT is stopped by a configuration hard gate. The local launcher now has a tested explicit-DPP contract (equal visible GPUs and workers) for future freezes, but freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` is mechanically single-use and cannot be retrained. Do not sample, retrain, scale, or run formal 618; a future training proposal must use a genuinely new reviewed freeze.
+The validation SFT is stopped by a data-collator hard gate. The DDP launcher is verified, but both single-use freezes are mechanically non-replayable. Do not sample, retrain, scale, or run formal 618. The only safe next work is a local reproduction and reviewed fix for the Qwen3-VL position-index serialization mismatch; another freeze requires a new explicit authorization.
 
 ## Records and archive
 

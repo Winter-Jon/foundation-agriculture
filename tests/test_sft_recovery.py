@@ -704,6 +704,27 @@ def test_validation_freeze_surplus_rotation_changes_only_surplus_cells(tmp_path:
     assert all(details["selection_offset"] == 0 for cell, details in report["rag_cell_coverage"].items() if cell != "standard/open/en/disease")
 
 
+def test_validation_freeze_serializes_rag_to_query_image_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tools.rag_distill.build_validation_freeze as builder
+
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    monkeypatch.setattr(builder, "evaluation_images", lambda: set())
+    monkeypatch.setattr(builder, "validate_sft_row", lambda row: ([], Counter()))
+    monkeypatch.setattr(builder, "direct_errors", lambda row, index: [])
+    rag_path, direct_path = tmp_path / "rag.jsonl", tmp_path / "direct.jsonl"
+    rag = []
+    for cell in builder.STANDARD_CELLS:
+        mode, question_type, language, domain = cell.split("/")
+        for index in range(4):
+            rag.append({"sample_id": f"r-{len(rag)}", "images": [f"q/{len(rag)}.jpg", f"ref/{len(rag)}.jpg"], "messages": [{"role": "user", "content": "<image>\nquestion"}], "metadata": {"query_image": f"q/{len(rag)}.jpg", "trajectory_mode": mode, "question_type": question_type, "language": language, "task_domain": domain}})
+    direct = [{"sample_id": f"d-{index}", "images": [f"d/{index}.jpg"], "messages": [{"role": "user", "content": "<image>"}], "metadata": {}} for index in range(32)]
+    write_jsonl(rag_path, rag); write_jsonl(direct_path, direct)
+    builder.build(rag_path, direct_path, tmp_path / "freeze")
+    frozen = [json.loads(line) for line in (tmp_path / "freeze" / "rag.jsonl").read_text().splitlines()]
+    assert all(len(row["images"]) == 1 for row in frozen)
+    assert all(row["metadata"]["training_image_serialization"] == "query_image_only_matches_one_user_placeholder" for row in frozen)
+
+
 def test_validation_freeze_rejects_evaluation_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import tools.rag_distill.build_validation_freeze as builder
 
