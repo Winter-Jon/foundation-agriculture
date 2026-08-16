@@ -48,6 +48,14 @@ parameters:
     smoke_eval_rows: 32
     validation_matched_eval_rows: 192
     full_eval_rows: 618
+  diagnostic_gates:
+    # Declared before reading the matched candidate result.  Direct retention
+    # is evaluated with the same held-out manifest but no retrieval/tool
+    # context, paired against checkpoint-165.
+    rag_targeted_min_gain_pp: 3.0
+    paired_bootstrap_lower_bound_pp: 0.0
+    direct_retention_min_overall_delta_pp: -3.0
+    direct_retention_min_major_subgroup_delta_pp: -8.0
   # Standing user authorization: Codex may autonomously choose and execute
   # bounded Pilot, freeze, internal SFT, diagnostic, and scaled-collection
   # actions when their stated hard gates permit.  Do not request per-step
