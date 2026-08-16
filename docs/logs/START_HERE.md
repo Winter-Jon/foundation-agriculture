@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-16 08:31:12 CST
+Last updated: 2026-08-16 14:32:00 CST
 
 ## Current focus
 
@@ -8,17 +8,17 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Verified state
 
-- Final success criterion: a separately approved forced-retrieval-off Milvus evaluation on 618 rows, above checkpoint-165's 65.21% without unacceptable subgroup regression. It has **not** been reached.
-- The active scope is Stage A standard/Blind only. Its 32 strict `standard` RAG + 32 current-contract Direct corpus is a protocol-and-signal validation SFT, not the final training scale. A robust positive matched result automatically releases a larger balanced Blind rejection-sampling loop and one final internal SFT; formal 618 evaluation remains separately approved. RAG is stratified across eight Open/Option × English/Chinese × disease/pest cells, with exactly four accepted rows per cell; collection stops per cell at four.
-- Rounds154--157 strictly accept the four remaining Chinese Open rows on Terra. The strict view has 34 raw current-contract RAG candidates, exactly 32 quota-usable standard RAG rows (four in every cell), and 32 Direct rows. The immutable 64-row freeze `d3cb9c4b5def5efab66f4dd7a514782cb293c54d55792120d133456ced859f8e` passed RAG and Direct validation.
-- The first freeze failed before data loading due to local DeepSpeed/device-map startup and remains non-replayable. The explicitly authorized v2 freeze `0676f670442b8d773883c5e385670771235ee1dccd66c88b1d9276d3c70f262c` fixed that launch path but failed at its first Qwen3-VL multimodal batch (`Train 0/16`) with a RoPE position-index shape mismatch. Neither freeze produced a checkpoint; both are non-replayable.
-- Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
-- Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
-- Standing authorization: I autonomously decide and execute bounded preflight/Pilot, strict validation, immutable freezes, internal SFT, smoke and matched diagnostics, and gated scaled rejection sampling. I do not ask for per-step approval; every action remains constrained by hard gates, image isolation, and one-run-per-freeze. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
+- The Stage-A v3 immutable freeze passed its RAG/Direct data gates: 32 strict standard RAG + 32 current-contract Direct rows, hash `557d1880e7382ce3e47d27755caf0d108255a3f538785eccc7a3ad86941e5300`. The checkpoint-165 SFT completed successfully, producing candidate `outputs/vlm_sft/qwen3_vl_4b_stagea_validation_sft_557d1880/v0-20260816-105246/checkpoint-16`.
+- The fixed internal 192-row matched diagnostic is Blind-safe and has zero training-image overlap. Its manifest hash is `1b967f23470e89c881a7f906f34e247b4f2f74a613b5051a6e98f2c3b33134d2`; it is not the formal 618 evaluation.
+- Corrected candidate RAG and Direct 192-row diagnostics completed protocol-clean. Both checkpoint-165 baselines completed on the same manifest (192/192, exit 0). v3 fails both effect gates: RAG candidate 35.94% vs. 55.73% baseline, delta −19.79pp (95% bootstrap CI [−28.13, −11.46]); Direct candidate 36.98% vs. 57.81%, delta −20.83pp (95% CI [−28.65, −13.02]). RAG Option is especially negative (−38.54pp). Thus v3 cannot release scaled collection or another SFT.
+- Standing authorization is durable: Codex autonomously decides and executes bounded preflight/Pilot, strict validation, immutable freezes, internal SFT, smoke/matched diagnostics, paired review, and hard-gated scaled Blind rejection sampling. No per-step authorization is required. Formal 618 evaluation, base-model changes, and evaluation-protocol changes remain separately authorized. Unknown remote delivery remains fail-closed and is never replayed.
 
 ## Stable evidence
 
-- State and strict gate: `outputs/experiments/rag_sft_iteration/state.json`, `outputs/experiments/rag_sft_iteration/reviews/strict_candidate_view_v1_gate.json`
+- v3 freeze/SFT: `outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/`, `outputs/runs/vlm/vlm-sft-qwen3vl4b-stagea-validation-v3/20260816T105228-393a45e1-a01/`
+- Matched diagnostic: `outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl`
+- Candidate and baseline diagnostics: `outputs/runs/vlm/vlm-rag-stagea-validation-candidate-v1/20260816T115555-b3344350-a01/`, `outputs/runs/vlm/vlm-direct-stagea-validation-candidate-v1/20260816T115603-b3344350-a01/`, `outputs/runs/vlm/vlm-rag-stagea-validation-baseline-v1/20260816T125052-b3344350-a01/`, `outputs/runs/vlm/vlm-direct-stagea-validation-baseline-v1/20260816T125052-b3344350-a01/`; paired reviews: `outputs/experiments/rag_sft_iteration/reviews/stagea_v3_rag_paired_review.json`, `outputs/experiments/rag_sft_iteration/reviews/stagea_v3_direct_paired_review.json`
+- Controls: `configs/experiments/data/data-rag-sft-iteration-control-v1.yaml`, `docs/plan/rag_sft_refactor.md`
 - Stage-A targets and approval report: `outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/standard_targets.jsonl`, `outputs/experiments/rag_sft_iteration/approval/rag_expansion_plan_v1/report.json`
 - Terra negative evidence: `outputs/runs/rag/rag-sft-round121-terra-preflight/logs/preflight_report.json`, `outputs/experiments/rag_sft_iteration/candidates/round122-terra-shard3-pilot/pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round123-terra-finalization-repair-pilot/pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round125-standard-option-en-disease-pilot/pilot/`
 - Luna standard Pilots: `outputs/runs/rag/rag-sft-round126-standard-option-en-disease-luna-preflight/logs/preflight_report.json`, `outputs/experiments/rag_sft_iteration/candidates/round126-standard-option-en-disease-luna-pilot/pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round131-standard-open-zh-pest-luna-closed-pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round132-standard-option-zh-disease-luna-pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round133-standard-option-en-pest-luna-pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round134-standard-option-zh-pest-luna-pilot/`; completed rejection evidence: `outputs/experiments/rag_sft_iteration/candidates/round129-standard-open-zh-pest-luna-closed-pilot/`, `outputs/experiments/rag_sft_iteration/candidates/round130-standard-open-zh-pest-luna-closed-pilot/`
@@ -26,7 +26,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 
 ## Next safe action
 
-The validation SFT is stopped by a data-collator hard gate. The DDP launcher is verified, but both single-use freezes are mechanically non-replayable. Do not sample, retrain, scale, or run formal 618. The only safe next work is a local reproduction and reviewed fix for the Qwen3-VL position-index serialization mismatch; another freeze requires a new explicit authorization.
+Stage-A v3 is a complete negative milestone. Do not sample, scale, or retrain its hash. Before a newly reviewed freeze is proposed, validate one bounded repair hypothesis: use substantially more current-contract, image-isolated historical Direct replay—balanced across the same language/domain/answer-type slices—to counter the token/turn dominance of long RAG trajectories, with Direct retention as the first decision gate. Formal 618 remains unapproved.
 
 ## Records and archive
 

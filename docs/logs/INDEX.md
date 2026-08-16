@@ -24,7 +24,7 @@
 
 ## Decisions
 
-No weekly records yet.
+- 2026-W33 - decisions/2026-W33-0810-0816.md
 
 ## Observations
 
