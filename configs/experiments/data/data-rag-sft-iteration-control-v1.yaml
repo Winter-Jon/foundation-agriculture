@@ -48,7 +48,15 @@ parameters:
     smoke_eval_rows: 32
     validation_matched_eval_rows: 192
     full_eval_rows: 618
+  # Standing user authorization: Codex may autonomously choose and execute
+  # bounded Pilot, freeze, internal SFT, diagnostic, and scaled-collection
+  # actions when their stated hard gates permit.  Do not request per-step
+  # approval.  These listed actions remain explicit user decisions.
   approval_required_for: [full_618_evaluation, base_model_or_eval_protocol_change]
+  autonomous_execution:
+    enabled: true
+    applies_to: [preflight, pilot, strict_validation, immutable_freeze, internal_sft, smoke_diagnostic, matched_diagnostic, paired_bootstrap, direct_retention, scaled_blind_rejection_sampling]
+    decision_rule: execute_only_when_current_hard_gates_and_single_use_constraints_allow; otherwise_record_bounded_repair_and_continue_without_requesting_per_step_approval
   stages:
     standard_intermediate:
       required_rag_rows: 32

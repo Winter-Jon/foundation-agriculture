@@ -14,7 +14,7 @@ Complete the **standard milestone** without weakening trajectory, evidence, lang
 - The first freeze failed before data loading due to local DeepSpeed/device-map startup and remains non-replayable. The explicitly authorized v2 freeze `0676f670442b8d773883c5e385670771235ee1dccd66c88b1d9276d3c70f262c` fixed that launch path but failed at its first Qwen3-VL multimodal batch (`Train 0/16`) with a RoPE position-index shape mismatch. Neither freeze produced a checkpoint; both are non-replayable.
 - Historical Terra failures remain negative evidence, but the active distillation teacher is now `gpt-5.6-terra` by explicit route decision. Every new request still requires a new-ID strict preflight and bounded Pilot; historical unknown Luna/Terra requests remain non-replayable.
 - Unknown delivery is fail-closed. Rounds 116, 117 shard 1, and 120 shard 2 must not be replayed; partial evidence is non-trainable.
-- Sampling and the two internal SFT stages are authorized by the active control loop. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
+- Standing authorization: I autonomously decide and execute bounded preflight/Pilot, strict validation, immutable freezes, internal SFT, smoke and matched diagnostics, and gated scaled rejection sampling. I do not ask for per-step approval; every action remains constrained by hard gates, image isolation, and one-run-per-freeze. Formal 618 evaluation, a base-model change, and an evaluation-protocol change remain separately authorized. No process is currently running.
 
 ## Stable evidence
 
