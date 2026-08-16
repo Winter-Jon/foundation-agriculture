@@ -12,7 +12,6 @@ from typing import Any
 import requests
 
 from tools.rag_distill.run_pilot import (
-    api_tool_response_prompt,
     STUDENT_USER_QUERY,
     clamp_tool_args,
     compact_hit,
@@ -136,18 +135,37 @@ def _build_eval_messages(sample: dict[str, Any], image_path: Path, top_k: int) -
 
 
 def _tool_response_message(sample: dict[str, Any], tool_response: dict[str, Any], reference_images: list[str]) -> dict[str, Any]:
-    message = api_tool_response_prompt(sample, tool_response, reference_images)
-    if sample.get("question_type") != "option":
-        return message
-    content = message.get("content")
-    if isinstance(content, list) and content and isinstance(content[0], dict):
-        suffix = (
-            " 这是选择题；最终 <answer> 只能包含题目中的选项字母 A、B、C 或 D，不要输出类别名称。"
-            if sample.get("language") == "zh" else
-            " This is a multiple-choice question: the final <answer> must contain only the selected option letter A, B, C, or D, not a class name."
+    """Render a public-only continuation for blind evaluation.
+
+    ``api_tool_response_prompt`` is intentionally a distillation helper and may
+    append an Oracle teacher-forcing context.  Evaluation must never expose a
+    manifest label, alias, or target-derived option mapping to the model.
+    """
+    chinese = sample.get("language") == "zh"
+    option = sample.get("question_type") == "option"
+    if chinese:
+        continuation = (
+            "如果证据不足，只输出下一次 JSON 工具调用；否则输出 <think>...</think><answer>...</answer>。"
+            "<think> 必须使用标题：证据、排除的候选、不确定性。"
+            + ("<answer> 只能是 A、B、C 或 D 中的一个选项字母。" if option else "<answer> 只能是检索证据中出现的中文规范类别名称或中文别名。")
         )
-        content[0]["text"] = str(content[0].get("text") or "") + suffix
-    return message
+    else:
+        continuation = (
+            "If evidence is insufficient, output only the next JSON tool call; otherwise output <think>...</think><answer>...</answer>. "
+            "Use Evidence, Rejected alternatives, and Uncertainty headings. "
+            + ("The <answer> must contain exactly one option letter A, B, C, or D." if option else "The <answer> must copy an English class name or alias appearing in retrieved evidence.")
+        )
+    text = (
+        "Tool response JSON:\n" + json.dumps(tool_response, ensure_ascii=False) + "\n\n"
+        + "Reference image IDs in this public result correspond to the attached images. " + continuation
+        + " Do not use hidden labels, ground truth, or private target information."
+    )
+    content: list[dict[str, Any]] = [{"type": "text", "text": text}]
+    for ref in reference_images:
+        path = Path(ref)
+        if path.exists():
+            content.append(image_url_content(path))
+    return {"role": "user", "content": content}
 
 
 def _trim_reference_images(reference_image_paths: list[str], limit: int = 0) -> list[str]:
