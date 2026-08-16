@@ -136,6 +136,26 @@ def rag_diagnostic_command(config: dict) -> list[str]:
     return ["env", *[f"{key}={value}" for key, value in environment.items()], "bash", "scripts/vlm/run_local_rag_sft_eval.sh"]
 
 
+def direct_retention_command(config: dict) -> list[str]:
+    """Build an explicit public-image-only Direct retention command."""
+    parameters = config.get("parameters", {})
+    required = ("model", "manifest", "output_dir", "cuda_visible_devices")
+    missing = [key for key in required if not isinstance(parameters.get(key), str) or not parameters[key]]
+    if missing:
+        raise ConfigError(f"direct retention missing parameters: {', '.join(missing)}")
+    environment = {
+        "MODEL_PATH": parameters["model"], "MANIFEST": parameters["manifest"],
+        "OUT_DIR": parameters["output_dir"], "CUDA_VISIBLE_DEVICES": parameters["cuda_visible_devices"],
+    }
+    for key, env_key in {
+        "limit": "LIMIT", "max_new_tokens": "MAX_NEW_TOKENS", "request_timeout": "REQUEST_TIMEOUT",
+        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
+    }.items():
+        if key in parameters:
+            environment[env_key] = str(parameters[key])
+    return ["env", *[f"{key}={value}" for key, value in environment.items()], "bash", "scripts/vlm/run_local_direct_retention_eval.sh"]
+
+
 @app.command("train")
 def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) -> None:
     """Run or preview ms-swift training from a registered explicit config."""
@@ -209,6 +229,11 @@ def submit(
     elif operation == "rag-diagnostic":
         try:
             command = rag_diagnostic_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "direct-retention":
+        try:
+            command = direct_retention_command(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
