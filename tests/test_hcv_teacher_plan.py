@@ -1,4 +1,4 @@
-from tools.rag_distill.build_hcv_teacher_plan import build
+from tools.rag_distill.build_hcv_teacher_plan import build, rebuild
 
 
 def _audit(sample_id: str, question_type: str, language: str, domain: str) -> dict:
@@ -43,3 +43,16 @@ def test_hcv_teacher_plan_rejects_duplicate_image_across_audits() -> None:
     plan, _, report = build([first, duplicate], [_source("sample-1"), _source("sample-2")], per_cell_cap=2)
     assert len(plan) == 1
     assert any(item["reason"] == "missing_or_duplicate_audit_image_hash" for item in report["excluded"])
+
+
+def test_hcv_rebuild_retires_contacted_rows_and_refills_cell() -> None:
+    old = _audit("old", "open", "en", "disease")
+    old_plan, old_private, _ = build([old], [_source("old")], per_cell_cap=1)
+    replacement = _audit("new", "open", "en", "disease")
+    plan, private, report = rebuild(
+        [replacement], [_source("new")], old_plan, old_private, {old_plan[0]["sample_id"]}, per_cell_cap=1
+    )
+    assert [row["source_sample_id"] for row in plan] == ["new"]
+    assert [row["source_sample_id"] for row in private] == ["new"]
+    assert report["invariants"]["retired_ids_absent"]
+    assert report["invariants"]["unique_image_hashes"]

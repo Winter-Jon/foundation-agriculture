@@ -49,6 +49,16 @@ def test_hcv_dp8_queue_dry_run_carries_freeze_gate() -> None:
     assert "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7" in result.stdout
 
 
+def test_hcv_teacher_collection_dry_run_preserves_two_turn_contract() -> None:
+    result = runner.invoke(
+        app, ["rag", "submit", "rag-hcv-visual-expand-teacher-collection-v1", "--dry-run"]
+    )
+    assert result.exit_code == 0
+    assert "--max-tool-turns 2" in result.stdout
+    assert "--top-k 3" in result.stdout
+    assert "--max-concurrent 1" in result.stdout
+
+
 def test_generate_preflight_happens_before_run_allocation(monkeypatch) -> None:
     monkeypatch.setattr(
         "agrinet.cli.data.yunwu_environment", lambda: (_ for _ in ()).throw(CredentialError("locked"))

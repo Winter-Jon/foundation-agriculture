@@ -32,6 +32,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--per-cell-cap", type=int, default=4)
+    parser.add_argument("--retain-plan", type=Path, help="Public prior teacher plan from which untouched rows are retained.")
+    parser.add_argument("--retain-private-audit", type=Path, help="Private audit paired with --retain-plan.")
+    parser.add_argument("--retire-sample-ids", type=Path, help="JSONL records whose sample_id values must never be reused.")
     return parser.parse_args()
 
 
@@ -158,10 +161,108 @@ def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], p
     return selected, private_audit, report
 
 
+def rebuild(
+    audit_rows: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    retained_plan: list[dict[str, Any]],
+    retained_private: list[dict[str, Any]],
+    retired_sample_ids: set[str],
+    per_cell_cap: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Replace retired teacher-contact images without replaying them.
+
+    Retained rows never need their labels reconstructed; their private audit is
+    carried forward by sample ID. New rows must be genuine visual-expansion
+    repairs and cannot share an image hash with any retained row.
+    """
+    if per_cell_cap < 1:
+        raise ValueError("per_cell_cap must be positive")
+    retained = [row for row in retained_plan if str(row.get("sample_id") or "") not in retired_sample_ids]
+    private_by_id = {str(row.get("sample_id") or ""): row for row in retained_private}
+    if any(str(row.get("sample_id") or "") not in private_by_id for row in retained):
+        raise ValueError("retained plan row missing private audit")
+    retained_private_rows = [private_by_id[str(row["sample_id"])] for row in retained]
+    retained_ids = {str(row["sample_id"]) for row in retained}
+    retained_hashes = {str(row.get("image_sha256") or "") for row in retained}
+    source_by_id = {str(row.get("sample_id") or ""): row for row in source_rows}
+    additions: list[dict[str, Any]] = []
+    additions_private: list[dict[str, Any]] = []
+    selected_hashes = set(retained_hashes)
+    excluded: list[dict[str, str]] = []
+    for question_type, language, domain in CELLS:
+        key = "/".join((question_type, language, domain))
+        existing = [row for row in retained if cell_key(row) == key]
+        needed = per_cell_cap - len(existing)
+        if needed < 0:
+            raise ValueError(f"retained plan exceeds per-cell cap for {key}")
+        candidates = [
+            row for row in audit_rows
+            if cell_key(row) == key and is_visual_expand_repair(row)
+            and str(row.get("image_sha256") or "") not in selected_hashes
+        ]
+        for row in sorted(candidates, key=lambda item: sort_key(item, key))[:needed]:
+            source = source_by_id.get(str(row.get("source_sample_id") or ""))
+            image_hash = str(row.get("image_sha256") or "")
+            if source is None or not image_hash:
+                excluded.append({"id": str(row.get("id") or ""), "reason": "missing_source_or_image_hash"})
+                continue
+            plan = public_plan_row(row, source)
+            if plan["sample_id"] in retained_ids:
+                excluded.append({"id": str(row.get("id") or ""), "reason": "duplicate_retained_sample_id"})
+                continue
+            additions.append(plan)
+            selected_hashes.add(image_hash)
+            private = {
+                "sample_id": plan["sample_id"], "source_sample_id": plan["source_sample_id"],
+                "audit_truth_code": source.get("final_label"),
+                "audit_truth_name": next((item.get("name") for item in source.get("candidate_labels") or [] if item.get("code") == source.get("final_label")), None),
+                "cell": key,
+                "first_codes": (row.get("audit", {}).get("actions", {}).get("visual_first", {}) or {}).get("codes", []),
+                "expand_new_codes": (row.get("audit", {}).get("actions", {}).get("visual_expand", {}) or {}).get("new_codes_vs_first", []),
+            }
+            if plan["question_type"] == "option":
+                names = [item["name"] for item in plan["public_option_labels"]]
+                private["audit_correct_option"] = "ABCD"[names.index(str(private["audit_truth_name"]))] if private["audit_truth_name"] in names else None
+            additions_private.append(private)
+    selected = retained + additions
+    private = retained_private_rows + additions_private
+    counts = Counter(cell_key(row) for row in selected)
+    shortages = {"/".join(cell): max(0, per_cell_cap - counts.get("/".join(cell), 0)) for cell in CELLS}
+    ids = [str(row.get("sample_id") or "") for row in selected]
+    hashes = [str(row.get("image_sha256") or "") for row in selected]
+    report = {
+        "schema_version": "agrinet.hcv-teacher-plan-rebuild/v1",
+        "seed": SEED, "retired_sample_ids": sorted(retired_sample_ids),
+        "retained_rows": len(retained), "replacement_rows": len(additions),
+        "selected_rows": len(selected), "selected_by_cell": dict(sorted(counts.items())),
+        "shortages": shortages, "excluded": excluded,
+        "invariants": {
+            "unique_plan_ids": len(ids) == len(set(ids)),
+            "unique_image_hashes": len(hashes) == len(set(hashes)) and all(hashes),
+            "retired_ids_absent": not (set(ids) & retired_sample_ids),
+            "all_hcv_strategy": all(row.get("strategy_id") == "hcv_visual_expand" for row in selected),
+            "all_blind_teacher": all(row.get("generation_route") == "blind_evidence" and row.get("label_visible_to_teacher") is False for row in selected),
+            "no_truth_in_public_plan": all(not ({"final_label", "final_label_zh", "audit_truth_code"} & set(row)) for row in selected),
+        },
+    }
+    report["ready_for_teacher_pilot"] = all(report["invariants"].values()) and not any(shortages.values())
+    report["freeze_authorized"] = report["ready_for_teacher_pilot"]
+    return selected, private, report
+
+
 def main() -> int:
     args = parse_args()
     audit_rows = [row for path in args.preflight_audits for row in read_jsonl(path)]
-    selected, private_audit, report = build(audit_rows, read_jsonl(args.source), args.per_cell_cap)
+    if bool(args.retain_plan) != bool(args.retain_private_audit):
+        raise SystemExit("--retain-plan and --retain-private-audit must be supplied together")
+    if args.retain_plan:
+        retired = {str(row.get("sample_id") or "") for row in read_jsonl(args.retire_sample_ids)} if args.retire_sample_ids else set()
+        selected, private_audit, report = rebuild(
+            audit_rows, read_jsonl(args.source), read_jsonl(args.retain_plan),
+            read_jsonl(args.retain_private_audit), retired, args.per_cell_cap,
+        )
+    else:
+        selected, private_audit, report = build(audit_rows, read_jsonl(args.source), args.per_cell_cap)
     report["preflight_audits"] = [str(path) for path in args.preflight_audits]
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write_jsonl(args.output_dir / "teacher_plan.jsonl", selected)

@@ -129,12 +129,18 @@ The registered HCV DP8 queue is intentionally fail-closed: it checks
 It is a prepared execution entrypoint, not evidence that collection, freeze,
 training, or evaluation has run.
 
-Credential decryption was later verified in the local execution environment,
-but the one-image teacher preflight could not reach `https://yunwu.ai/v1`
-(`Errno 101: Network is unreachable`). Its fail-closed report is at
-`outputs/experiments/hcv_multi_query_rag/teacher_plan/20260822T204000-expand-320-complete-bilingual/teacher_preflight.json`.
-No teacher trajectory was collected; restore outbound network connectivity and
-rerun that one-image preflight before starting the 32-row collection.
+The stale Yunwu route is superseded for this line by `micu_slb`
+(`https://api-slb.micuapi.ai/v1`, `gpt-5.6-terra`). Its one-image HCV preflight
+passed with known delivery, visual reachability, and one valid manual tool call
+at `outputs/experiments/hcv_multi_query_rag/teacher_plan/20260822T204000-expand-320-complete-bilingual/teacher_preflight_micu_slb.json`.
+
+The first Micu collection was stopped after a local HCV collector bug: the
+valid-tool path referenced an uninitialized `visible_call`, so its first 12
+rows are explicit local failures with zero retrieval calls and zero accepted
+trajectories. The thirteenth request was interrupted and is marked unknown
+delivery; all 13 images are retired. The bug is fixed and regression-tested,
+but replacement image-isolated retrieval audits must replenish the affected
+cells before a fresh collection is authorized.
 
 ## Records and archive
 

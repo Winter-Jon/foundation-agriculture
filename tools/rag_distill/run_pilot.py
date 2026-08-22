@@ -2160,9 +2160,13 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                         call["arguments"] = clamp_tool_args(adjacent_args, sample_top_k, sample, sft_messages)
                 normalized_calls.append(call)
             for call in normalized_calls:
+                # Both the normal and the unknown-tool branches record a public
+                # tool envelope.  HCV needs that same envelope to derive the
+                # automatic top-3 -> top-10 expansion after a valid first
+                # visual call, so create it before branching on tool identity.
+                visible_call = {"name": TOOL_NAME, "arguments": call["arguments"]}
                 if call.get("name") != TOOL_NAME:
                     call_args = call["arguments"]
-                    visible_call = {"name": TOOL_NAME, "arguments": call_args}
                     if not (not retrieval_ledgers and sample.get("strict_first_tool_call")):
                         sft_messages.append({"role": "assistant", "content": pre_tool_think(call_args, str(sample.get("language") or "en"), first_turn=not retrieval_ledgers)})
                     first_role = "assistant" if (not retrieval_ledgers and sample.get("strict_first_tool_call")) else "tool_call"

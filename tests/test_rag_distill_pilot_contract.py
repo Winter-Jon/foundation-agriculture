@@ -44,6 +44,53 @@ def test_hcv_strategy_uses_distinct_top_k_per_turn() -> None:
     assert expanded["top_k"] == 10
 
 
+def test_hcv_first_valid_visual_call_expands_without_unknown_tool_branch(tmp_path, monkeypatch) -> None:
+    import argparse
+    import json
+
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {
+        "sample_id": "hcv-expand-unit", "query_image": str(image),
+        "language": "en", "question_type": "open", "task_domain": "disease",
+        "generation_route": "blind_evidence", "strategy_id": "hcv_visual_expand",
+        "preferred_sequence": ["visual", "visual"], "top_k": 3, "max_tool_turns": 2,
+    }
+    first_call = {
+        "name": run_pilot.TOOL_NAME,
+        "arguments": {"query": "brown leaf lesions", "retrieval_type": "visual",
+                      "image": "query_image", "top_k": 3,
+                      "rationale": "Visual Observation: brown lesions; Candidate Analysis: fungal spot."},
+    }
+    replies = [json.dumps(first_call), "<think>Predicted class name: Target\nEvidence: public visual evidence.\nRejected alternatives: Other.\nUncertainty: low.</think><answer>Target</answer>"]
+    seen_calls = []
+
+    def fake_chat(*_args, **_kwargs):
+        return {"choices": [{"message": {"role": "assistant", "content": replies.pop(0)}}]}
+
+    def fake_append(args, sample, sft_messages, retrieval_ledgers, api_messages, call_args, call_id, assistant_think=None):
+        seen_calls.append(dict(call_args))
+        visible = {"name": run_pilot.TOOL_NAME, "arguments": call_args}
+        response = {"status": "success", "results": [{"rank": 1, "class_name": "Target"}]}
+        sft_messages.extend([{"role": "tool_call", "content": json.dumps(visible)}, {"role": "tool_response", "content": json.dumps(response)}])
+        ledger = {"ok": True, "tool_call": visible, "visible_reference_images": []}
+        retrieval_ledgers.append(ledger)
+        return response, ledger
+
+    monkeypatch.setattr(run_pilot, "build_initial_messages", lambda *_args: [{"role": "user", "content": "mock"}])
+    monkeypatch.setattr(run_pilot, "chat_completion", fake_chat)
+    monkeypatch.setattr(run_pilot, "append_tool_execution", fake_append)
+    monkeypatch.setattr(run_pilot, "needs_more_evidence_before_final", lambda *_args: False)
+    monkeypatch.setattr(run_pilot, "accept_trajectory", lambda *_args: (True, []))
+    args = argparse.Namespace(top_k=3, image_max_side=0, max_tool_turns=2, model="mock", rag_api="mock", candidate_followup_mode="retrieved_descriptive")
+    row, trace, ledgers, rejected = run_pilot.run_sample(sample, args, "key", "base")
+
+    assert rejected is None and row is not None and trace["accepted"] is True
+    assert len(ledgers) == 2
+    assert [call["top_k"] for call in seen_calls] == [3, 10]
+    assert all(call["retrieval_type"] == "visual" for call in seen_calls)
+
+
 def test_public_option_question_uses_blind_public_order() -> None:
     sample = {
         "language": "zh",
