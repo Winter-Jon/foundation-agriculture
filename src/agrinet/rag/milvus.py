@@ -16,6 +16,9 @@ from agrinet.common.contracts import RagSearchRequest
 CLASS_FIELDS = [
     "entry_id", "code", "english_name", "chinese_name",
     "source_dataset", "local_reference_images", "alias_en", "alias_cn",
+    # Curated same-domain neighbours stored in the wiki class collection.
+    # Return them with a hit so callers can compare alternatives.
+    "similar_english_classes", "similar_chinese_classes",
 ]
 IMAGE_FIELDS = [
     "image_id", "entry_id", "code", "english_name", "chinese_name",
@@ -32,12 +35,46 @@ class MilvusSiglipBackend:
         self.client = MilvusClient(uri=str(db_path))
         self.class_collection = "agrinet_wiki_siglip2_classes"
         self.image_collection = "agrinet_wiki_siglip2_images"
+        class_schema = self.client.describe_collection(self.class_collection).get("schema") or {}
+        self.class_fields = {str(field.get("name")) for field in class_schema.get("fields") or []}
+        self._catalog_similar_classes = self._load_catalog_similar_classes()
         requested = "cuda" if device == "auto" and torch.cuda.is_available() else device
         self.device = torch.device("cpu" if requested == "auto" else requested)
         self.processor = AutoProcessor.from_pretrained(model_path, local_files_only=True)
         self.model = AutoModel.from_pretrained(model_path, local_files_only=True).to(self.device).eval()
         self.client.load_collection(self.class_collection)
         self.client.load_collection(self.image_collection)
+
+    def _load_catalog_similar_classes(self) -> dict[str, dict[str, list[str]]]:
+        """Load public curated neighbours when serving a pre-extension index.
+
+        Existing Lite files predate the two similar-class scalar fields.  The
+        canonical wiki remains the source used to build those fields, so this
+        fallback preserves the same public evidence without rebuilding or
+        mutating a live index.
+        """
+        try:
+            wiki_path = self.db_path.parents[2] / "datasets/AgriNet-1K/wiki/base.json"
+            payload = json.loads(wiki_path.read_text(encoding="utf-8"))
+            descriptions = payload.get("description") or {}
+            if not isinstance(descriptions, dict):
+                return {}
+            return {
+                str(entry_id): {
+                    "similar_english_classes": [str(value) for value in (item.get("similar_english_classes") or []) if str(value).strip()],
+                    "similar_chinese_classes": [str(value) for value in (item.get("similar_chinese_classes") or []) if str(value).strip()],
+                }
+                for entry_id, item in descriptions.items()
+                if isinstance(item, dict)
+            }
+        except (OSError, json.JSONDecodeError, IndexError):
+            return {}
+
+    @property
+    def _class_output_fields(self) -> list[str]:
+        # Milvus rejects unknown output fields.  Restrict dynamically so an
+        # already-serving old Lite index keeps working during the transition.
+        return [field for field in CLASS_FIELDS if field in self.class_fields]
 
     def health(self) -> dict[str, Any]:
         return {
@@ -78,24 +115,35 @@ class MilvusSiglipBackend:
             return {}
         quoted = ", ".join(json.dumps(value) for value in entry_ids)
         rows = self.client.query(
-            collection_name=self.class_collection, filter=f"entry_id in [{quoted}]", output_fields=CLASS_FIELDS
+            collection_name=self.class_collection, filter=f"entry_id in [{quoted}]", output_fields=self._class_output_fields
         )
         normalized = [self._plain_row(row) for row in rows]
         return {str(row["entry_id"]): row for row in normalized}
 
-    @staticmethod
-    def _plain_row(row: dict[str, Any]) -> dict[str, Any]:
+    def _with_catalog_similar_classes(self, row: dict[str, Any]) -> dict[str, Any]:
         output = dict(row)
-        for key in ("local_reference_images", "alias_en", "alias_cn"):
+        entry_id = str(output.get("entry_id") or output.get("id") or "")
+        fallback = self._catalog_similar_classes.get(entry_id, {})
+        for key in ("similar_english_classes", "similar_chinese_classes"):
+            if not output.get(key) and fallback.get(key):
+                output[key] = list(fallback[key])
+        return output
+
+    def _plain_row(self, row: dict[str, Any]) -> dict[str, Any]:
+        output = dict(row)
+        for key in (
+            "local_reference_images", "alias_en", "alias_cn",
+            "similar_english_classes", "similar_chinese_classes",
+        ):
             value = output.get(key)
             if value is not None and not isinstance(value, list):
                 output[key] = list(value)
-        return output
+        return self._with_catalog_similar_classes(output)
 
     def _text_hits(self, text: str, limit: int) -> list[dict[str, Any]]:
         hits = self.client.search(
             collection_name=self.class_collection, data=[self._encode_text(text)], anns_field="text_vector",
-            limit=limit, output_fields=CLASS_FIELDS,
+            limit=limit, output_fields=self._class_output_fields,
         )[0]
         return [{"score": float(hit.get("distance") or 0.0), **self._plain_row(dict(hit.get("entity") or {}))} for hit in hits]
 
@@ -139,7 +187,7 @@ class MilvusSiglipBackend:
         normalized = self._normalize_name(query)
         if not normalized:
             raise ValueError("query_text is required for name retrieval")
-        rows = self.client.query(collection_name=self.class_collection, filter="entry_id != ''", output_fields=CLASS_FIELDS, limit=1000)
+        rows = self.client.query(collection_name=self.class_collection, filter="entry_id != ''", output_fields=self._class_output_fields, limit=1000)
         matches: dict[str, dict[str, Any]] = {}
         for raw_row in rows:
             row = self._plain_row(raw_row)

@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-b2-m2-native-json-current-contract-direct3-rag1-v5-manual-json-8gpu-b4-e3-v1
+display_name: {en: "B2 + M2 native-JSON v5: manual-JSON 8-GPU batch-4 3-epoch repair", zh: "B2 + M2 原生 JSON v5：manual-JSON 8 卡 batch-4 三轮修复"}
+domain: vlm
+task: sft
+description: "User-requested 8-GPU, batch-four, three-epoch manual-JSON retraining from B2."
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train}
+runtime_profile: runtime/local-a800-8gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b4_e3_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b2-m2-native-json-current-contract-direct3-rag1-v4/manifest.json
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b4_e3}
+parameters:
+  dataset_sha256: 044bd07e153f9dad571f1c7365c718796e4d7c890c6aa2d153ca110ca043371b
+  initialization_model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+  protocol: {rag: agrinet.native-json-tool-call/v1, training_agent_template: manual_json, loss_scale: manual_json}
+  rows: 2240
+  ratio_direct_to_rag: '3:1'
+  epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 8
+  global_batch_size: 256
+  expected_optimizer_steps: 27
+  learning_rate: 1.0e-6
+  warmup_ratio: 0.05
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29664}
+  evaluation: {rag: native_dp8_formal618_v3_native_json_strict, max_tool_turns: 5, paired_bootstrap_samples: 10000}
+tags: [qwen3-vl, native-json, manual-json, protocol-repair, 8gpu, batch4, e3]

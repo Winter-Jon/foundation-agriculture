@@ -108,7 +108,7 @@ class RagSearchResponse(StrictModel):
 
 
 class StudentMessage(StrictModel):
-    role: Literal["system", "user", "assistant", "tool"]
+    role: Literal["system", "user", "assistant", "tool", "tool_call", "tool_response"]
     content: Any
 
 
@@ -117,7 +117,7 @@ class StudentSftRecord(StrictModel):
     sample_id: str
     messages: list[StudentMessage]
     images: list[Path] = Field(default_factory=list)
-    tools: list[dict[str, Any]] = Field(default_factory=list)
+    tools: list[dict[str, Any]] | str = Field(default_factory=list)
     source_artifact: ArtifactRef
 
 

@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-blind-calibration-option-zh-pest-v4
+display_name: {en: Reconstructive Blind RAG Chinese pest Option v4 calibration, zh: 重建式 Blind RAG 中文虫害 Option v4 校准}
+domain: rag
+task: distill
+description: Fixed 12-attempt, single-concurrency Blind calibration on isolated v4 targets.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/rag_intermediate_plan_fresh_v4_closed_final/calibration_targets.jsonl
+  approval_scope: reconstructive_blind_calibration
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/calibration_v4/option-zh-pest
+  model: gpt-5.6-terra
+  offset: 84
+  limit: 12
+  max_concurrent: 1
+tags: [rag, reconstructive, blind-evidence, calibration, option, zh, pest, v4, gpt-5.6-terra]

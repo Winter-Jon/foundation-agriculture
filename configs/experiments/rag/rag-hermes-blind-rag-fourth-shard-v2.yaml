@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-blind-rag-fourth-shard-v2
+display_name: {en: Hermes v2 Blind RAG fourth per-cell shard, zh: Hermes v2 Blind RAG 第四个每格分片}
+domain: rag
+task: distill
+description: "Eight exact Blind RAG rows: the next fresh image per Open/Option, language, and domain cell."
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/fourth-per-cell/rag_targets.jsonl
+  route: rag
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/rag-fourth-shard
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 8
+tags: [hermes, v2, blind-rag, shard, per-cell, fresh-images]

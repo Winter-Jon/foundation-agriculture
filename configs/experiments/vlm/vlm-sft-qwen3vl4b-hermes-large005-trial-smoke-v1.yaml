@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hermes-large005-trial-smoke-v1
+display_name:
+  en: Hermes large-005 conversion and SFT smoke
+  zh: Hermes large-005 转换与 SFT 试跑
+domain: vlm
+task: sft
+description: Noncanonical one-epoch conversion/training smoke; never a release model.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-4gpu-train}
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hermes_large005_trial_smoke_sft.yaml
+  immutable_freeze: outputs/artifacts/datasets/agrinet-hermes-large005-trial-smoke-v1/manifest.yaml
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_hermes_large005_trial_smoke_v1}
+parameters:
+  rows: 96
+  epochs: 1
+  protocol: swift-hermes/v1
+  purpose: conversion_and_local_training_smoke_only
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29615}
+tags: [qwen3-vl, hermes, large005, smoke, noncanonical]

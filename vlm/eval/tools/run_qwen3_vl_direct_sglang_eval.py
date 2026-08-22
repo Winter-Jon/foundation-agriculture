@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
-"""Run direct, non-RAG Qwen3-VL inference over an AgriNet manifest."""
-
+"""Run durable, sample-concurrent direct Qwen3-VL inference over a manifest."""
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tools.rag_distill.run_pilot import image_url_content
+from eval_runner_common import SnapshotStore, load_jsonl, request_fingerprint, validate_manifest
 
 
-def load_jsonl(path: Path) -> list[dict[str, Any]]:
-    with path.open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+DEFAULT_MAX_CONCURRENT = 64
+PROTOCOL_VERSION = "agrinet.direct-sglang-async/v1"
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output", required=True)
@@ -27,39 +30,76 @@ def main() -> None:
     parser.add_argument("--api-base", required=True)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--request-timeout", type=int, default=1200)
+    parser.add_argument("--max-concurrent", type=int, default=DEFAULT_MAX_CONCURRENT)
+    parser.add_argument("--request-retries", type=int, default=2)
+    parser.add_argument("--snapshot-every", type=int, default=1, help="Progress reporting cadence; every completion is durable.")
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--limit", type=int, default=0)
-    args = parser.parse_args()
-    root = Path(args.repo_root).resolve()
-    rows = load_jsonl(Path(args.manifest))
+    return parser.parse_args()
+
+
+def _request(api_base: str, model: str, row: dict[str, Any], image: Path, max_new_tokens: int, timeout: int) -> str:
+    response = requests.post(
+        f"{api_base.rstrip('/')}/chat/completions",
+        json={"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": str(row["question"])}, image_url_content(image)]}], "max_tokens": max_new_tokens, "temperature": 0},
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    return str(response.json()["choices"][0]["message"].get("content") or "")
+
+
+async def run(args: argparse.Namespace) -> None:
+    if args.max_concurrent < 1 or args.request_retries < 0 or args.snapshot_every < 1:
+        raise ValueError("--max-concurrent and --snapshot-every must be positive; --request-retries must be non-negative")
+    manifest = Path(args.manifest)
+    rows = load_jsonl(manifest)
     if args.limit > 0:
-        rows = rows[: args.limit]
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", encoding="utf-8") as handle:
-        for idx, row in enumerate(rows, 1):
-            image = Path(str(row["image_path"]))
-            if not image.is_absolute():
-                image = root / image
-            response = requests.post(
-                f"{args.api_base.rstrip('/')}/chat/completions",
-                json={
-                    "model": args.model,
-                    "messages": [{"role": "user", "content": [
-                        {"type": "text", "text": str(row["question"])},
-                        image_url_content(image),
-                    ]}],
-                    "max_tokens": args.max_new_tokens,
-                    "temperature": 0,
-                },
-                timeout=args.request_timeout,
-            )
-            response.raise_for_status()
-            message = response.json()["choices"][0]["message"]
-            result = dict(row)
-            result["prediction"] = str(message.get("content") or "")
-            handle.write(json.dumps(result, ensure_ascii=False) + "\n")
-            print(f"[{idx}/{len(rows)}] {row['id']}", flush=True)
+        rows = rows[:args.limit]
+    ids = validate_manifest(rows)
+    fingerprint = request_fingerprint(manifest=manifest, protocol=PROTOCOL_VERSION, model=args.model, parameters={
+        "max_new_tokens": args.max_new_tokens, "temperature": 0, "limit": args.limit,
+    })
+    store = SnapshotStore(Path(args.output), fingerprint, resume=args.resume)
+    completed = store.completed(set(ids))
+    root = Path(args.repo_root).resolve()
+    semaphore = asyncio.Semaphore(args.max_concurrent)
+    count = len(completed)
+    lock = asyncio.Lock()
+
+    async def one(row: dict[str, Any]) -> None:
+        nonlocal count
+        item_id = str(row["id"])
+        if item_id in completed:
+            return
+        image = Path(str(row["image_path"]))
+        image = image if image.is_absolute() else root / image
+        result = dict(row)
+        try:
+            if not image.exists():
+                raise FileNotFoundError(f"image not found: {image}")
+            async with semaphore:
+                last_error: Exception | None = None
+                for attempt in range(args.request_retries + 1):
+                    try:
+                        result["prediction"] = await asyncio.to_thread(_request, args.api_base, args.model, row, image, args.max_new_tokens, args.request_timeout)
+                        result["request_attempts"] = attempt + 1
+                        break
+                    except Exception as exc:
+                        last_error = exc
+                else:
+                    raise RuntimeError(f"request failed after {args.request_retries + 1} attempts: {last_error}")
+        except Exception as exc:
+            result.update({"prediction": "", "error": str(exc), "request_attempts": args.request_retries + 1})
+        async with lock:
+            completed[item_id] = result
+            store.append(result)
+            count += 1
+            if count % args.snapshot_every == 0 or count == len(rows):
+                print(f"[{count}/{len(rows)}] {item_id}", flush=True)
+
+    await asyncio.gather(*(one(row) for row in rows))
+    store.finalize(ids, completed)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(run(parse_args()))

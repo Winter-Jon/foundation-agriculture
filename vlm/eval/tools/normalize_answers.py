@@ -124,6 +124,11 @@ def option_maps(row: dict[str, Any]) -> tuple[dict[str, str], dict[str, str]]:
 
 
 def extract_option_letter(prediction: str, row: dict[str, Any]) -> str:
+    # A tool invocation is protocol text, never a visible multiple-choice
+    # answer.  In particular, do not let a free letter in a JSON key/value
+    # (for example an English rationale) become a spurious A--D prediction.
+    if "<tool_call>" in str(prediction or "").lower():
+        return ""
     text = unicodedata.normalize("NFKC", strip_answer_tags(str(prediction or ""))).strip()
     text = re.sub(r"^(答案|我选择|选择|选)\s*(是|为)?\s*[:：]?\s*", "", text, flags=re.IGNORECASE)
     match = re.search(r"(?i)(?:answer|choice|option|choose|select)\s*(?:is|:|：)?\s*([ABCD])\b", text)
@@ -221,6 +226,23 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         metrics[f"{qtype}_overall_accuracy"] = metrics.get(key, {"accuracy": 0.0})["accuracy"]
     metrics["overall_unparseable_rate"] = metrics["overall"]["unparseable_rate"]
     metrics["overall_count"] = metrics["overall"]["count"]
+    protocol_rows = [row.get("protocol") for row in rows if isinstance(row.get("protocol"), dict)]
+    if protocol_rows:
+        count = len(protocol_rows)
+        metrics["hermes_protocol"] = {
+            "count": count,
+            "valid_tool_call_rate": sum(int(protocol.get("valid_tool_calls") or 0) > 0 for protocol in protocol_rows) / count,
+            "zero_tool_call_rate": sum(int(protocol.get("valid_tool_calls") or 0) == 0 for protocol in protocol_rows) / count,
+            "planning_turn_rate": sum(int(protocol.get("planning_turns") or 0) > 0 for protocol in protocol_rows) / count,
+            "invalid_tool_call_rate": sum(bool(protocol.get("has_invalid_tool_call")) for protocol in protocol_rows) / count,
+            "malformed_tool_call_attempts": sum(int(protocol.get("malformed_tool_call_attempts") or 0) for protocol in protocol_rows),
+            "noncanonical_recovered_calls": sum(int(protocol.get("noncanonical_recovered_calls") or 0) for protocol in protocol_rows),
+            "post_budget_tool_attempts": sum(int(protocol.get("post_budget_tool_attempts") or 0) for protocol in protocol_rows),
+            "terminal_closure_used": sum(int(protocol.get("terminal_closure_used") or 0) for protocol in protocol_rows),
+            "terminal_closure_failed": sum(int(protocol.get("terminal_closure_failed") or 0) for protocol in protocol_rows),
+            "forced_fallback_turns": sum(int(protocol.get("forced_fallback_turns") or 0) for protocol in protocol_rows),
+            "answer_format_corrections": sum(int(protocol.get("answer_format_corrections") or 0) for protocol in protocol_rows),
+        }
     return metrics
 
 
@@ -237,9 +259,27 @@ def main() -> None:
     parser.add_argument("--output-jsonl", required=True, help="Per-row scored JSONL output.")
     parser.add_argument("--output-metrics", required=True, help="Metrics JSON output.")
     parser.add_argument("--output-csv", help="Optional compact per-row CSV output.")
+    parser.add_argument("--manifest", help="Require predictions to contain exactly the manifest's unique IDs in manifest order.")
     args = parser.parse_args()
 
-    rows = [score_row(row) for row in load_rows(Path(args.predictions))]
+    raw_rows = load_rows(Path(args.predictions))
+    if args.manifest:
+        manifest_rows = load_rows(Path(args.manifest))
+        expected_ids = [str(row.get("id") or "") for row in manifest_rows]
+        observed_ids = [str(row.get("id") or "") for row in raw_rows]
+        if (not all(expected_ids) or len(set(expected_ids)) != len(expected_ids)
+                or len(observed_ids) != len(expected_ids)
+                or len(set(observed_ids)) != len(observed_ids)
+                or observed_ids != expected_ids):
+            raise ValueError("predictions must contain exactly the manifest's unique IDs in manifest order")
+    errors = [
+        str(row.get("id") or "")
+        for row in raw_rows
+        if row.get("error") or "<tool_call>" in str(row.get("prediction") or "").lower()
+    ]
+    if errors:
+        raise ValueError(f"refusing to score {len(errors)} explicit evaluation/protocol errors (first: {errors[0]!r})")
+    rows = [score_row(row) for row in raw_rows]
     write_jsonl(rows, Path(args.output_jsonl))
 
     metrics = summarize(rows)

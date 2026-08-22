@@ -1,0 +1,22 @@
+schema_version: agrinet.collection-specification/v1
+id: reconstructive-blind-rag-collection-spec-v1
+sampling_contract: configs/sampling/reconstructive-blind-rag-contract-v1.yaml
+description: Current two-stage collection targets only; does not redefine the reusable sampling contract.
+stages:
+  intermediate:
+    direct_per_cell: 70
+    rag_per_cell: 35
+    rag_min_classes: 18
+    rag_max_per_class: 2
+    blind_attempt_cap: 140
+    oracle_attempt_cap: 28
+    oracle_cap: 7
+  full:
+    direct_per_cell: 350
+    rag_per_cell: 175
+    rag_min_classes: {disease: 100, pest: 50}
+    rag_max_per_class: 4
+    blind_attempt_cap: 704
+    oracle_attempt_cap: 140
+    oracle_cap: 35
+    option_letter_floor: 40

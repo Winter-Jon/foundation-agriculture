@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-formal618-native-sglang-dp8-v1
+display_name:
+  en: Formal 618 native SGLang DP8 evaluation
+  zh: 正式 618 原生 SGLang DP8 评测
+domain: vlm
+task: formal_evaluation_native_sglang
+description: Resumable formal 618-row candidate/base Direct/RAG evaluation; routes run sequentially on one native DP8 service.
+lifecycle: active
+components: {runtime: sglang.launch_server, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_hermes_long_direct_blind_rag_1to1_e5/v0-20260819-075722/checkpoint-175
+outputs: {run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/}
+parameters:
+  entrypoint: scripts/vlm/run_formal618_native_dp8.sh
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_hermes_long_direct_blind_rag_1to1_e5/v0-20260819-075722/checkpoint-175
+  local_launch: {cuda_visible_devices: "0,1,2,3,4,5,6,7", nproc_per_node: 8}
+  runtime: {launcher: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, require_visible_gpu_product: true}
+  retry_policy: {request_retries: 2, snapshot_every: 1, resume: true}
+  routes:
+    - {id: candidate_direct, model: candidate_checkpoint, mode: direct, max_concurrent: 64}
+    - {id: raw_base_direct, model: models/Qwen3-VL-4B-Instruct, mode: direct, max_concurrent: 64}
+    - {id: candidate_rag, model: candidate_checkpoint, mode: rag, max_concurrent: 24}
+    - {id: raw_base_rag, model: models/Qwen3-VL-4B-Instruct, mode: rag, max_concurrent: 24}
+  paired_bootstrap: {samples: 10000, seed: 20260819}
+tags: [formal-evaluation, qwen3-vl, native-sglang, dp8, resumable]

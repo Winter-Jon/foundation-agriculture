@@ -1,0 +1,11 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-supplement-option-en-disease-v1
+display_name: {en: Reconstructive supplement Option English disease, zh: 重建式补采选项英文病害}
+domain: rag
+task: distill
+description: Audit-driven, locally eligible, bounded Blind supplement; stops after 5 strict accepts.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters: {credential_profile: micu_slb, plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/supplement_plan_v1/collection_shards/option-en-disease/blind_targets.jsonl, approval_scope: reconstructive_blind_supplement, rag_api: http://127.0.0.1:8077, output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/supplement_collection_v1/option-en-disease, model: gpt-5.6-terra, limit: 52, stop_after_accepted: 5, max_concurrent: 1}
+tags: [rag, reconstructive, supplement, blind-evidence, option, en, disease, gpt-5.6-terra]

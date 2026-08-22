@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: vlm-rag-b2-m2-native-json-current-contract-direct3-rag1-v4-formal618-dp8-v1
+display_name: {en: "B2 + M2 native-JSON current-contract 3:1 v4: native DP8 formal RAG 618", zh: "B2 + M2 原生 JSON 当前契约 3:1 v4：原生 DP8 RAG 正式 618"}
+domain: vlm
+task: formal_rag_evaluation_native_sglang
+description: "Formal v3-native-JSON strict RAG 618 evaluation of the v4 protocol-repair checkpoint against raw base, with up to five ordered retrieval turns and fail-closed terminal handling."
+lifecycle: active
+components: {runtime: sglang.launch_server, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4/v0-20260819-233753/checkpoint-70
+outputs: {run_root: outputs/runs/vlm/vlm-rag-b2-m2-native-json-current-contract-direct3-rag1-v4-formal618-dp8-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_rag_formal618_native_dp8.sh
+  local_launch: {cuda_visible_devices: "0,1,2,3,4,5,6,7", nproc_per_node: 8}
+  runtime: {launcher: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, require_visible_gpu_product: true}
+  route: {id: candidate_rag, max_concurrent: 24, max_tool_turns: 5, top_k: 3, disable_forced_first_call: true, invalid_tool_call_policy: strict, terminal_policy: one-terminal-closure-v1}
+  paired_bootstrap: {samples: 10000, seed: 20260819}
+tags: [formal-evaluation, rag, b2, m2, native-json, current-contract, direct3-rag1, native-sglang, dp8]

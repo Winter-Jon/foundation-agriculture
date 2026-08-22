@@ -1,0 +1,33 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2
+display_name:
+  en: "Hermes SFT, audited long Direct + independent Blind RAG 1:1"
+  zh: "Hermes SFT，审计长 Direct 与独立 Blind RAG 1:1"
+domain: vlm
+task: sft
+description: Train only after immutable 560 Direct + 560 Blind RAG v2 freeze acceptance and paired diagnostic gate.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-4gpu-train}
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hermes_long_direct_blind_rag_1to1_e5_sft.yaml
+  immutable_freeze: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/manifest.yaml
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_hermes_long_direct_blind_rag_1to1_e5}
+parameters:
+  rows: 1120
+  ratio_direct_to_rag: "1:1"
+  epochs: 5
+  effective_global_batch: 32
+  expected_optimizer_steps: 175
+  learning_rate: 5.0e-6
+  initialization_model: models/Qwen3-VL-4B-Instruct
+  checkpoint_policy: final_only
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29616}
+  prerequisite_gate:
+    diagnostic_rows: 192
+    rag_valid_tool_call_rate_min: 0.95
+    rag_gain_vs_base_pp_min: 3.0
+    rag_bootstrap_lower_bound_pp_gt: 0.0
+    direct_non_degradation: [overall, en, zh, disease, pest, open, option]
+  formal_evaluation: {rows: 618, bootstrap_resamples: 10000, authorization: diagnostic_gate_only}
+tags: [qwen3-vl, hermes, long-direct, blind-rag, ratio-1to1]

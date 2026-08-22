@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-blind-calibration-option-en-pest-preflight-v1
+display_name: {en: Reconstructive Blind RAG English pest Option preflight, zh: 重建式 Blind RAG 英文虫害 Option 预检}
+domain: rag
+task: distill
+description: One fresh Micu SLB real-image preflight for English pest Option calibration.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/rag_intermediate_plan_fresh_v3/calibration_targets.jsonl
+  approval_scope: reconstructive_blind_calibration
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/calibration/option-en-pest-preflight
+  model: gpt-5.6-terra
+  offset: 60
+  limit: 1
+  max_concurrent: 1
+  preflight_only: true
+  preflight_image: true
+  preflight_report: outputs/experiments/reconstructive_direct_blind_rag_v1/calibration/option-en-pest-preflight/preflight_report.json
+tags: [rag, reconstructive, blind-evidence, calibration, option, en, pest, gpt-5.6-terra]

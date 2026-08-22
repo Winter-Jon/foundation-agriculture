@@ -16,42 +16,23 @@ AGRINET_RAG_SEARCH_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {
         "name": TOOL_NAME,
-        "description": (
-            "Search the AgriNet wiki-backed retrieval service for evidence about fine-grained "
-            "agricultural disease, pest, crop, and morphology classes. Prefer visual retrieval "
-            "for image appearance, semantic retrieval for symptom or morphology text, balanced "
-            "retrieval when both image and text evidence are useful, and rrf only as dense "
-            "text-image rank fusion. Use name retrieval only for exact lookup of a class name "
-            "or alias that already appears verbatim in retrieved evidence. If a candidate is "
-            "not already named in evidence, search with neutral host, organ, symptom, color, "
-            "shape, or health-state words using visual, semantic, balanced, or rrf retrieval; "
-            "do not use name retrieval for descriptive phrases or approximate guessed labels."
-        ),
+        "description": "Retrieve public AgriNet evidence for an agricultural image or text query.",
         "parameters": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": (
-                        "Short English search text. For visual, semantic, balanced, and rrf, use natural "
-                        "symptom, crop, organ, or morphology phrases, not a guessed final class name. "
-                        "For name retrieval, use only an exact database class name or alias, not an "
-                        "approximate paraphrase or symptom description."
-                    ),
+                    "description": "Search text.",
                 },
                 "retrieval_type": {
                     "type": "string",
                     "enum": list(RETRIEVAL_TYPES),
-                    "description": (
-                        "Retrieval preset. visual=image-heavy dense image search; semantic=dense text search; "
-                        "balanced=dense text-image hybrid; rrf=dense text-image rank fusion without sparse/name signal; "
-                        "name=sparse exact class-name/alias lookup only."
-                    ),
+                    "description": "Retrieval mode.",
                 },
                 "image": {
                     "type": "string",
                     "enum": list(IMAGE_HANDLES),
-                    "description": "Use query_image to include the user's image, or none for text/name-only retrieval.",
+                    "description": "Image input to search.",
                 },
                 "top_k": {
                     "type": "integer",
@@ -62,33 +43,33 @@ AGRINET_RAG_SEARCH_SCHEMA: dict[str, Any] = {
                 "ranker": {
                     "type": "string",
                     "enum": list(RANKERS),
-                    "description": "Hybrid ranker. Use weighted for controlled signal weights or rrf for robust fusion.",
+                    "description": "Optional ranking method.",
                 },
                 "text_weight": {
                     "type": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
-                    "description": "Optional dense text-vector weight for weighted hybrid retrieval.",
+                    "description": "Optional text weight.",
                 },
                 "image_weight": {
                     "type": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
-                    "description": "Optional dense image-vector weight for weighted hybrid retrieval.",
+                    "description": "Optional image weight.",
                 },
                 "sparse_weight": {
                     "type": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
-                    "description": "Sparse class-name/alias weight. Only valid for name retrieval; other retrieval types ignore sparse.",
+                    "description": "Optional sparse weight.",
                 },
                 "filter": {
                     "type": "string",
-                    "description": "Optional Milvus scalar filter expression when a domain constraint is justified.",
+                    "description": "Optional search filter.",
                 },
                 "rationale": {
                     "type": "string",
-                    "description": "Brief reason for this retrieval call, for audit and rejection-sampling checks.",
+                    "description": "Brief search reason.",
                 },
             },
             "required": ["query", "retrieval_type", "image", "top_k", "rationale"],

@@ -41,3 +41,22 @@ def test_concurrent_health_initializes_backend_once() -> None:
         statuses = list(pool.map(lambda _: client.get("/health").status_code, range(8)))
     assert statuses == [200] * 8
     assert calls == 1
+
+
+def test_search_preserves_catalog_similar_classes(tmp_path: Path) -> None:
+    class SimilarBackend(Backend):
+        def search(self, request):
+            return [{
+                "entry_id": "N04001", "score": 0.9, "english_name": "Apple Black Rot",
+                "similar_english_classes": ["Grape Black rot"],
+                "similar_chinese_classes": ["葡萄黑腐病"],
+            }]
+
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"fixture")
+    client = TestClient(create_app(lambda: RetrievalService(SimilarBackend())))
+    response = client.post("/search/visual", json={"image_path": str(image), "top_k": 1})
+    assert response.status_code == 200
+    metadata = response.json()["hybrid"][0]
+    assert metadata["similar_english_classes"] == ["Grape Black rot"]
+    assert metadata["similar_chinese_classes"] == ["葡萄黑腐病"]

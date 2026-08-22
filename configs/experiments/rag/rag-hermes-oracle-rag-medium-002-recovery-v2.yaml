@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-oracle-rag-medium-002-recovery-v2
+display_name: {en: Hermes v2 bounded Oracle RAG medium-002 recovery, zh: Hermes v2 中规模重采有上限 Oracle RAG 恢复}
+domain: rag
+task: distill
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: micu_slb
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/oracle-recovery-medium-002/rag_targets.jsonl
+  route: rag
+  oracle: true
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/oracle-rag-recovery-medium-002
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 12
+tags: [hermes, v2, rag, oracle, recovery, bounded, medium-002, micu-slb]

@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-long-direct-resend-pilot-v2
+display_name: {en: Hermes v2 long Direct independent resend pilot, zh: Hermes v2 长 Direct 独立重发预检}
+domain: rag
+task: distill
+description: One permitted independent resend after the first target's known strict rejection; never overwrites original evidence.
+lifecycle: active
+components: {runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shortage_plan/direct_shortage_targets.jsonl
+  route: direct
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/direct-pilot-001-resend
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 1
+tags: [hermes, v2, direct, resend, pilot]

@@ -118,13 +118,18 @@ def submit(
         config = resolve_config(spec)
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
-    if operation == "distill":
-        command = [sys.executable, "-m", "tools.rag_distill.run_pilot"]
+    if operation in {"distill", "hermes-collect"}:
+        command = [sys.executable, "-m", "tools.rag_distill.run_pilot"] if operation == "distill" else [sys.executable, "-m", "tools.rag_distill.collect_hermes_1to1_v2"]
         parameters = config.get("parameters", {})
-        for key, flag in (("sample_file", "--sample-file"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("max_concurrent", "--max-concurrent")):
+        bindings = (("sample_file", "--sample-file"), ("plan_file", "--plan-file"), ("candidate_source", "--candidate-source"), ("approval_scope", "--approval-scope"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("offset", "--offset"), ("stop_after_accepted", "--stop-after-accepted"), ("max_concurrent", "--max-concurrent"), ("preflight_report", "--preflight-report")) if operation == "distill" else (("targets", "--targets"), ("route", "--route"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("offset", "--offset"), ("target_id", "--target-id"))
+        for key, flag in bindings:
             if key in parameters: command.extend([flag, str(parameters[key])])
+        if operation == "distill" and parameters.get("preflight_only"): command.append("--preflight-only")
+        if operation == "distill" and parameters.get("preflight_image"): command.append("--preflight-image")
+        if operation == "hermes-collect" and parameters.get("oracle"): command.append("--oracle")
         try:
-            child_env = {**yunwu_environment(), **local_proxy_environment()} if not dry_run else {}
+            credential_profile = str(parameters.get("credential_profile", "yunwu"))
+            child_env = {**yunwu_environment(profile=credential_profile), **local_proxy_environment()} if not dry_run else {}
         except (CredentialError, NetworkConfigError) as exc:
             typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
     elif operation == "serve":

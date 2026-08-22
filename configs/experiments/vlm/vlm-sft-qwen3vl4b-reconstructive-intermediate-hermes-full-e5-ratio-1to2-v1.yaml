@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-reconstructive-intermediate-hermes-full-e5-ratio-1to2-v1
+display_name:
+  en: "Full Hermes SFT, Direct:RAG 1:2"
+  zh: "完整 Hermes SFT，Direct:RAG 1:2"
+domain: vlm
+task: sft
+description: User-authorized RAG-weighted Direct:RAG 1:2 sampling-ratio ablation, five epochs.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-2gpu-train}
+runtime_profile: runtime/local-a800-2gpu-train
+inputs: {config: configs/vlm/qwen3_vl_4b_reconstructive_intermediate_hermes_full_e5_ratio_1to2_sft.yaml, immutable_freeze: outputs/artifacts/datasets/agrinet-reconstructive-direct-blind-intermediate-v1/manifest.yaml}
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_reconstructive_intermediate_hermes_full_e5_ratio_1to2_v1}
+parameters:
+  dataset: outputs/artifacts/datasets/agrinet-reconstructive-direct-blind-intermediate-v1/sft-hermes-ratio-1to2/data.jsonl
+  source_freeze_sha256: 2273a80ae0ed84b9152c47cf8768f1ad2d2d7f8ecbbc1c98d603406a04086ea1
+  dataset_sha256: acff27ea5721214eebd3bfd52a89680bd78004cec31ad30e610c6991c92fcf34
+  protocol: swift-hermes/v1
+  ratio_direct_to_rag: "1:2"
+  epochs: 5
+  learning_rate: 5.0e-6
+  local_launch: {cuda_visible_devices: "6,7", nproc_per_node: 2}
+tags: [qwen3-vl, hermes, full-sft, ratio-1to2]

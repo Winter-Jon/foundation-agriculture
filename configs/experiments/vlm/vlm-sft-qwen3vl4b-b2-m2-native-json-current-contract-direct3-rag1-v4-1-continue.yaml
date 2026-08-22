@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-b2-m2-native-json-current-contract-direct3-rag1-v4-continue-v1
+display_name: {en: "B2 + M2 native-JSON v4: one-epoch continuation", zh: "B2 + M2 原生 JSON v4：一轮续训"}
+domain: vlm
+task: sft
+description: "Controlled extra-epoch test: continue v4 checkpoint-70 on unchanged native-JSON 3:1 data for one additional epoch/70 steps at low no-warmup learning rate, before rerunning the same five-turn strict DP8 RAG evaluation."
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4/v0-20260819-233753/checkpoint-70, runtime: runtime/local-a800-4gpu-train}
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4_1_continue_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b2-m2-native-json-current-contract-direct3-rag1-v4/manifest.json
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4_continue_e1}
+parameters:
+  dataset_sha256: 044bd07e153f9dad571f1c7365c718796e4d7c890c6aa2d153ca110ca043371b
+  initialization_model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4/v0-20260819-233753/checkpoint-70
+  protocol: {rag: agrinet.native-json-tool-call/v1}
+  rows: 2240
+  ratio_direct_to_rag: "3:1"
+  extra_epochs: 1
+  learning_rate: 2.0e-7
+  warmup_ratio: 0.0
+  expected_optimizer_steps: 70
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29656}
+  evaluation: {rag: native_dp8_formal618_v3_native_json_strict, max_tool_turns: 5, paired_bootstrap_samples: 10000}
+tags: [qwen3-vl, native-json, protocol-repair, extra-steps, continuation]

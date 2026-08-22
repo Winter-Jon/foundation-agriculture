@@ -1,0 +1,23 @@
+schema_version: agrinet.collection-specification/v2
+id: hermes-direct-blind-rag-1to1-collection-spec-v2
+description: "Immutable next-round target: 560 audited long Direct and 560 independent Blind RAG rows."
+sampling_contract: configs/sampling/reconstructive-blind-rag-contract-v1.yaml
+stage:
+  id: hermes-long-direct-blind-rag-1to1-v2
+  direct_per_cell: 70
+  rag_per_cell: 70
+  direct_min_classes: 35
+  rag_min_classes: 35
+  direct_max_per_class: 2
+  rag_max_per_class: 2
+  oracle_rag_cap_per_cell: 14
+  blind_rag_min_per_cell: 56
+  option_letter_floor: 14
+  direct_min_think_characters: 320
+  direct_min_think_characters_zh: 280
+  direct_min_candidates: 4
+  direct_min_negative_exclusions: 3
+  rag_min_candidates: 3
+  rag_min_evidence_exclusions: 2
+  uncertainty: "Uncertainty/不确定性: The image evidence is insufficient for a confidence estimate."
+  held_out_sets: [diagnostic_192, formal_618]

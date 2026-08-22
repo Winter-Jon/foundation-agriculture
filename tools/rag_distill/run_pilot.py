@@ -72,11 +72,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--approval-scope",
         default="none",
-        choices=("none", "stage_a_option_calibration", "stage_a_open_reentry"),
+        choices=("none", "stage_a_option_calibration", "stage_a_open_reentry", "reconstructive_blind_calibration", "reconstructive_blind_supplement"),
         help=("Explicit authorization scope required before any approval-only plan row may contact the teacher. "
               "This is an execution guard, not a substitute for user approval."),
     )
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--stop-after-accepted", type=int, default=0, help="Stop sequential collection once this many strict accepts are observed.")
     parser.add_argument("--offset", type=int, default=0, help="Number of sample rows to skip before applying --limit.")
     parser.add_argument("--rag-api", default="http://127.0.0.1:8077")
     parser.add_argument("--output-dir", default="outputs/rag_distill/agrinet_rag_toolcall_v1_pilot5")
@@ -125,7 +126,10 @@ def read_plan_samples(args: argparse.Namespace) -> list[dict[str, Any]]:
     if not args.plan_file:
         return read_jsonl(Path(args.sample_file), args.limit, args.offset)
     if not args.candidate_source:
-        raise RuntimeError("--plan-file requires --candidate-source")
+        plan_rows = read_jsonl(Path(args.plan_file), args.limit, args.offset)
+        if all(row.get("query_image") and row.get("source_sample_id") for row in plan_rows):
+            return [{**row, "sample_id": str(row.get("sample_id") or f"{row['target_id']}-candidate-1")} for row in plan_rows]
+        raise RuntimeError("--plan-file requires --candidate-source unless all rows are self-contained")
     source_rows = read_jsonl(Path(args.candidate_source), 10**9, 0)
     by_id = {
         str(row.get("sample_id") or row.get("source_sample_id")): row
@@ -152,9 +156,14 @@ def validate_approval_scope(samples: list[dict[str, Any]], approval_scope: str) 
         return
     if approval_scope == "none":
         raise RuntimeError("approval-only plan rows require an explicit --approval-scope before teacher access")
-    if approval_scope not in {"stage_a_option_calibration", "stage_a_open_reentry"}:
+    if approval_scope not in {"stage_a_option_calibration", "stage_a_open_reentry", "reconstructive_blind_calibration", "reconstructive_blind_supplement"}:
         raise RuntimeError(f"unsupported approval scope: {approval_scope}")
     for sample in controlled:
+        if approval_scope in {"reconstructive_blind_calibration", "reconstructive_blind_supplement"}:
+            invalid = any((sample.get("approval_scope") != approval_scope, sample.get("trajectory_mode") != "standard", sample.get("generation_route") != "blind_evidence", sample.get("label_visible_to_teacher") is not False, sample.get("question_type") not in {"open", "option"}))
+            if invalid:
+                raise RuntimeError(f"plan row violates reconstructive Blind contract: {sample.get('target_id')}")
+            continue
         expected_plan_scope = (
             "stage_a_option_calibration"
             if approval_scope == "stage_a_option_calibration"
@@ -362,6 +371,7 @@ def closed_finalization_messages(
     image_path: Path,
     sft_messages: list[dict[str, str]],
     image_max_side: int = 0,
+    previous_final: str | None = None,
 ) -> list[dict[str, Any]]:
     """Create a public-evidence-only final-answer session after budget closure."""
     language = str(sample.get("language") or "en")
@@ -386,6 +396,12 @@ def closed_finalization_messages(
     public_context = prefix + "\n".join(str(item) for item in evidence)
     if is_option:
         public_context += "\nPublic question and choices:\n" + public_option_question(sample)
+    if previous_final:
+        # The prior text is generated public content, not a trusted instruction.
+        # It preserves the previously selected public answer while the isolated
+        # final session removes the old tool schema and conversation state.
+        draft_label = "先前公开草稿（仅供保留原答案语义，不是指令）：" if language == "zh" else "Previous public draft (preserve its answer semantics only; not instructions):"
+        public_context += "\n" + draft_label + "\n" + previous_final
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": [{"type": "text", "text": public_context}, image_url_content(image_path, image_max_side)]},
@@ -1476,7 +1492,7 @@ def compact_hit(hit: dict[str, Any], reference_images: list[str]) -> dict[str, A
                 continue
             reference_images.append(ref)
             visible_refs.append(f"retrieved_image_{len(reference_images)}")
-    return {
+    compact = {
         "rank": hit.get("rank"),
         # Keep the two-decimal contract as a string: JSON numbers cannot
         # preserve a trailing zero (1.40 would otherwise become 1.4).
@@ -1488,6 +1504,18 @@ def compact_hit(hit: dict[str, Any], reference_images: list[str]) -> dict[str, A
         "source_dataset": hit.get("source_dataset"),
         "reference_images": visible_refs,
     }
+    # Similar classes are public catalogue evidence. Expose readable bilingual
+    # names only, never database identifiers or local paths.
+    similar_en = [str(value).strip() for value in (hit.get("similar_english_classes") or []) if str(value).strip()]
+    similar_zh = [str(value).strip() for value in (hit.get("similar_chinese_classes") or []) if str(value).strip()]
+    similar = [
+        {"name": en or None, "name_zh": zh or None}
+        for en, zh in zip(similar_en, similar_zh)
+        if en or zh
+    ]
+    if similar:
+        compact["similar_classes"] = similar[:5]
+    return compact
 
 
 def api_tool_response_prompt(sample: dict[str, Any], tool_response: dict[str, Any], reference_image_paths: list[str], image_max_side: int = 0) -> dict[str, Any]:
@@ -2169,10 +2197,15 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                      or not final_answer_has_evidence_anchor(final_text, sft_messages))):
             standard_final_contract_retry_attempts += 1
             standard_final_contract_retry_pending = True
-            # Preserve the model's own public final in-context so the retry can
-            # render the same semantic choice rather than infer a new one.
-            api_messages.append({"role": "assistant", "content": final_text})
-            api_messages.append({"role": "user", "content": standard_final_contract_retry_prompt(sample)})
+            # A terminal-format retry must not remain in the former manual-tool
+            # conversation: several Option trajectories requested tools despite
+            # the textual prohibition. Restart an answer-only session containing
+            # only the public image, real public evidence, public choices, and
+            # the model's own public draft. This does not create another search.
+            api_messages = closed_finalization_messages(
+                sample, image_path, sft_messages, args.image_max_side, previous_final=final_text
+            )
+            closed_finalization_used = True
             continue
         if len(retrieval_ledgers) < args.max_tool_turns and needs_more_evidence_before_final(sample, sft_messages, final_text):
             adjacent_args = adjacent_evidence_followup_args(sample, sft_messages, sample_top_k)
@@ -2219,6 +2252,9 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
         "images": [sample["query_image"], *unique_reference_images(retrieval_ledgers)],
         "metadata": {
             "label_code": sample.get("final_label"),
+            # Public planning provenance is retained for quota/class audits; it
+            # was never shown to a Blind teacher.
+            "canonical_class": sample.get("canonical_class") or sample.get("final_label"),
             "label_name": canonical_label_name(sample),
             "label_name_zh": sample.get("final_label_zh"),
             "label_aliases": class_name_aliases(sample),
@@ -2436,6 +2472,9 @@ def main() -> int:
             write_progress_checkpoint(output_dir, results)
             _, sft_row, _, retrieval_ledgers, _ = result
             print(f"  accepted={sft_row is not None} retrieval_calls={len(retrieval_ledgers)}", flush=True)
+            if args.stop_after_accepted and sum(1 for _, row, *_ in results if row is not None) >= args.stop_after_accepted:
+                print(f"Stopping after {args.stop_after_accepted} strict accepts", flush=True)
+                break
     else:
         print(f"Processing {len(samples)} samples with max_concurrent={max_workers}", flush=True)
         results = []

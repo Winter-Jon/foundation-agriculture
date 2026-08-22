@@ -11,9 +11,16 @@ class CredentialError(RuntimeError):
 
 
 ALLOWED_YUNWU_KEYS = {"YUNWU_API_KEY", "YUNWU_API_BASE_URL"}
+ALLOWED_CREDENTIAL_PROFILES = {"yunwu", "micu_slb"}
+PROFILE_ENV_NAMES = {
+    "yunwu": {"YUNWU_API_KEY": "YUNWU_API_KEY", "YUNWU_API_BASE_URL": "YUNWU_API_BASE_URL"},
+    "micu_slb": {"MICU_SLB_API_KEY": "YUNWU_API_KEY", "MICU_SLB_API_BASE_URL": "YUNWU_API_BASE_URL"},
+}
 
 
-def yunwu_environment(helper: Path | None = None) -> dict[str, str]:
+def yunwu_environment(helper: Path | None = None, profile: str = "yunwu") -> dict[str, str]:
+    if profile not in ALLOWED_CREDENTIAL_PROFILES:
+        raise CredentialError(f"unsupported credential profile: {profile}")
     existing = {key: os.environ[key] for key in ALLOWED_YUNWU_KEYS if os.environ.get(key)}
     if "YUNWU_API_KEY" in existing:
         return existing
@@ -22,7 +29,7 @@ def yunwu_environment(helper: Path | None = None) -> dict[str, str]:
         raise CredentialError(f"encrypted credential helper not found: {executable}")
     try:
         result = subprocess.run(
-            [str(executable), "env", "yunwu"],
+            [str(executable), "env", profile],
             check=True,
             capture_output=True,
             text=True,
@@ -35,12 +42,13 @@ def yunwu_environment(helper: Path | None = None) -> dict[str, str]:
         if not line.startswith("export ") or "=" not in line:
             raise CredentialError("credential helper returned an unsupported command")
         name, encoded = line.removeprefix("export ").split("=", 1)
-        if name not in ALLOWED_YUNWU_KEYS:
+        target_name = PROFILE_ENV_NAMES[profile].get(name)
+        if target_name not in ALLOWED_YUNWU_KEYS:
             raise CredentialError(f"credential helper returned disallowed variable: {name}")
         tokens = shlex.split(encoded, posix=True)
         if len(tokens) != 1:
             raise CredentialError(f"credential helper returned an invalid value for {name}")
-        values[name] = tokens[0]
+        values[target_name] = tokens[0]
     if not values.get("YUNWU_API_KEY"):
         raise CredentialError("credential helper did not return YUNWU_API_KEY")
     return values

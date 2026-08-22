@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-long-direct-seventh-shard-v2
+display_name: {en: Hermes v2 long Direct seventh per-cell shard, zh: Hermes v2 长 Direct 第七个每格分片}
+domain: rag
+task: distill
+lifecycle: active
+components: {runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/seventh-per-cell/direct_targets.jsonl
+  route: direct
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/direct-seventh-shard
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 8
+tags: [hermes, v2, direct, shard, per-cell, fresh-images]

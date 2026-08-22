@@ -1,0 +1,13 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-reconstructive-intermediate-candidate192-v1
+display_name: {en: Reconstructive intermediate candidate 192-row Direct diagnostic, zh: 重建式中间候选 192 行 Direct 诊断}
+domain: vlm
+task: direct_retention
+description: Matched 192-row public-image-only Direct diagnostic for the completed intermediate SFT checkpoint.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_reconstructive_intermediate_v1/v0-20260817-043835/checkpoint-135, data: data/rag-sft-stagea-matched-diagnostic-v1, runtime: runtime/local-a800-2gpu-eval}
+runtime_profile: runtime/local-a800-2gpu-eval
+inputs: {baseline_model: outputs/vlm_sft/qwen3_vl_4b_reconstructive_intermediate_v1/v0-20260817-043835/checkpoint-135, diagnostic_manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl}
+outputs: {evaluation: outputs/experiments/reconstructive_direct_blind_rag_v1/evaluation/intermediate_candidate_direct192}
+parameters: {model: outputs/vlm_sft/qwen3_vl_4b_reconstructive_intermediate_v1/v0-20260817-043835/checkpoint-135, manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl, output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/evaluation/intermediate_candidate_direct192, cuda_visible_devices: "2,3", max_new_tokens: 512, request_timeout: 1200, sglang_tp_size: 2, sglang_mem_fraction_static: 0.7}
+tags: [qwen3-vl, reconstructive, intermediate, candidate, matched-diagnostic, direct]

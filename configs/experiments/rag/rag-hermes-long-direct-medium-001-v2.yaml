@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-long-direct-medium-001-v2
+display_name: {en: Hermes v2 long Direct medium collection 001, zh: Hermes v2 长 Direct 中规模采样 001}
+domain: rag
+task: distill
+description: "Forty fresh Direct rows: five bilingual source-image pairs per question-type/domain cell."
+lifecycle: active
+components: {runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: micu_slb
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/medium-002/direct_targets.jsonl
+  route: direct
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/direct-medium-001
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 40
+tags: [hermes, v2, direct, medium, fresh-images, micu-slb]

@@ -1,10 +1,13 @@
 from pathlib import Path
+
+import numpy as np
 from fastapi.testclient import TestClient
 
 from agrinet.common.contracts import RagSearchRequest
 from agrinet.rag.retrieval import RetrievalService
 from agrinet.rag.service import create_app
 from agrinet.rag.tool_schema import validate_tool_arguments
+from agrinet.rag.milvus import MilvusSiglipBackend
 
 
 class Backend:
@@ -22,6 +25,16 @@ def test_retrieval_service_uses_versioned_contract() -> None:
     assert result.schema_version == "agrinet.rag.search/v1"
     assert result.evidence[0].artifact_id == "N04001"
     assert result.evidence[0].metadata["english_name"] == "Apple Black Rot"
+
+
+def test_retrieval_service_normalizes_numpy_metadata_for_http() -> None:
+    class NumpyBackend:
+        def health(self): return {"ok": True}
+        def search(self, request):
+            return [{"entry_id": "N04001", "score": np.float32(0.9), "rank": np.int64(1), "nested": [np.float32(0.5)]}]
+
+    result = RetrievalService(NumpyBackend()).search(RagSearchRequest(retrieval_type="visual", query_image=Path("query.jpg")))
+    assert result.evidence[0].metadata == {"entry_id": "N04001", "rank": 1, "nested": [0.5]}
 
 
 def test_tool_schema_rejects_name_without_required_fields() -> None:
@@ -45,3 +58,18 @@ def test_http_presets_forward_real_retrieval_contract() -> None:
     assert all(request.query_text == body["text"] for request in requests)
     assert requests[2].weights == {"text": 0.7, "image": 0.3}
     assert client.post("/search/visual", json={**body, "ignored": True}).status_code == 422
+
+
+def test_old_milvus_index_falls_back_to_public_catalog_similar_classes() -> None:
+    # Construct without opening Milvus or a vision encoder: this isolates the
+    # compatibility path used when a live Lite file predates the new fields.
+    backend = object.__new__(MilvusSiglipBackend)
+    backend._catalog_similar_classes = {
+        "wiki::N04001": {
+            "similar_english_classes": ["Grape Black rot"],
+            "similar_chinese_classes": ["葡萄黑腐病"],
+        }
+    }
+    row = backend._plain_row({"entry_id": "wiki::N04001", "english_name": "Apple Black Rot"})
+    assert row["similar_english_classes"] == ["Grape Black rot"]
+    assert row["similar_chinese_classes"] == ["葡萄黑腐病"]

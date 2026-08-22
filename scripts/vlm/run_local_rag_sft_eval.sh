@@ -26,6 +26,7 @@ TOP_K="${TOP_K:-3}"
 REQUEST_TIMEOUT="${REQUEST_TIMEOUT:-1200}"
 SGLANG_MEM_FRACTION_STATIC="${SGLANG_MEM_FRACTION_STATIC:-0.7}"
 SGLANG_TP_SIZE="${SGLANG_TP_SIZE:-2}"
+SGLANG_DP_SIZE="${SGLANG_DP_SIZE:-0}"
 SGLANG_HEALTH_ATTEMPTS="${SGLANG_HEALTH_ATTEMPTS:-420}"
 RAG_LITE_DB="${RAG_LITE_DB:-outputs/milvus/agrinet_wiki_lite.db}"
 RAG_MODEL="${RAG_MODEL:-models/siglip2-so400m-patch16-naflex}"
@@ -35,6 +36,9 @@ export LMUData="$REPO_ROOT/tmp/LMUData"
 export no_proxy="${no_proxy:-127.0.0.1,localhost}"
 export NO_PROXY="${NO_PROXY:-$no_proxy}"
 mkdir -p "$OUT_DIR" "$LMUData"
+IFS=',' read -r -a visible_gpus <<<"$CUDA_VISIBLE_DEVICES"
+if [[ "$SGLANG_DP_SIZE" == 0 ]]; then SGLANG_DP_SIZE=$(( ${#visible_gpus[@]} / SGLANG_TP_SIZE )); fi
+(( SGLANG_TP_SIZE > 0 && SGLANG_DP_SIZE > 0 && SGLANG_TP_SIZE * SGLANG_DP_SIZE == ${#visible_gpus[@]} )) || { echo "SGLANG_TP_SIZE * SGLANG_DP_SIZE must equal visible GPU count" >&2; exit 2; }
 
 for path in "$MODEL_PATH" "$MANIFEST" "$RAG_LITE_DB"; do
   [[ -e "$path" ]] || { echo "Required path does not exist: $path" >&2; exit 2; }
@@ -103,7 +107,7 @@ wait_ok RAG "http://127.0.0.1:$RAG_PORT/health" "$RAG_PID" 180
 
 echo "Starting SGLang on GPUs $CUDA_VISIBLE_DEVICES at $SGLANG_PORT"
 setsid "$PYTHON_BIN" -m swift.cli.main deploy --model "$MODEL_PATH" --infer_backend sglang \
-  --sglang_tp_size "$SGLANG_TP_SIZE" --sglang_context_length 8192 \
+  --sglang_tp_size "$SGLANG_TP_SIZE" --sglang_dp_size "$SGLANG_DP_SIZE" --sglang_context_length 8192 \
   --sglang_mem_fraction_static "$SGLANG_MEM_FRACTION_STATIC" \
   --sglang_disable_cuda_graph true --max_new_tokens "$MAX_NEW_TOKENS" \
   --served_model_name "$SERVED_MODEL_NAME" --host "$SGLANG_HOST" --port "$SGLANG_PORT" \

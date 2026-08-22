@@ -1,6 +1,7 @@
 import json
 
 from swift.agent_template.manual_json import ManualJSONAgentTemplate
+from swift.agent_template.hermes import HermesAgentTemplate
 from swift.template.base import Template
 from swift.template.template_inputs import StdTemplateInputs
 from swift.loss_scale.manual_json import ManualJSONLossScale
@@ -22,6 +23,19 @@ def test_manual_json_tool_call_is_bare_json():
     assert '<tool_call>' not in content
     assert '✿FUNCTION✿' not in content
     assert 'Action:' not in content
+
+
+def test_manual_json_is_required_for_the_native_json_sft_wire_contract():
+    """Hermes rewrites role=tool_call to XML; native evaluation must not train it."""
+    message = {'content': json.dumps({
+        'name': 'agrinet_rag_search',
+        'arguments': {'query': 'leaf spot', 'top_k': 3},
+    })}
+    hermes_content = HermesAgentTemplate()._format_tool_calls([message])
+    native_content = ManualJSONAgentTemplate()._format_tool_calls([message])
+    assert '<tool_call>' in hermes_content
+    assert json.loads(native_content)['name'] == 'agrinet_rag_search'
+    assert '<tool_call>' not in native_content
 
 
 def test_manual_json_preserves_tool_response_order():

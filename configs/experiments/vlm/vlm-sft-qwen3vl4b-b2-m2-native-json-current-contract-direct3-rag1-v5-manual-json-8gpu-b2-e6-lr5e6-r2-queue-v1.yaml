@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-b2-m2-native-json-current-contract-direct3-rag1-v5-manual-json-8gpu-b2-e6-lr5e6-r2-queue-v1
+display_name: {en: "B2 + M2 native-JSON v5: batch-2 e6 LR5e-6 queue repeat 2", zh: "B2 + M2 原生 JSON v5：batch-2 六轮 LR5e-6 队列重复 2"}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: "Second dependent six-epoch manual-JSON LR5e-6 repeat; starts only after repeat 1 completes successfully."
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_r2_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b2-m2-native-json-current-contract-direct3-rag1-v4/manifest.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_r2, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-b2-m2-native-json-current-contract-direct3-rag1-v5-manual-json-8gpu-b2-e6-lr5e6-r2-queue-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  wait_for_run_dir: outputs/runs/vlm/vlm-sft-qwen3vl4b-b2-m2-native-json-current-contract-direct3-rag1-v5-manual-json-8gpu-b2-e6-lr5e6-r1-queue-v1/20260820T042053-e259e1da-a01
+  dataset_sha256: 044bd07e153f9dad571f1c7365c718796e4d7c890c6aa2d153ca110ca043371b
+  epochs: 6
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  global_batch_size: 128
+  expected_optimizer_steps: 108
+  learning_rate: 5.0e-6
+  queued_checkpoints: [{epoch: 2, step: 36}, {epoch: 4, step: 72}, {epoch: 6, step: 108}]
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29669}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260819}
+tags: [qwen3-vl, native-json, manual-json, 8gpu, batch2, e6, lr5e-6, checkpoint-queue, dp8, repeat2]

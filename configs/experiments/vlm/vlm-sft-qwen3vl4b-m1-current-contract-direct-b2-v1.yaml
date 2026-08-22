@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-m1-current-contract-direct-b2-v1
+display_name:
+  en: "B2 repair: M1 current-contract Direct, low-update budget"
+  zh: "B2 修复：M1 当前协议 Direct，低更新预算"
+domain: vlm
+task: sft
+description: "Targeted repair after B formal failure: system-free official Direct prompts and one low-LR epoch from M1."
+lifecycle: active
+components:
+  model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  runtime: runtime/local-a800-4gpu-train
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_m1_current_contract_direct_b2_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b2-current-contract-direct-v1/manifest.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2
+parameters:
+  dataset_sha256: f46b335bc41160750c5b5244e940ea4b92825bc991ae76f7acf4ad004c42e185
+  source_freeze_sha256: 9d59ad93790f8931a4a7ec63c3e4f615b65316530750b6623c99cf0a4812fd28
+  initialization_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  protocol: agrinet.current-direct-contract/v1
+  rows: 560
+  epochs: 1
+  learning_rate: 1.0e-6
+  effective_global_batch: 32
+  expected_optimizer_steps: 18
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29631}
+  evaluation: native_dp8_formal618_direct_before_any_mixture
+tags: [qwen3-vl, m1, direct, prompt-contract, retention-repair, low-update]

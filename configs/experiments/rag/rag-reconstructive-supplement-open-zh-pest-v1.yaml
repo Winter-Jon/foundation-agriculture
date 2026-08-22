@@ -1,0 +1,11 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-supplement-open-zh-pest-v1
+display_name: {en: Reconstructive supplement Open Chinese pest, zh: 重建式补采开放中文虫害}
+domain: rag
+task: distill
+description: Audit-driven, locally eligible, bounded Blind supplement; stops after 27 strict accepts.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters: {credential_profile: micu_slb, plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/supplement_plan_v1/collection_shards/open-zh-pest/blind_targets.jsonl, approval_scope: reconstructive_blind_supplement, rag_api: http://127.0.0.1:8077, output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/supplement_collection_v1/open-zh-pest, model: gpt-5.6-terra, limit: 38, stop_after_accepted: 27, max_concurrent: 1}
+tags: [rag, reconstructive, supplement, blind-evidence, open, zh, pest, gpt-5.6-terra]

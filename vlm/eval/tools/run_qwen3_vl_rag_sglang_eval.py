@@ -4,25 +4,34 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tools.rag_distill.run_pilot import (
     STUDENT_USER_QUERY,
     clamp_tool_args,
     compact_hit,
     extract_message,
     image_url_content,
-    normalize_tool_calls,
-    one_shot_example,
     sft_user_message,
-    user_prompt,
 )
 from tools.rag_distill.schema import TOOL_NAME, tool_schema, validate_tool_arguments
+from agrinet.rag.hermes_protocol import is_pre_tool_think, parse_hermes_tool_calls
+from eval_runner_common import SnapshotStore, load_jsonl as durable_load_jsonl, request_fingerprint, validate_manifest
+
+
+DEFAULT_MAX_CONCURRENT = 24
+# v4 adds public curated similar-class evidence to each model-visible hit.
+# Bump the fingerprint so a resumed run cannot mix old and new evidence turns.
+PROTOCOL_VERSION = "agrinet.hermes-rag-sglang-async/v4-native-json-strict-similar-classes"
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,7 +50,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--request-timeout", type=int, default=300)
+    parser.add_argument("--max-concurrent", type=int, default=DEFAULT_MAX_CONCURRENT, help="Concurrent samples; tool turns within one sample remain ordered.")
+    parser.add_argument("--request-retries", type=int, default=2)
+    parser.add_argument("--snapshot-every", type=int, default=1, help="Progress reporting cadence; every completion is durable.")
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--capture-protocol-trace", action="store_true", help="Persist bounded model-output forms for non-formal protocol smoke diagnostics.")
     parser.add_argument("--disable-forced-first-call", action="store_true", help="Do not inject the mandatory first retrieval when the model answers directly.")
+    parser.add_argument(
+        "--invalid-tool-call-policy", choices=("strict", "recovery"), default="strict",
+        help="strict closes any malformed tool attempt with one terminal-answer request; recovery may use one fixed public visual fallback before the tool budget is exhausted.",
+    )
     return parser.parse_args()
 
 
@@ -98,78 +116,73 @@ def _eval_sample(row: dict[str, Any], image_path: Path) -> dict[str, Any]:
 
 def _build_eval_messages(sample: dict[str, Any], image_path: Path, top_k: int) -> list[dict[str, Any]]:
     question = str(sample.get("evaluation_question") or STUDENT_USER_QUERY)
-    option_task = sample.get("question_type") == "option"
-    chinese = sample.get("language") == "zh"
-    answer_contract = (
-        ("<answer> 中只能包含题目选项字母 A、B、C 或 D。" if chinese else
-         "The <answer> section must contain only the selected option letter (A, B, C, or D). ")
-        if option_task else
-        ("<answer> 中只能包含检索证据支持的中文规范类别名称；可在括号中保留英文原名，但回答主体必须为中文。"
-         if chinese else
-         "The <answer> section must contain only the predicted canonical class name. ")
+    # The frozen Swift native ``tool_call`` role is rendered as a bare JSON
+    # assistant object, not Hermes XML.  Keep XML parsing only as historical
+    # input recovery; asking for XML here creates an evaluation-only wire
+    # mismatch and confounds strict protocol diagnostics.
+    system = (
+        "You are a helpful agricultural recognition assistant. When retrieval is needed, output exactly one bare JSON tool-call object and no other text: "
+        f'{{"name":"{TOOL_NAME}","arguments":{{"query":"...","retrieval_type":"visual","image":"query_image","top_k":{top_k},"rationale":"..."}}}}. '
+        "After a tool result, either output one bare JSON tool-call object or the trained final form <think>brief evidence</think><answer>...</answer>. Never use <tool_call> XML tags, markdown fences, or mix a call with an answer."
     )
-    language_contract = (
-        "这是中文 query。除工具 arguments.query 外，所有可见思维链、Evidence 字段、排除候选、不确定性和答案都必须使用中文；"
-        "<think> 中必须使用中文标题：证据、排除的候选、不确定性。工具查询仍使用简短英文。"
-        if chinese else
-        "This is an English query. All visible reasoning and the final answer must be in English; do not use Chinese."
-    )
-    system = ("You are an agricultural visual recognition assistant using manual JSON tool-calling. "
-        "You must use a manual JSON tool-call protocol, not provider-native function calling. "
-        "Every assistant message must be exactly one of two forms: (1) a single JSON tool-call object and no other text, "
-        "or (2) the final response as <think>...</think> followed by <answer>...</answer>. Never mix a JSON tool call with explanation or a final answer. "
-        "The first assistant message must be a single agrinet_rag_search JSON call. Do not output a bare arguments object. "
-        f'The required shape is exactly: {{"name":"agrinet_rag_search","arguments":{{"query":"...","retrieval_type":"visual","image":"query_image","top_k":{top_k},"rationale":"..."}}}}. '
-        f'The student-facing user request is: "{STUDENT_USER_QUERY}" Use it as the starting point for natural English tool queries, but keep each query shorter than the full instruction when possible. '
-        "Good first-query examples are simple English phrases or questions such as `what disease is on this leaf`, `leaf spots and edge shape`, or `brown spots on crop leaf`. After the first retrieval, first state candidate hypotheses from Visual Observation plus retrieved results, then search again. Candidate hypotheses should be descriptive variants like `healthy-looking stone-fruit leaf`, `dark leaf-spot disease on a broadleaf crop`, or `rust-like lesions on a pome-fruit leaf`; they should not exactly copy a database class name such as `Cherry Normal leaf` unless the query is an exact name lookup for retrieved evidence. If a candidate is not already named in retrieved evidence, describe it neutrally with host/organ/symptom traits instead of writing a full database class name. Avoid Chinese, first-turn class-name guesses, and procedural text such as `retrieve top visual evidence before answering`. "
-        "After tool responses, either emit another single JSON tool call or give the final response. The final response must include a <think> section first, then an <answer> section. "
-    )
-    system += " " + language_contract + " "
-    system += ("The <think> section must include exactly these Chinese field labels: 证据, 排除的候选, 不确定性。 " if chinese else
-               "The <think> section must include exactly these field labels: Evidence, Rejected alternatives, Uncertainty. ")
-    system += answer_contract
-    system += ("Use retrieved class names, aliases, scores, and reference image IDs as evidence. Keep the final visible reasoning concise and grounded in tool responses. "
-               "Final answers are allowed only when retrieved evidence contains the predicted class or an alias; otherwise search again. "
-               "Name lookup may use only an exact class name or alias already seen in tool evidence. Semantic, balanced, visual, and rrf follow-ups may compare retrieved similar class names, or may search neutral host/organ/symptom descriptions when an exact name is not yet supported. Do not use name lookup on the first turn, for descriptive phrases, or for inferred/guessed names that have not appeared in retrieved evidence. ")
-    system += f"{one_shot_example(top_k)} Tool schema: {json.dumps(tool_schema(), ensure_ascii=False)}"
     return [
-        {"role": "system", "content": system},
-        {"role": "user", "content": [{"type": "text", "text": user_prompt(sample, top_k).replace(STUDENT_USER_QUERY, question)}, image_url_content(image_path)]},
+        {"role": "system", "content": system + " Tool schema: " + json.dumps(tool_schema(), ensure_ascii=False, separators=(",", ":"))},
+        {"role": "user", "content": [{"type": "text", "text": question}, image_url_content(image_path)]},
     ]
 
 
-def _tool_response_message(sample: dict[str, Any], tool_response: dict[str, Any], reference_images: list[str]) -> dict[str, Any]:
-    """Render a public-only continuation for blind evaluation.
 
-    ``api_tool_response_prompt`` is intentionally a distillation helper and may
-    append an Oracle teacher-forcing context.  Evaluation must never expose a
-    manifest label, alias, or target-derived option mapping to the model.
+def _training_tool_response(tool_response: dict[str, Any]) -> dict[str, Any]:
+    """Serialize public retrieval evidence in the frozen SFT schema.
+
+    Student RAG rows use a native ``tool`` role whose results expose
+    ``name``, ``name_zh``, and ``similarity``.  Evaluation must not add labels,
+    option targets, or teacher-only fields.
     """
-    chinese = sample.get("language") == "zh"
-    option = sample.get("question_type") == "option"
-    if chinese:
-        continuation = (
-            "如果证据不足，只输出下一次 JSON 工具调用；否则输出 <think>...</think><answer>...</answer>。"
-            "<think> 必须使用标题：证据、排除的候选、不确定性。"
-            + ("<answer> 只能是 A、B、C 或 D 中的一个选项字母。" if option else "<answer> 只能是检索证据中出现的中文规范类别名称或中文别名。")
-        )
-    else:
-        continuation = (
-            "If evidence is insufficient, output only the next JSON tool call; otherwise output <think>...</think><answer>...</answer>. "
-            "Use Evidence, Rejected alternatives, and Uncertainty headings. "
-            + ("The <answer> must contain exactly one option letter A, B, C, or D." if option else "The <answer> must copy an English class name or alias appearing in retrieved evidence.")
-        )
-    text = (
-        "Tool response JSON:\n" + json.dumps(tool_response, ensure_ascii=False) + "\n\n"
-        + "Reference image IDs in this public result correspond to the attached images. " + continuation
-        + " Do not use hidden labels, ground truth, or private target information."
-    )
-    content: list[dict[str, Any]] = [{"type": "text", "text": text}]
-    for ref in reference_images:
-        path = Path(ref)
-        if path.exists():
-            content.append(image_url_content(path))
-    return {"role": "user", "content": content}
+    results: list[dict[str, Any]] = []
+    for hit in tool_response.get("results", []) or []:
+        if isinstance(hit, dict):
+            results.append({
+                "rank": hit.get("rank"),
+                "name": hit.get("class_name"),
+                "name_zh": hit.get("chinese_name"),
+                "similarity": hit.get("score"),
+            })
+            similar = hit.get("similar_classes")
+            if isinstance(similar, list) and similar:
+                # Keep only readable public names in the actual model-visible
+                # tool turn. Internal IDs, local paths, and labels stay hidden.
+                results[-1]["similar_classes"] = [
+                    {"name": item.get("name"), "name_zh": item.get("name_zh")}
+                    for item in similar[:5]
+                    if isinstance(item, dict) and (item.get("name") or item.get("name_zh"))
+                ]
+    payload = {
+        "source": "AgriNet public reference catalog",
+        "retrieval_type": tool_response.get("retrieval_type"),
+        "query": tool_response.get("query"),
+        "results": results,
+        "status": tool_response.get("status"),
+    }
+    # Error identifiers are public protocol state, not labels. Preserve them
+    # so terminal-budget and invalid-call closures remain observable to the
+    # model after serialization.
+    for key in ("error", "message", "errors"):
+        if key in tool_response:
+            payload[key] = tool_response[key]
+    return payload
+
+
+def _tool_response_message(sample: dict[str, Any], tool_response: dict[str, Any], reference_images: list[str]) -> dict[str, Any]:
+    """Render public evidence as the native ``tool`` turn used in SFT.
+
+    Reference images are deliberately omitted: frozen student trajectories use
+    JSON evidence only, and repeated reference-image tokens are not part of
+    the trained state transition.
+    """
+    del sample, reference_images
+    return {"role": "tool", "content": json.dumps(_training_tool_response(tool_response), ensure_ascii=False, separators=(",", ":"))}
+
 
 
 def _trim_reference_images(reference_image_paths: list[str], limit: int = 0) -> list[str]:
@@ -266,6 +279,165 @@ def _fallback_final_answer(text: str) -> str:
     return f"<answer>{stripped}</answer>"
 
 
+def _output_form(content: str, calls: list[dict[str, Any]], noncanonical: bool, malformed_reason: str | None = None) -> str:
+    """Classify a model response without inspecting labels or retrieval truth."""
+    stripped = content.strip()
+    if calls:
+        if noncanonical:
+            return "mixed_or_noncanonical_tool_call"
+        if stripped.startswith("<tool_call>"):
+            return "xml_tool_call"
+        if stripped.startswith("{"):
+            return "bare_json_tool_call"
+        return "recognized_tool_call"
+    if malformed_reason:
+        return f"invalid_tool_call:{malformed_reason}"
+    if is_pre_tool_think(stripped):
+        return "planning_think"
+    if "<answer>" in stripped:
+        return "answer"
+    return "other"
+
+
+def _parse_eval_tool_calls(content: str) -> tuple[list[dict[str, Any]], bool, str | None]:
+    """Parse strict Hermes calls, with a narrow evaluator-only recovery.
+
+    Training validation deliberately rejects mixed assistant output.  At
+    evaluation, a model can emit one otherwise-valid public call wrapped with
+    incidental text.  Recover only that single, schema-valid call and record
+    it as noncanonical; malformed or multiple calls remain invalid.
+    """
+    # Swift's manual-JSON template renders a training ``tool_call`` role as a
+    # bare assistant JSON object. Prefer that exact served form; retain XML
+    # parsing only for backwards-compatible recovery of historical outputs.
+    try:
+        bare = json.loads(content.strip())
+    except (json.JSONDecodeError, TypeError):
+        bare = None
+    if (isinstance(bare, dict) and bare.get("name") == TOOL_NAME
+            and isinstance(bare.get("arguments"), dict)
+            and not validate_tool_arguments(bare["arguments"])):
+        return [{"name": TOOL_NAME, "arguments": bare["arguments"]}], False, None
+    # The SFT trace has a pure planning assistant turn followed by a bare JSON
+    # tool turn.  The served model can occasionally concatenate the next
+    # trained final-answer turn in the same generation.  Recover exactly one
+    # schema-valid bare object from that mixed response, but mark it
+    # noncanonical; multiple, malformed, or wrong-schema objects remain
+    # strict failures below.  This is parallel to the existing XML mixed-call
+    # recovery and never invents a retrieval call.
+    decoder = json.JSONDecoder()
+    recovered_bare: list[dict[str, Any]] = []
+    for match in re.finditer(r"\{\s*\"name\"", content):
+        try:
+            candidate, _ = decoder.raw_decode(content[match.start():])
+        except json.JSONDecodeError:
+            continue
+        if (isinstance(candidate, dict) and candidate.get("name") == TOOL_NAME
+                and isinstance(candidate.get("arguments"), dict)
+                and not validate_tool_arguments(candidate["arguments"])):
+            recovered_bare.append(candidate)
+    if len(recovered_bare) == 1:
+        call = recovered_bare[0]
+        return [{"name": TOOL_NAME, "arguments": call["arguments"]}], True, None
+    if len(recovered_bare) > 1:
+        return [], False, "multiple_bare_json_objects"
+    strict = parse_hermes_tool_calls(content, tool_name=TOOL_NAME, validate_arguments=validate_tool_arguments)
+    if strict:
+        if len(strict) == 1:
+            return strict, False, None
+        return [], False, "multiple_tool_calls"
+    matches = re.findall(r"<tool_call>\s*(.*?)\s*</tool_call>", content, flags=re.DOTALL)
+    stripped = content.strip()
+    if matches:
+        if len(matches) != 1:
+            return [], False, "multiple_tool_calls"
+        try:
+            call = json.loads(matches[0])
+        except json.JSONDecodeError:
+            return [], False, "malformed_xml_json"
+        if not isinstance(call, dict):
+            return [], False, "xml_call_not_object"
+        if call.get("name") != TOOL_NAME:
+            return [], False, "wrong_tool_name"
+        if not isinstance(call.get("arguments"), dict) or validate_tool_arguments(call["arguments"]):
+            return [], False, "invalid_tool_arguments"
+        # A valid XML call embedded in other text is recoverable but is not a
+        # canonical trained transition.
+        return [{"name": TOOL_NAME, "arguments": call["arguments"]}], True, None
+    if "<tool_call" in stripped.lower() or "</tool_call>" in stripped.lower():
+        return [], False, "malformed_xml_envelope"
+
+    # Do not flag ordinary final prose.  Bare JSON is a tool attempt only when
+    # it begins like the trained wire form or mentions a tool-specific key.
+    looks_like_bare_call = stripped.startswith("{") or any(token in stripped for token in ("agrinet_rag_search", '"arguments"', '"name"'))
+    if not looks_like_bare_call:
+        return [], False, None
+    try:
+        call = json.loads(stripped)
+    except json.JSONDecodeError:
+        decoder = json.JSONDecoder()
+        try:
+            _, end = decoder.raw_decode(stripped)
+        except json.JSONDecodeError:
+            pass
+        else:
+            if stripped[end:].lstrip().startswith("{"):
+                return [], False, "multiple_bare_json_objects"
+        return [], False, "malformed_bare_json"
+    if not isinstance(call, dict):
+        return [], False, "bare_call_not_object"
+    if call.get("name") != TOOL_NAME:
+        return [], False, "wrong_tool_name"
+    if not isinstance(call.get("arguments"), dict) or validate_tool_arguments(call["arguments"]):
+        return [], False, "invalid_tool_arguments"
+    return [{"name": TOOL_NAME, "arguments": call["arguments"]}], False, None
+
+
+def _fallback_visual_call(top_k: int) -> dict[str, Any]:
+    """Public, label-blind retrieval used only to recover malformed calls."""
+    return {
+        "name": TOOL_NAME,
+        "arguments": {
+            "query": "agricultural disease or pest visual features",
+            "retrieval_type": "visual",
+            "image": "query_image",
+            "top_k": top_k,
+            "rationale": "Recover from a malformed tool request with public visual evidence.",
+        },
+    }
+
+
+def _final_answer_only_correction(sample: dict[str, Any]) -> str:
+    """Force a terminal answer after the evaluator has spent its tool budget."""
+    if sample.get("question_type") == "option":
+        return (
+            "Tool budget exhausted: do not call any more tools. Give the final answer now. "
+            "Use the trained final form <think>brief evidence</think><answer>A</answer>: the <answer> must contain exactly one option letter A, B, C, or D. Do not output tool_call."
+            if sample.get("language") != "zh" else
+            "工具调用次数已用尽：不要再调用工具。现在使用训练时的最终格式 <think>简短证据</think><answer>A</answer>；<answer> 中只能输出唯一选项字母 A、B、C 或 D，不要输出 tool_call。"
+        )
+    return (
+        "Tool budget exhausted: do not call any more tools. Use the trained final form <think>brief evidence</think><answer>class name</answer>, copying only a class name or alias from retrieved evidence; no tool_call."
+        if sample.get("language") != "zh" else
+        "工具调用次数已用尽：不要再调用工具。现在使用训练时的最终格式 <think>简短证据</think><answer>类别名</answer>，<answer> 只能使用检索证据中的类别名或别名；不要输出 tool_call。"
+    )
+
+
+def _invalid_tool_final_answer_correction(sample: dict[str, Any], attempt: int) -> str:
+    """Escalating terminal prompt for a malformed follow-up call."""
+    if sample.get("question_type") == "option":
+        answer_format = "exactly one option letter A, B, C, or D inside <answer>"
+    else:
+        answer_format = "one class name or alias from the evidence inside <answer>"
+    if sample.get("language") == "zh":
+        answer_format = "在 <answer> 中输出唯一选项字母 A、B、C 或 D" if sample.get("question_type") == "option" else "在 <answer> 中输出证据中的一个类别名称或别名"
+        return f"刚才的请求无法处理（第 {attempt} 次）。不要重复该请求，也不要检索。现在仅根据已有证据使用 <think>简短证据</think><answer>...</answer> 给出最终分类：{answer_format}。"
+    return (
+        f"The previous request cannot be processed (attempt {attempt}). Do not repeat it and do not retrieve anything. "
+        f"Use the trained final form <think>brief evidence</think><answer>...</answer> and state the final classification using {answer_format}."
+    )
+
+
 def _grounded_chinese_answer(text: str, tool_history: list[dict[str, Any]]) -> str:
     """Map an English retrieved class name to its retrieved Chinese name only."""
     if "<answer>" not in text or "</answer>" not in text:
@@ -338,20 +510,7 @@ def _grounded_final_answer(text: str, tool_history: list[dict[str, Any]], sample
     return text.replace(f"<answer>{body}</answer>", f"<answer>{replacement}</answer>")
 
 
-def main() -> None:
-    args = parse_args()
-    repo_root = Path(args.repo_root).resolve()
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-
-    rows = _load_jsonl(Path(args.manifest))
-    if args.offset:
-        rows = rows[args.offset :]
-    if args.limit:
-        rows = rows[: args.limit]
-
-    with output.open("w", encoding="utf-8") as f:
-        for idx, row in enumerate(rows, start=1):
+def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: Path) -> dict[str, Any]:
             image_path = _resolve(str(row["image_path"]), repo_root)
             if not image_path.exists():
                 raise FileNotFoundError(f"image not found: {image_path}")
@@ -364,10 +523,24 @@ def main() -> None:
             forced_tool_turns = 0
             tool_history: list[dict[str, Any]] = []
             raw_messages: list[dict[str, Any]] = []
+            protocol_trace: list[dict[str, Any]] = []
             error_text = ""
             language_correction_turns = 0
             answer_correction_turns = 0
             first_turn_reprompted = False
+            planning_turns = 0
+            protocol_errors: list[str] = []
+            max_tool_turns_exceeded = 0
+            terminal_answer_reprompts = 0
+            terminal_answer_pending = False
+            invalid_tool_reprompts = 0
+            invalid_tool_call_policy = getattr(args, "invalid_tool_call_policy", "strict")
+            malformed_tool_call_attempts = 0
+            malformed_tool_call_reasons: dict[str, int] = {}
+            noncanonical_recovered_calls = 0
+            post_budget_tool_attempts = 0
+            terminal_closure_used = 0
+            terminal_closure_failed = 0
 
             while True:
                 try:
@@ -379,11 +552,11 @@ def main() -> None:
                         max_new_tokens=args.max_new_tokens,
                         temperature=args.temperature,
                         timeout=args.request_timeout,
-                        # Qwen3-VL's native template otherwise prepends a
-                        # thinking block before the protocol's first JSON
-                        # call. Disable thinking only for the first turn;
-                        # later turns retain the normal final-answer contract.
-                        chat_template_kwargs={"enable_thinking": False} if tool_turns == 0 else None,
+                        # Frozen RAG rows contain one pure assistant planning
+                        # turn before their first tool call. Keep thinking
+                        # enabled for that trained transition; disable it only
+                        # when a terminal-only correction must close the run.
+                        chat_template_kwargs={"enable_thinking": False} if terminal_answer_pending else None,
                     )
                 except Exception as exc:
                     error_text = f"sglang request failed: {exc}"
@@ -392,20 +565,69 @@ def main() -> None:
 
                 raw_messages.append(response)
                 message = extract_message(response)
-                calls = normalize_tool_calls(message)
+                content = str(message.get("content") or "")
+                calls, noncanonical_call, malformed_reason = _parse_eval_tool_calls(content)
+                if getattr(args, "capture_protocol_trace", False):
+                    protocol_trace.append({
+                        "tool_turns_before": tool_turns,
+                        "form": _output_form(content, calls, noncanonical_call, malformed_reason),
+                        "content_chars": len(content),
+                        # Diagnostic smokes need the actual wire form to
+                        # distinguish schema failures from mixed planning/JSON
+                        # output.  Formal runs never enable this flag; cap the
+                        # payload so repeated failures stay inspectable.
+                        "content_preview": content[:2048],
+                    })
                 forced_call = False
+                if not calls and is_pre_tool_think(content) and planning_turns == 0 and tool_turns == 0:
+                    planning_turns += 1
+                    api_messages.append({"role": "assistant", "content": content})
+                    # The native/manual-JSON SFT trajectory is a pure planning
+                    # turn followed by a bare JSON assistant object.  Asking
+                    # for Hermes XML here reintroduces the exact wire-format
+                    # mismatch this evaluator is intended to diagnose.
+                    api_messages.append({
+                        "role": "user",
+                        "content": (
+                            "Continue with exactly one bare JSON object with name agrinet_rag_search and its arguments; "
+                            "do not answer yet, and do not use XML tags, markdown, or explanation."
+                            if sample.get("language") != "zh" else
+                            "继续时只输出一个包含 name=agrinet_rag_search 与 arguments 的裸 JSON 对象；暂时不要回答，"
+                            "不要使用 XML 标签、Markdown 或解释。"
+                        ),
+                    })
+                    continue
+                invalid_tool_call = malformed_reason is not None
+                if invalid_tool_call:
+                    protocol_errors.append("invalid_hermes_tool_call")
+                    malformed_tool_call_attempts += 1
+                    malformed_tool_call_reasons[malformed_reason] = malformed_tool_call_reasons.get(malformed_reason, 0) + 1
+                if noncanonical_call:
+                    protocol_errors.append("noncanonical_hermes_tool_call")
+                    noncanonical_recovered_calls += 1
+                if (calls or invalid_tool_call) and tool_turns >= args.max_tool_turns:
+                    post_budget_tool_attempts += 1
+                # A terminal-only correction is a single, fixed state
+                # transition. Any further tool attempt (valid or malformed)
+                # is an explicit evaluation failure; never turn it into an
+                # additional retrieval, fallback, or repeated prompt.
+                if terminal_answer_pending and (calls or invalid_tool_call):
+                    error_text = "model emitted a tool call despite terminal-answer correction"
+                    final_text = f"<answer>{error_text}</answer>"
+                    terminal_closure_failed += 1
+                    break
                 # The trained manual-JSON policy occasionally emits a final
                 # answer directly on its first generation. Give it one
                 # explicit protocol-only retry before treating the sample as
                 # a no-retrieval failure (or using the optional forced call).
-                if not calls and tool_turns == 0 and not first_turn_reprompted:
+                if not calls and not invalid_tool_call and tool_turns == 0 and not first_turn_reprompted:
                     first_turn_reprompted = True
                     api_messages.append({
                         "role": "user",
                         "content": (
-                            "Protocol correction: this is the first turn. Do not answer yet. Output exactly one JSON object with name agrinet_rag_search and its arguments; no markdown, explanation, or <answer> tags."
+                            "Protocol correction: this is the first tool turn. Do not answer yet. Output exactly one bare JSON object with name agrinet_rag_search and its arguments; no XML tags, markdown, explanation, or <answer> tags."
                             if sample.get("language") != "zh" else
-                            "协议校正：这是第一轮。现在不要回答。只输出一个 name 为 agrinet_rag_search 且包含 arguments 的 JSON 对象，不要输出 Markdown、解释或 <answer> 标签。"
+                            "协议校正：这是第一轮工具调用。现在不要回答。只输出一个包含 name=agrinet_rag_search 与 arguments 的裸 JSON 对象，不要输出 XML 标签、Markdown、解释或 <answer> 标签。"
                         ),
                     })
                     continue
@@ -415,18 +637,47 @@ def main() -> None:
                 # Keep the benchmark genuinely RAG-enabled by executing the
                 # protocol's mandatory first visual retrieval in that case, and
                 # record the fallback separately from model-emitted calls.
-                if not calls and tool_turns == 0 and not args.disable_forced_first_call:
-                    calls = [{
-                        "name": TOOL_NAME,
-                        "arguments": {
-                            "query": "agricultural disease or pest visual features",
-                            "retrieval_type": "visual",
-                            "image": "query_image",
-                            "top_k": args.top_k,
-                            "rationale": "Establish visual candidates before the final identification.",
-                        },
-                    }]
+                if not calls and not invalid_tool_call and tool_turns == 0 and not args.disable_forced_first_call:
+                    calls = [_fallback_visual_call(args.top_k)]
                     forced_call = True
+                if (invalid_tool_call and invalid_tool_call_policy == "recovery"
+                        and tool_turns > 0 and tool_turns < args.max_tool_turns):
+                    # Preserve a genuine RAG trajectory when the model asks for
+                    # another tool but its wire format is malformed.  The
+                    # fallback is fixed, public, and label-blind; it avoids
+                    # turning a transport/protocol typo into a missing answer.
+                    calls = [_fallback_visual_call(args.top_k)]
+                    forced_call = True
+
+                # A malformed manual tool call is not a final answer.  Close
+                # it with a public protocol error and request a final answer
+                # from the evidence already available.  This applies after a
+                # valid retrieval as well as on the first turn; no extra tool
+                # execution is performed.
+                if invalid_tool_call and not calls:
+                    if invalid_tool_reprompts < 1:
+                        invalid_tool_reprompts += 1
+                        terminal_answer_pending = True
+                        terminal_closure_used += 1
+                        # No schema-valid call exists in this branch, so keep
+                        # the raw malformed attempt visible before returning a
+                        # native tool error.
+                        api_messages.append({"role": "assistant", "content": content})
+                        api_messages.append(_tool_response_message(
+                            sample,
+                            {
+                                "status": "error",
+                                "error": "invalid_tool_call",
+                                "message": "The tool call was invalid and was not executed. Use evidence already returned.",
+                            },
+                            [],
+                        ))
+                        api_messages.append({"role": "user", "content": _invalid_tool_final_answer_correction(sample, invalid_tool_reprompts)})
+                        continue
+                    error_text = "model repeated an invalid tool call despite final-answer correction"
+                    final_text = f"<answer>{error_text}</answer>"
+                    terminal_closure_failed += 1
+                    break
 
                 if calls and tool_turns < args.max_tool_turns:
                     call = calls[0]
@@ -454,7 +705,7 @@ def main() -> None:
                     forced_tool_turns += int(forced_call)
                     tool_history.append({"tool_call": visible_call, "tool_response": tool_response, "ledger": ledger, "forced": forced_call})
                     sft_messages.append({"role": "tool_response", "content": json.dumps(tool_response, ensure_ascii=False, separators=(",", ":"))})
-                    api_messages.append({"role": "assistant", "content": json.dumps(visible_call, ensure_ascii=False)})
+                    api_messages.append({"role": "assistant", "content": json.dumps(visible_call, ensure_ascii=False, separators=(",", ":"))})
                     api_messages.append(
                         _tool_response_message(
                             sample,
@@ -464,9 +715,52 @@ def main() -> None:
                     )
                     continue
 
-                content = message.get("content") or ""
+                # A model-generated call after the tool budget is exhausted is
+                # not an answer.  The previous implementation fell through to
+                # _fallback_final_answer and serialized the XML call inside
+                # <answer>, which disproportionately invalidated option items.
+                # Preserve the ordered transcript, then allow one terminal-only
+                # correction; a repeated call is an explicit evaluation error.
+                if calls or ("<tool_call>" in content and tool_turns >= args.max_tool_turns):
+                    max_tool_turns_exceeded += 1
+                    protocol_errors.append("max_tool_turns_exceeded")
+                    if terminal_answer_reprompts < 1:
+                        terminal_answer_reprompts += 1
+                        # Close the manual tool turn with a public rejection
+                        # response.  Leaving the emitted call unmatched makes
+                        # the chat state incomplete and Qwen tends to emit a
+                        # further call; this response neither executes a
+                        # fourth retrieval nor exposes hidden information.
+                        terminal_answer_pending = True
+                        terminal_closure_used += 1
+                        # A schema-valid over-budget call can be replayed in
+                        # the same assistant JSON form used by successful SFT
+                        # tool transitions before attaching the public error.
+                        terminal_call = calls[0] if calls else None
+                        terminal_content = (json.dumps(terminal_call, ensure_ascii=False, separators=(",", ":"))
+                                            if terminal_call is not None else content)
+                        api_messages.append({"role": "assistant", "content": terminal_content})
+                        api_messages.append(_tool_response_message(
+                            sample,
+                            {
+                                "status": "error",
+                                "error": "tool_budget_exhausted",
+                                "message": "No additional retrieval is available. Use the evidence already returned.",
+                            },
+                            [],
+                        ))
+                        api_messages.append({"role": "user", "content": _final_answer_only_correction(sample)})
+                        continue
+                    error_text = (
+                        f"model emitted a tool call after max_tool_turns={args.max_tool_turns} "
+                        "despite terminal-answer correction"
+                    )
+                    final_text = f"<answer>{error_text}</answer>"
+                    terminal_closure_failed += 1
+                    break
+
                 answer_body = content.split("<answer>", 1)[-1].split("</answer>", 1)[0] if "<answer>" in content else ""
-                if (answer_correction_turns < 2 and tool_history
+                if (answer_correction_turns < 1 and tool_history
                         and not _answer_is_evidence_grounded(content, tool_history, sample)):
                     answer_correction_turns += 1
                     if sample.get("question_type") == "option":
@@ -501,11 +795,90 @@ def main() -> None:
             out["tool_turns"] = tool_turns
             out["forced_tool_turns"] = forced_tool_turns
             out["tool_history"] = tool_history
+            out["protocol"] = {
+                "format": "swift-hermes/v1", "planning_turns": planning_turns,
+                "valid_tool_calls": tool_turns - forced_tool_turns,
+                "protocol_errors": protocol_errors,
+                "has_invalid_tool_call": bool(malformed_tool_call_attempts),
+                "has_protocol_event": bool(protocol_errors),
+                "malformed_tool_call_attempts": malformed_tool_call_attempts,
+                "malformed_tool_call_reasons": malformed_tool_call_reasons,
+                "noncanonical_recovered_calls": noncanonical_recovered_calls,
+                "post_budget_tool_attempts": post_budget_tool_attempts,
+                "terminal_closure_used": terminal_closure_used,
+                "terminal_closure_failed": terminal_closure_failed,
+                "forced_fallback_turns": forced_tool_turns,
+                "answer_format_corrections": answer_correction_turns,
+                "invalid_tool_call_policy": invalid_tool_call_policy,
+                "max_tool_turns_exceeded": max_tool_turns_exceeded,
+                "terminal_answer_reprompts": terminal_answer_reprompts,
+                "invalid_tool_reprompts": invalid_tool_reprompts,
+            }
+            if getattr(args, "capture_protocol_trace", False):
+                out["protocol_trace"] = protocol_trace
             out["student_user_query"] = STUDENT_USER_QUERY
             if error_text:
                 out["error"] = error_text
-            f.write(json.dumps(out, ensure_ascii=False) + "\n")
-            print(f"[{idx}/{len(rows)}] {row['id']} tool_turns={tool_turns}", flush=True)
+            return out
+
+
+async def run(args: argparse.Namespace) -> None:
+    if args.max_concurrent < 1 or args.request_retries < 0 or args.snapshot_every < 1:
+        raise ValueError("--max-concurrent and --snapshot-every must be positive; --request-retries must be non-negative")
+    manifest = Path(args.manifest)
+    rows = durable_load_jsonl(manifest)
+    if args.offset:
+        rows = rows[args.offset:]
+    if args.limit:
+        rows = rows[:args.limit]
+    ids = validate_manifest(rows)
+    fingerprint = request_fingerprint(manifest=manifest, protocol=PROTOCOL_VERSION, model=args.model, parameters={
+        "offset": args.offset, "limit": args.limit, "top_k": args.top_k, "max_tool_turns": args.max_tool_turns,
+        "max_new_tokens": args.max_new_tokens, "temperature": args.temperature, "disable_forced_first_call": args.disable_forced_first_call,
+        "invalid_tool_call_policy": args.invalid_tool_call_policy, "terminal_policy": "one-terminal-closure-v1",
+    })
+    store = SnapshotStore(Path(args.output), fingerprint, resume=args.resume)
+    completed = store.completed(set(ids))
+    semaphore = asyncio.Semaphore(args.max_concurrent)
+    lock = asyncio.Lock()
+    count = len(completed)
+    root = Path(args.repo_root).resolve()
+
+    async def one(row: dict[str, Any]) -> None:
+        nonlocal count
+        item_id = str(row["id"])
+        if item_id in completed:
+            return
+        try:
+            async with semaphore:
+                last_error: Exception | None = None
+                for attempt in range(args.request_retries + 1):
+                    try:
+                        result = await asyncio.to_thread(_evaluate_sample, args, row, root)
+                        if result.get("error"):
+                            raise RuntimeError(str(result["error"]))
+                        result["request_attempts"] = attempt + 1
+                        break
+                    except Exception as exc:
+                        last_error = exc
+                else:
+                    raise RuntimeError(f"sample failed after {args.request_retries + 1} attempts: {last_error}")
+        except Exception as exc:
+            result = dict(row)
+            result.update({"prediction": "", "error": str(exc), "request_attempts": args.request_retries + 1, "tool_history": []})
+        async with lock:
+            completed[item_id] = result
+            store.append(result)
+            count += 1
+            if count % args.snapshot_every == 0 or count == len(rows):
+                print(f"[{count}/{len(rows)}] {item_id}", flush=True)
+
+    await asyncio.gather(*(one(row) for row in rows))
+    store.finalize(ids, completed)
+
+
+def main() -> None:
+    asyncio.run(run(parse_args()))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,19 @@ def test_distillation_teacher_default_is_gpt_5_6_terra() -> None:
     assert DEFAULT_TEACHER_MODEL == "gpt-5.6-terra"
 
 
+def test_micu_slb_credential_profile_is_allowed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from agrinet.common.credentials import CredentialError, yunwu_environment
+
+    helper = tmp_path / "apikey"
+    helper.write_text("placeholder")
+    result = type("Result", (), {"stdout": "export MICU_SLB_API_KEY='key'\nexport MICU_SLB_API_BASE_URL='https://api-slb.micuapi.ai/v1'\n"})()
+    monkeypatch.setattr("agrinet.common.credentials.subprocess.run", lambda *args, **kwargs: result)
+    environment = yunwu_environment(helper, profile="micu_slb")
+    assert environment["YUNWU_API_BASE_URL"] == "https://api-slb.micuapi.ai/v1"
+    with pytest.raises(CredentialError, match="unsupported credential profile"):
+        yunwu_environment(helper, profile="untrusted")
+
+
 def test_unknown_teacher_delivery_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
     import argparse
     import tools.rag_distill.run_pilot as pilot
@@ -173,6 +186,21 @@ def test_approval_only_rows_require_matching_stage_a_option_scope() -> None:
     open_row["language"] = "en"
     with pytest.raises(RuntimeError, match="violates Stage-A Open re-entry"):
         validate_approval_scope([open_row], "stage_a_open_reentry")
+
+
+def test_reconstructive_supplement_scope_requires_matching_blind_plan() -> None:
+    from tools.rag_distill.run_pilot import validate_approval_scope
+
+    row = {
+        "target_id": "supplement-1", "approval_only": True,
+        "approval_scope": "reconstructive_blind_supplement",
+        "trajectory_mode": "standard", "generation_route": "blind_evidence",
+        "label_visible_to_teacher": False, "question_type": "option",
+    }
+    validate_approval_scope([row], "reconstructive_blind_supplement")
+    row["approval_scope"] = "reconstructive_blind_calibration"
+    with pytest.raises(RuntimeError, match="reconstructive Blind contract"):
+        validate_approval_scope([row], "reconstructive_blind_supplement")
 
 
 def test_publish_frozen_dataset_is_idempotent_and_immutable(tmp_path: Path) -> None:
@@ -388,8 +416,11 @@ def test_standard_final_contract_retry_repairs_missing_colons_without_retrieval(
     seen_messages = []
     retrieval_calls = []
 
-    def fake_chat(api_key, base_url, model, messages, args):
+    final_flags = []
+
+    def fake_chat(api_key, base_url, model, messages, args, **kwargs):
         seen_messages.append(json.loads(json.dumps(messages)))
+        final_flags.append(kwargs)
         return {"choices": [{"message": {"role": "assistant", "content": responses[len(seen_messages) - 1]}}]}
 
     def fake_append(args, sample, sft_messages, retrieval_ledgers, api_messages, call_args, call_id, assistant_think=None):
@@ -410,13 +441,15 @@ def test_standard_final_contract_retry_repairs_missing_colons_without_retrieval(
     args = argparse.Namespace(top_k=5, image_max_side=0, max_tool_turns=2, model="mock", rag_api="mock", candidate_followup_mode="retrieved_descriptive")
     row, trace, _, rejected = pilot.run_sample(sample, args, "key", "base")
 
-    retry = seen_messages[2][-1]["content"]
     assert row is not None and rejected is None and trace["accepted"] is True
     assert len(retrieval_calls) == 1
     assert len(seen_messages) == 3
-    assert seen_messages[2][-2]["role"] == "assistant"
-    assert seen_messages[2][-2]["content"] == responses[1]
-    assert "Predicted class name:" in retry and "Evidence:" in retry
+    assert len(seen_messages[2]) == 2 and seen_messages[2][0]["role"] == "system"
+    retry = json.dumps(seen_messages[2], ensure_ascii=False)
+    retry_context = seen_messages[2][1]["content"][0]["text"]
+    assert final_flags[2] == {"final_only": True}
+    assert responses[1] in retry_context
+    assert "This session has no tools" in retry and "Evidence:" in retry
     assert "correct_option" not in retry and "PRIVATE_N4" not in retry
     assert pilot.extract_answer_body(row["messages"][-1]["content"]).strip() == "C"
 

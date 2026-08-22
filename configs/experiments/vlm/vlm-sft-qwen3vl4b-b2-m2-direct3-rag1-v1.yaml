@@ -1,0 +1,32 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-b2-m2-direct3-rag1-v1
+display_name:
+  en: "B2 + M2 Hermes RAG, Direct:RAG 3:1"
+  zh: "B2 + M2 Hermes RAG，Direct:RAG 3:1"
+domain: vlm
+task: sft
+description: "Controlled mixed-route pilot: continue B2 with current-contract Direct weighted 3:1 over frozen M2 RAG."
+lifecycle: active
+components:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+  runtime: runtime/local-a800-4gpu-train
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_direct3_rag1_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b2-m2-direct3-rag1-v1/manifest.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_direct3_rag1
+parameters:
+  dataset_sha256: d7638811467b121e56a98de69f05a52c6b46f4ef2db1de5dd413307d0863b5c5
+  source_freeze_sha256: 9d59ad93790f8931a4a7ec63c3e4f615b65316530750b6623c99cf0a4812fd28
+  initialization_model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+  protocol: {direct: agrinet.current-direct-contract/v1, rag: swift-hermes/v1}
+  rows: 2240
+  ratio_direct_to_rag: "3:1"
+  epochs: 1
+  learning_rate: 1.0e-6
+  effective_global_batch: 32
+  expected_optimizer_steps: 70
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29632}
+  evaluation: {direct: native_dp8_formal618, rag: native_dp8_formal618, paired_bootstrap_samples: 10000}
+tags: [qwen3-vl, b2, m2, hermes, direct3-rag1, controlled-pilot]

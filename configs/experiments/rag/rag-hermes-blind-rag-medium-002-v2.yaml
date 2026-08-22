@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-blind-rag-medium-002-v2
+display_name: {en: Hermes v2 Blind RAG medium recollection 002, zh: Hermes v2 Blind RAG 中规模重采样 002}
+domain: rag
+task: distill
+description: "Recollect forty existing medium-002 Blind RAG targets with readable public class-name evidence and no internal retrieval identifiers."
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: micu_slb
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/medium-002/rag_targets.jsonl
+  route: rag
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/rag-medium-002
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 40
+tags: [hermes, v2, blind-rag, medium, recollection, readable-public-evidence, micu-slb]

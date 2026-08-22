@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: vlm-rag-qwen3vl4b-manual-json-lr5e6-checkpoint72-trace-smoke-dp8-v1
+display_name: {en: "Manual-JSON LR5e-6 checkpoint-72 DP8 trace smoke", zh: "manual-JSON LR5e-6 checkpoint-72 DP8 原始输出诊断"}
+domain: vlm
+task: checkpoint_protocol_diagnostic
+description: "Eight-row strict DP8 diagnostic on completed checkpoint-72; captures bounded raw model output to diagnose malformed native JSON. It never runs formal evaluation."
+lifecycle: active
+components: {runtime: runtime/local-a800-8gpu-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun_sft.yaml
+  training_dir: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun, run_root: outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-checkpoint72-trace-smoke-dp8-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450
+  smoke_limit: 8
+  checkpoint_specs: '4:72'
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, max_tool_turns: 5, invalid_tool_call_policy: strict, diagnostic_only: true}
+tags: [qwen3-vl, manual-json, lr5e-6, checkpoint72, trace, dp8, strict]

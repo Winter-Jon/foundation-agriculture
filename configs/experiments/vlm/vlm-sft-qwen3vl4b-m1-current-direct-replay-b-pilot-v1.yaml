@@ -1,0 +1,36 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-m1-current-direct-replay-b-pilot-v1
+display_name:
+  en: "B pilot: M1-initialized current-contract Direct replay"
+  zh: "B 试验：从 M1 初始化的当前协议 Direct 重放"
+domain: vlm
+task: sft
+description: Bounded Direct-only pilot from M1. It is the prerequisite Direct-retention test before any RAG-mixture pilot.
+lifecycle: active
+components:
+  model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  runtime: runtime/local-a800-4gpu-train
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_m1_current_direct_replay_b_pilot_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b-direct-only-v1/manifest.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_current_direct_replay_b_pilot
+parameters:
+  dataset: outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/pilot-views/b-direct-only-v1/data.jsonl
+  dataset_sha256: 0acb5546af1ae939dfec03ae794ab0c0abadfc42b6af2e71f60f884428278cb6
+  source_freeze_sha256: 9d59ad93790f8931a4a7ec63c3e4f615b65316530750b6623c99cf0a4812fd28
+  protocol: swift-hermes/v1
+  initialization_model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+  ratio_direct_to_rag: "Direct-only (560:0)"
+  epochs: 5
+  effective_global_batch: 32
+  expected_optimizer_steps: 90
+  learning_rate: 5.0e-6
+  checkpoint_policy: final_only
+  local_launch: {cuda_visible_devices: "0,1,2,3", nproc_per_node: 4, master_port: 29630}
+  prerequisite_gate:
+    diagnostic_rows: 192
+    current_direct_noninferiority_vs_m1: [overall, en, zh, disease, pest, open, option]
+    formal_618_evaluation: not_authorized_until_192_gate
+tags: [qwen3-vl, m1, current-direct, direct-only, bounded-pilot]

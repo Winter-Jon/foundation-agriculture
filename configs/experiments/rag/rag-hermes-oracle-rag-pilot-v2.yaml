@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-oracle-rag-pilot-v2
+display_name: {en: Hermes Oracle RAG semantic-recollection pilot, zh: Hermes Oracle RAG 语义重采预检}
+domain: rag
+task: distill
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/first-per-cell/rag_targets.jsonl
+  target_id: hermes-v2-rag-open-zh-disease-001
+  route: rag
+  oracle: true
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/oracle-rag-open-zh-disease-001
+  model: gpt-5.6-terra
+tags: [hermes, v2, blind-rag, oracle, pilot]

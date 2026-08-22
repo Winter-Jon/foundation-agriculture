@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-recovery-supplement-preflight-v1
+display_name: {en: Reconstructive supplement fresh-image preflight, zh: 重建式补采新图预检}
+domain: rag
+task: distill
+description: One fresh image preflight for the bounded seven-row recovery supplement; the image is not in the sample batch.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/rag_intermediate_recovery_reserve_v3/blind_targets.jsonl
+  approval_scope: reconstructive_blind_calibration
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/recovery/supplement-v1/preflight
+  model: gpt-5.6-terra
+  offset: 0
+  limit: 1
+  max_concurrent: 1
+  preflight_only: true
+  preflight_image: true
+  preflight_report: outputs/experiments/reconstructive_direct_blind_rag_v1/recovery/supplement-v1/preflight/preflight_report.json
+tags: [rag, reconstructive, recovery, supplement, preflight, blind-evidence, gpt-5.6-terra]

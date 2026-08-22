@@ -30,7 +30,7 @@ class ConvertedSftRecord(StrictModel):
     sample_id: str
     messages: list[StudentMessage]
     images: list[str] = Field(default_factory=list)
-    tools: list[dict[str, Any]] = Field(default_factory=list)
+    tools: list[dict[str, Any]] | str = Field(default_factory=list)
     source_artifact_id: str
 
 

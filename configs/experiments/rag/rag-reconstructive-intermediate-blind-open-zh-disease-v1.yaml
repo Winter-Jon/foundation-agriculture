@@ -1,0 +1,11 @@
+schema_version: agrinet.experiment/v1
+id: rag-reconstructive-intermediate-blind-open-zh-disease-v1
+display_name: {en: Reconstructive intermediate Blind RAG Chinese disease Open collection, zh: 重建式中间 Blind RAG 中文病害 Open 采集}
+domain: rag
+task: distill
+description: Bounded 140-attempt Blind collection; stop after 35 strict accepts.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters: {credential_profile: micu_slb, plan_file: outputs/experiments/reconstructive_direct_blind_rag_v1/rag_intermediate_reserve_v1/blind_targets.jsonl, approval_scope: reconstructive_blind_calibration, rag_api: http://127.0.0.1:8077, output_dir: outputs/experiments/reconstructive_direct_blind_rag_v1/intermediate_collection/open-zh-disease, model: gpt-5.6-terra, offset: 280, limit: 140, stop_after_accepted: 35, max_concurrent: 1}
+tags: [rag, reconstructive, intermediate, blind-evidence, collection, open, zh, disease, gpt-5.6-terra]

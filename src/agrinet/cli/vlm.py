@@ -1,4 +1,5 @@
 import json
+import os
 import platform
 import sys
 import subprocess
@@ -79,6 +80,11 @@ def local_training_env(config: dict) -> dict[str, str]:
     if len(devices) != workers or len(set(devices)) != len(devices):
         raise ConfigError("local_launch must expose exactly one unique GPU per worker")
     env.update({"CUDA_VISIBLE_DEVICES": ",".join(devices), "NPROC_PER_NODE": str(workers)})
+    master_port = launch.get("master_port")
+    if master_port is not None:
+        if not isinstance(master_port, int) or not 1024 <= master_port <= 65535:
+            raise ConfigError("local_launch.master_port must be an integer in [1024, 65535]")
+        env["MASTER_PORT"] = str(master_port)
     return env
 
 
@@ -128,7 +134,7 @@ def rag_diagnostic_command(config: dict) -> list[str]:
     optional = {
         "limit": "LIMIT", "offset": "OFFSET", "max_new_tokens": "MAX_NEW_TOKENS",
         "max_tool_turns": "MAX_TOOL_TURNS", "top_k": "TOP_K", "request_timeout": "REQUEST_TIMEOUT",
-        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
+        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_dp_size": "SGLANG_DP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
     }
     for key, env_key in optional.items():
         if key in parameters:
@@ -149,11 +155,69 @@ def direct_retention_command(config: dict) -> list[str]:
     }
     for key, env_key in {
         "limit": "LIMIT", "max_new_tokens": "MAX_NEW_TOKENS", "request_timeout": "REQUEST_TIMEOUT",
-        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
+        "sglang_tp_size": "SGLANG_TP_SIZE", "sglang_dp_size": "SGLANG_DP_SIZE", "sglang_mem_fraction_static": "SGLANG_MEM_FRACTION_STATIC",
     }.items():
         if key in parameters:
             environment[env_key] = str(parameters[key])
     return ["env", *[f"{key}={value}" for key, value in environment.items()], "bash", "scripts/vlm/run_local_direct_retention_eval.sh"]
+
+
+def formal_direct_native_command(config: dict) -> list[str]:
+    """Build the registered native-DP8 Direct-only formal evaluation command."""
+    parameters = config.get("parameters", {})
+    inputs = config.get("inputs", {})
+    entrypoint = parameters.get("entrypoint")
+    candidate = inputs.get("candidate_checkpoint")
+    if not isinstance(entrypoint, str) or not entrypoint:
+        raise ConfigError("formal direct evaluation requires parameters.entrypoint")
+    if not isinstance(candidate, str) or not candidate:
+        raise ConfigError("formal direct evaluation requires inputs.candidate_checkpoint")
+    return ["env", f"CANDIDATE={candidate}", f"EXPERIMENT_ID={config['id']}", "bash", entrypoint]
+
+
+def formal_rag_native_command(config: dict) -> list[str]:
+    """Build the registered native-DP8 RAG-only formal evaluation command."""
+    return formal_direct_native_command(config)
+
+
+def manual_json_checkpoint_queue_command(config: dict) -> list[str]:
+    """Build the serialized train→smoke→formal checkpoint queue.
+
+    The script owns no scheduler state: it trains once, then consumes only the
+    epoch checkpoints that the declared training config must produce.  Each
+    checkpoint is fail-closed at a 64-row strict smoke gate before its own
+    formal paired evaluation can start.
+    """
+    parameters = config.get("parameters", {})
+    entrypoint = parameters.get("entrypoint")
+    training_config = config.get("inputs", {}).get("config")
+    if not isinstance(entrypoint, str) or not entrypoint:
+        raise ConfigError("manual-json checkpoint queue requires parameters.entrypoint")
+    if not isinstance(training_config, str) or not training_config:
+        raise ConfigError("manual-json checkpoint queue requires inputs.config")
+    outputs = config.get("outputs", {})
+    model_root = outputs.get("model")
+    if not isinstance(model_root, str) or not model_root:
+        raise ConfigError("manual-json checkpoint queue requires outputs.model")
+    command = ["env", f"TRAINING_CONFIG={training_config}", f"EXPERIMENT_ID={config['id']}", f"MODEL_ROOT={model_root}"]
+    wait_for_run_dir = parameters.get("wait_for_run_dir")
+    if wait_for_run_dir is not None:
+        if not isinstance(wait_for_run_dir, str) or not wait_for_run_dir:
+            raise ConfigError("wait_for_run_dir must be a non-empty string when declared")
+        command.append(f"WAIT_FOR_RUN_DIR={wait_for_run_dir}")
+    resume_training_dir = parameters.get("resume_training_dir")
+    if resume_training_dir is not None:
+        if not isinstance(resume_training_dir, str) or not resume_training_dir:
+            raise ConfigError("resume_training_dir must be a non-empty string when declared")
+        command.extend(["SKIP_TRAIN=1", f"TRAIN_DIR={resume_training_dir}"])
+    for parameter, env_name in (("smoke_limit", "SMOKE_LIMIT"), ("checkpoint_specs", "CHECKPOINT_SPECS")):
+        value = parameters.get(parameter)
+        if value is not None:
+            if not isinstance(value, (str, int)) or not str(value):
+                raise ConfigError(f"{parameter} must be a non-empty string or integer when declared")
+            command.append(f"{env_name}={value}")
+    command.extend(["bash", entrypoint])
+    return command
 
 
 @app.command("train")
@@ -164,7 +228,7 @@ def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) 
         command = MsSwiftAdapter().train_command(repository_root() / config["inputs"]["config"])
         if dry_run:
             typer.echo(" ".join(command)); return
-        result = subprocess.run(command, cwd=repository_root())
+        result = subprocess.run(command, cwd=repository_root(), env={**os.environ, **local_training_env(config)})
         if result.returncode: raise typer.Exit(result.returncode)
     except (ConfigError, FileNotFoundError, KeyError) as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
@@ -236,9 +300,24 @@ def submit(
             command = direct_retention_command(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "formal-direct-native":
+        try:
+            command = formal_direct_native_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "formal-rag-native":
+        try:
+            command = formal_rag_native_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "manual-json-checkpoint-queue":
+        try:
+            command = manual_json_checkpoint_queue_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
-    env = local_training_env(config) if operation == "train" else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
+    env = local_training_env(config) if operation in {"train", "manual-json-checkpoint-queue"} else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
     if dry_run:
         launch = " ".join(f"{key}={value}" for key, value in env.items() if key in {"CUDA_VISIBLE_DEVICES", "NPROC_PER_NODE"})
         typer.echo(f"{launch} {' ' if launch else ''}{' '.join(command)}"); return

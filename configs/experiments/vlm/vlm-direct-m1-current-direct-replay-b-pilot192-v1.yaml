@@ -1,0 +1,33 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-m1-current-direct-replay-b-pilot192-v1
+display_name:
+  en: "B pilot: M1 current-contract Direct retention, 192 rows"
+  zh: "B 试验：M1 当前协议 Direct 保留，192 行"
+domain: vlm
+task: direct_retention
+description: Matched Direct retention diagnostic for B. Uses the exact M1 baseline manifest and decoding settings.
+lifecycle: active
+components:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_current_direct_replay_b_pilot/v0-20260819-145014/checkpoint-90
+  data: data/rag-sft-stagea-matched-diagnostic-v1
+  runtime: runtime/local-a800-2gpu-eval
+runtime_profile: runtime/local-a800-2gpu-eval
+inputs:
+  baseline_model: outputs/vlm_sft/qwen3_vl_4b_m1_current_direct_replay_b_pilot/v0-20260819-145014/checkpoint-90
+  paired_baseline: outputs/experiments/rag_sft_iteration/evaluation/stagea_validation_checkpoint165_direct192/scored.jsonl
+  diagnostic_manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+outputs:
+  evaluation: outputs/experiments/m1_current_direct_replay_b_pilot_v1/evaluation/direct192
+parameters:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_current_direct_replay_b_pilot/v0-20260819-145014/checkpoint-90
+  manifest: outputs/artifacts/datasets/agrinet-rag-sft-stagea-validation-v3/matched_diagnostic_192.jsonl
+  output_dir: outputs/experiments/m1_current_direct_replay_b_pilot_v1/evaluation/direct192
+  cuda_visible_devices: "2,3"
+  max_new_tokens: 512
+  request_timeout: 1200
+  sglang_tp_size: 2
+  sglang_mem_fraction_static: 0.7
+  bootstrap_samples: 10000
+  bootstrap_seed: 20260819
+  gate: current_direct_noninferiority_vs_m1
+tags: [qwen3-vl, m1, current-direct, direct-only, retention, pilot-192]

@@ -1,0 +1,23 @@
+schema_version: agrinet.sampling-contract/v1
+id: reconstructive-blind-rag-contract-v1
+description: Versioned reusable Direct plus Blind RAG sampling contract; contains no batch quota or collection target.
+cells:
+  question_types: [open, option]
+  languages: [en, zh]
+  domains: [disease, pest]
+direct:
+  tool_free: true
+  bilingual_image_pairs: true
+rag:
+  required_route: blind_evidence
+  require_tool_schema: true
+  require_retrieval_evidence: true
+  unique_training_image: true
+  selection_order: [class_coverage, fewest_tool_turns, stable_sample_id]
+isolation:
+  direct: true
+  diagnostic: true
+retries:
+  retryable_statuses: [unknown_delivery, strict_rejected]
+  max_retryable_outcomes: 2
+  preserve_prior_trace: true

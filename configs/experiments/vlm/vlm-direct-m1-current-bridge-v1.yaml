@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-m1-current-bridge-v1
+display_name: {en: M1 checkpoint under current Direct 618 bridge protocol, zh: M1 检查点在当前 Direct 618 桥接协议下的评测}
+domain: vlm
+task: direct_milestone_bridge
+description: Read-only bridge evaluation of the historical M1 Direct checkpoint using the current public Direct manifest and scorer.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165, runtime: sglang.launch_server}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  raw_base_direct: outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/raw_base_direct/scored.jsonl
+  m2_direct: outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/candidate_direct/scored.jsonl
+outputs: {run_root: outputs/runs/vlm/vlm-direct-m1-current-bridge/}
+parameters:
+  entrypoint: scripts/vlm/run_m1_current_direct_bridge.sh
+  local_launch: {cuda_visible_devices: "0,1,2,3,4,5,6,7", nproc_per_node: 8}
+  parallelism: {tensor_parallel_size: 1, data_parallel_size: 8}
+  max_concurrent: 64
+  request_retries: 2
+  paired_bootstrap: {samples: 10000, seed: 20260819}
+tags: [milestone-m1, milestone-m2, direct, bridge, native-sglang, dp8]

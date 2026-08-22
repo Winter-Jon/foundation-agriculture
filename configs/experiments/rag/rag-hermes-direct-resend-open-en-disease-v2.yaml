@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-direct-resend-open-en-disease-v2
+display_name: {en: Hermes Direct resend Open EN disease, zh: Hermes Direct 重发 Open 英文病害}
+domain: rag
+task: distill
+lifecycle: active
+components: {runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/first-per-cell/direct_targets.jsonl
+  target_id: hermes-v2-direct-open-en-disease-003
+  route: direct
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/resend-direct-open-en-disease-003
+  model: gpt-5.6-terra
+tags: [hermes, v2, direct, resend]

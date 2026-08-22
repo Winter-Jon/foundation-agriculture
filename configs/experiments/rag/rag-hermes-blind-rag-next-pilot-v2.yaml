@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-hermes-blind-rag-next-pilot-v2
+display_name: {en: Hermes v2 Blind RAG fresh-image pilot, zh: Hermes v2 Blind RAG 新图像预检}
+domain: rag
+task: distill
+description: Fresh Blind RAG target after the first image reached its two known-rejection limit.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-data}
+runtime_profile: runtime/local-data
+parameters:
+  credential_profile: yunwu
+  targets: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shortage_plan/blind_rag_shortage_targets.jsonl
+  route: rag
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/collection/rag-pilot-002
+  model: gpt-5.6-terra
+  offset: 1
+  limit: 1
+tags: [hermes, v2, blind-rag, fresh-image, pilot]

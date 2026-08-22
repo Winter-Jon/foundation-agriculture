@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v1
+display_name: {en: "Manual-JSON LR5e-6 checkpoint DP8 evaluation recovery", zh: "manual-JSON LR5e-6 checkpoint DP8 评测恢复"}
+domain: vlm
+task: checkpoint_evaluation_recovery
+description: "Re-run epoch 2/4/6 strict smoke and gated formal evaluations from the completed LR5e-6 training after repairing the planning-turn bare-JSON continuation. No training is run."
+lifecycle: active
+components: {runtime: runtime/local-a800-8gpu-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun_sft.yaml
+  training_dir: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun, run_root: outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260819}
+tags: [qwen3-vl, manual-json, lr5e-6, recovery, dp8, strict]

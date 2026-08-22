@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-b2-m2-direct3-rag1-formal618-dp8-v1
+display_name:
+  en: "B2 + M2 3:1: native DP8 formal Direct 618"
+  zh: "B2 + M2 3:1：原生 DP8 Direct 正式 618"
+domain: vlm
+task: formal_direct_evaluation_native_sglang
+description: "Formal Direct 618 evaluation of the B2+M2 3:1 checkpoint against M1 and raw base."
+lifecycle: active
+components: {runtime: sglang.launch_server, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_b2_m2_direct3_rag1/v0-20260819-162307/checkpoint-70
+  m1_checkpoint: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_final/v0-20260531-231355/checkpoint-165
+outputs: {run_root: outputs/runs/vlm/vlm-direct-b2-m2-direct3-rag1-formal618-dp8-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_direct_formal618_native_dp8.sh
+  local_launch: {cuda_visible_devices: "0,1,2,3,4,5,6,7", nproc_per_node: 8}
+  runtime: {launcher: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, require_visible_gpu_product: true}
+  routes: [{id: candidate_direct, max_concurrent: 64}, {id: m1_direct, max_concurrent: 64}, {id: raw_base_direct, max_concurrent: 64}]
+  paired_bootstrap: {samples: 10000, seed: 20260819}
+tags: [formal-evaluation, direct, b2, m2, direct3-rag1, native-sglang, dp8]
