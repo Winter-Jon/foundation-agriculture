@@ -43,6 +43,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--per-cell", type=int, default=4)
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--expand-top-k", type=int, default=10, help="wider second visual candidate budget; must exceed --top-k")
+    parser.add_argument("--cells", nargs="*", default=None, help="Optional cell keys, e.g. open/en/disease option/en/pest.")
+    parser.add_argument("--cell-offset", type=int, default=0, help="Deterministic per-cell candidate offset for non-overlapping follow-up audits.")
+    parser.add_argument("--exclude-manifests", type=Path, nargs="*", default=(), help="Prior public preflight manifests whose image hashes must be excluded.")
     parser.add_argument("--timeout", type=int, default=60)
     return parser.parse_args()
 
@@ -82,10 +85,10 @@ def explicit_isolation_hashes(root: Path = ROOT) -> tuple[set[str], dict[str, in
     return hashes, counts
 
 
-def select_rows(source: list[dict[str, Any]], per_cell: int, root: Path = ROOT) -> tuple[list[dict[str, Any]], dict[str, int], dict[str, Any]]:
+def select_rows(source: list[dict[str, Any]], per_cell: int, root: Path = ROOT, cells: set[str] | None = None, cell_offset: int = 0, excluded_hashes: set[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, int], dict[str, Any]]:
     historical_forbidden = isolation_hashes(root)
     explicit_forbidden, explicit_sources = explicit_isolation_hashes(root)
-    forbidden = historical_forbidden | explicit_forbidden
+    forbidden = historical_forbidden | explicit_forbidden | (excluded_hashes or set())
     pools: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in source:
         image = str(row.get("query_image") or "")
@@ -109,9 +112,11 @@ def select_rows(source: list[dict[str, Any]], per_cell: int, root: Path = ROOT) 
     shortages: dict[str, int] = {}
     for question_type, language, domain in CELLS:
         key = "/".join((question_type, language, domain))
+        if cells is not None and key not in cells:
+            continue
         ordered = sorted(pools[domain], key=lambda row: hashlib.sha256(f"{SEED}:{key}:{_digest_key(row)}".encode()).hexdigest())
         cell = []
-        for row in ordered:
+        for row in ordered[cell_offset:]:
             image = str(row["query_image"])
             if image in used_images:
                 continue
@@ -135,6 +140,7 @@ def select_rows(source: list[dict[str, Any]], per_cell: int, root: Path = ROOT) 
         "forbidden_hashes": len(forbidden),
         "historical_forbidden_hashes": len(historical_forbidden),
         "explicit_forbidden_hashes": len(explicit_forbidden),
+        "prior_manifest_forbidden_hashes": len(excluded_hashes or set()),
         "explicit_source_rows_hashed": explicit_sources,
     }
     return selected, shortages, audit
@@ -271,9 +277,19 @@ def quality_gate(report: dict[str, Any], rows: list[dict[str, Any]], selected: l
 
 def main() -> int:
     args = parse_args()
-    if args.per_cell < 1 or args.top_k < 1 or args.expand_top_k <= args.top_k:
+    if args.per_cell < 1 or args.top_k < 1 or args.expand_top_k <= args.top_k or args.cell_offset < 0:
         raise SystemExit("--per-cell/--top-k must be positive and --expand-top-k must exceed --top-k")
-    selected, shortages, isolation_audit = select_rows(read_jsonl(args.source), args.per_cell)
+    requested_cells = set(args.cells) if args.cells else None
+    if requested_cells is not None and not requested_cells <= {"/".join(cell) for cell in CELLS}:
+        raise SystemExit(f"unknown --cells: {sorted(requested_cells - {'/'.join(cell) for cell in CELLS})}")
+    prior_hashes: set[str] = set()
+    for manifest in args.exclude_manifests:
+        for row in read_jsonl(manifest):
+            value = str(row.get("image_sha256") or "")
+            if not value:
+                raise SystemExit(f"prior manifest has no image_sha256: {manifest}")
+            prior_hashes.add(value)
+    selected, shortages, isolation_audit = select_rows(read_jsonl(args.source), args.per_cell, cells=requested_cells, cell_offset=args.cell_offset, excluded_hashes=prior_hashes)
     if any(shortages.values()):
         raise SystemExit(f"insufficient image-isolated rows: {shortages}")
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -290,6 +306,9 @@ def main() -> int:
         "source": str(args.source.relative_to(ROOT)),
         "rag_api": args.rag_api,
         "per_cell": args.per_cell,
+        "cells": sorted(requested_cells) if requested_cells else ["/".join(cell) for cell in CELLS],
+        "cell_offset": args.cell_offset,
+        "exclude_manifests": [str(path) for path in args.exclude_manifests],
         "top_k": args.top_k,
         "expand_top_k": args.expand_top_k,
         "label_policy": "audit-only; labels never form retrieval queries or HTTP requests",

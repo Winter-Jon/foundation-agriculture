@@ -28,7 +28,7 @@ SEED = "hcv-teacher-plan-v1-20260822"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--preflight-audit", type=Path, required=True)
+    parser.add_argument("--preflight-audits", type=Path, nargs="+", required=True)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--per-cell-cap", type=int, default=4)
@@ -54,7 +54,7 @@ def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> di
     # explicitly omit final_label and all audit truth information.  The teacher
     # receives only the image and public task presentation.
     output = {
-        "sample_id": f"hcv-expand-{audit_row['id']}",
+        "sample_id": f"hcv-expand-{source_row['sample_id']}",
         "source_sample_id": source_row["sample_id"],
         "query_image": audit_row["query_image"],
         "image_sha256": audit_row["image_sha256"],
@@ -89,9 +89,15 @@ def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], p
     source_by_id = {str(row.get("sample_id") or ""): row for row in source_rows}
     candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
     excluded: list[dict[str, str]] = []
+    seen_hashes: set[str] = set()
     for row in audit_rows:
         if not is_visual_expand_repair(row):
             continue
+        image_hash = str(row.get("image_sha256") or "")
+        if not image_hash or image_hash in seen_hashes:
+            excluded.append({"id": str(row.get("id") or ""), "reason": "missing_or_duplicate_audit_image_hash"})
+            continue
+        seen_hashes.add(image_hash)
         source = source_by_id.get(str(row.get("source_sample_id") or ""))
         if source is None:
             excluded.append({"id": str(row.get("id") or ""), "reason": "source_row_missing"})
@@ -150,7 +156,9 @@ def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], p
 
 def main() -> int:
     args = parse_args()
-    selected, private_audit, report = build(read_jsonl(args.preflight_audit), read_jsonl(args.source), args.per_cell_cap)
+    audit_rows = [row for path in args.preflight_audits for row in read_jsonl(path)]
+    selected, private_audit, report = build(audit_rows, read_jsonl(args.source), args.per_cell_cap)
+    report["preflight_audits"] = [str(path) for path in args.preflight_audits]
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write_jsonl(args.output_dir / "teacher_plan.jsonl", selected)
     write_jsonl(args.output_dir / "private_audit.jsonl", private_audit)

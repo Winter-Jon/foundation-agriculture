@@ -33,3 +33,12 @@ def test_hcv_teacher_plan_excludes_truth_and_uses_blind_strategy() -> None:
     assert report["invariants"]["no_truth_in_public_plan"]
     assert report["ready_for_teacher_pilot"]
     assert not report["freeze_authorized"]
+
+
+def test_hcv_teacher_plan_rejects_duplicate_image_across_audits() -> None:
+    first = _audit("sample-1", "open", "en", "disease")
+    duplicate = _audit("sample-2", "open", "en", "disease")
+    duplicate["image_sha256"] = first["image_sha256"]
+    plan, _, report = build([first, duplicate], [_source("sample-1"), _source("sample-2")], per_cell_cap=2)
+    assert len(plan) == 1
+    assert any(item["reason"] == "missing_or_duplicate_audit_image_hash" for item in report["excluded"])

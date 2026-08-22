@@ -29,6 +29,26 @@ def test_select_rows_is_unique_and_manifest_never_contains_audit_truth(tmp_path:
     assert all("audit_truth_code" not in row for row in preflight.public_manifest(selected))
 
 
+def test_select_rows_supports_targeted_nonoverlapping_cell_offset(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(preflight, "isolation_hashes", lambda root: set())
+    monkeypatch.setattr(preflight, "explicit_isolation_hashes", lambda root: (set(), {}))
+    source = _source(tmp_path)
+    first, _, _ = preflight.select_rows(source, per_cell=1, root=tmp_path, cells={"open/en/disease"}, cell_offset=0)
+    later, shortages, _ = preflight.select_rows(source, per_cell=1, root=tmp_path, cells={"open/en/disease"}, cell_offset=1)
+    assert not shortages["open/en/disease"]
+    assert len(first) == len(later) == 1
+    assert first[0]["image_sha256"] != later[0]["image_sha256"]
+
+
+def test_select_rows_excludes_prior_manifest_hashes(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(preflight, "isolation_hashes", lambda root: set())
+    monkeypatch.setattr(preflight, "explicit_isolation_hashes", lambda root: (set(), {}))
+    source = _source(tmp_path)
+    initial, _, _ = preflight.select_rows(source, per_cell=1, root=tmp_path, cells={"open/en/disease"})
+    selected, _, _ = preflight.select_rows(source, per_cell=1, root=tmp_path, cells={"open/en/disease"}, excluded_hashes={initial[0]["image_sha256"]})
+    assert selected[0]["image_sha256"] != initial[0]["image_sha256"]
+
+
 def test_run_row_uses_public_similar_class_and_image_free_followups(monkeypatch) -> None:
     calls = []
 
