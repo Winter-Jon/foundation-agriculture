@@ -1,7 +1,9 @@
 # Multi-Query RAG Retrieval Roadmap
 
-Status: planned; no model, dataset, retrieval index, or formal evaluation has
-been changed by this document.
+Status: Phase 0 completed on 2026-08-22. The public retrieval and evaluator
+contract changed (v4) to return curated similar classes and permit strict
+text-only retrieval; no new model, SFT dataset, retrieval-index rebuild, or
+formal evaluation has been run under this roadmap.
 
 ## Goal
 
@@ -58,7 +60,7 @@ host, symptom, morphology, and confusable-category wording seed a semantic or
 balanced query. The model must never be supplied the scored label to construct
 this follow-up.
 
-## Phase 0 — Tool and Evaluator Contract
+## Phase 0 — Tool and Evaluator Contract — completed 2026-08-22
 
 1. Make `image_path` optional for text-only `semantic` and `name` requests;
    require it only for `visual`, `balanced`, and `rrf` when image evidence is
@@ -72,9 +74,13 @@ this follow-up.
 4. Keep the existing strict failure behavior: invalid calls do not receive
    hidden retrieval or label-derived correction.
 
-**Acceptance:** every mode has an explicit valid/invalid argument test, public
-responses contain readable class names only, and the same request has
-deterministic visible evidence under the frozen index.
+**Verified acceptance:** every mode has an explicit valid/invalid argument
+test. The live Lite service now accepts image-free `semantic` and `name` calls
+and returns readable class metadata; it rejects unsupported image/mode pairs.
+Name calls are checked against names or aliases in prior public evidence,
+including public similar-class entries; repeated requests are rejected before
+execution. The evaluator records the request and visible response in the
+per-turn ledger.
 
 ## Phase 1 — Build an Image-Disjoint Multi-Query Candidate Pool
 
@@ -158,8 +164,7 @@ diagnostic gates.
 
 ## Immediate Next Action
 
-Implement only Phase 0 in a new branch-local change set: resolve and test the
-`image=none` API contract, add retrieval-mode dispatch coverage, and add no
-training or formal run. Then produce a small, image-disjoint candidate-pool
-preflight that measures whether the proposed follow-up actions actually change
-public evidence before constructing SFT data.
+Produce a small, image-disjoint candidate-pool preflight that measures whether
+public similar-class, semantic, balanced, and name follow-ups actually change
+public evidence before constructing SFT data. Do not launch SFT or formal 618
+evaluation until its predefined evidence-delta and isolation gates pass.

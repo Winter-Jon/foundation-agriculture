@@ -13,7 +13,7 @@ from agrinet.rag.retrieval import RetrievalService
 
 class HttpSearchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    image_path: Path
+    image_path: Path | None = None
     top_k: int = Field(default=5, ge=1)
     retrieval_type: str = "image-to-class"
     text: str = ""
@@ -54,6 +54,10 @@ def create_app(service_factory: Callable[[], RetrievalService]) -> FastAPI:
                 }.items()
                 if value is not None
             }
+            if retrieval_type in {"semantic", "name"} and body.image_path is not None:
+                raise ValueError(f"{retrieval_type} retrieval must omit image_path")
+            if retrieval_type in {"visual", "balanced", "rrf", "image", "image-to-class"} and body.image_path is None:
+                raise ValueError(f"{retrieval_type} retrieval requires image_path")
             return get_service().search(
                 RagSearchRequest(
                     retrieval_type=retrieval_type, query_image=body.image_path, query_text=body.text,

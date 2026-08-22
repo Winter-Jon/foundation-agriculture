@@ -35,7 +35,11 @@ class MilvusSiglipBackend:
         self.client = MilvusClient(uri=str(db_path))
         self.class_collection = "agrinet_wiki_siglip2_classes"
         self.image_collection = "agrinet_wiki_siglip2_images"
-        class_schema = self.client.describe_collection(self.class_collection).get("schema") or {}
+        class_description = self.client.describe_collection(self.class_collection)
+        # pymilvus exposes fields directly for Lite but nests them under
+        # ``schema`` in other client/server combinations. Support both so text
+        # retrieval always returns readable class metadata.
+        class_schema = class_description.get("schema") or class_description
         self.class_fields = {str(field.get("name")) for field in class_schema.get("fields") or []}
         self._catalog_similar_classes = self._load_catalog_similar_classes()
         requested = "cuda" if device == "auto" and torch.cuda.is_available() else device

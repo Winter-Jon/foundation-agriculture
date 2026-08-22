@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictModel(BaseModel):
@@ -94,12 +94,22 @@ class RagEvidence(StrictModel):
 class RagSearchRequest(StrictModel):
     schema_version: Literal["agrinet.rag.search/v1"] = "agrinet.rag.search/v1"
     retrieval_type: str
-    query_image: Path
+    query_image: Path | None = None
     query_text: str = ""
     top_k: int = Field(default=5, ge=1)
     ranker: str | None = None
     weights: dict[str, float] = Field(default_factory=dict)
     filters: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_modal_inputs(self) -> "RagSearchRequest":
+        text_only = {"semantic", "name"}
+        image_required = {"image", "image-to-class", "visual", "balanced", "rrf"}
+        if self.retrieval_type in text_only and self.query_image is not None:
+            raise ValueError(f"{self.retrieval_type} retrieval must not include query_image")
+        if self.retrieval_type in image_required and self.query_image is None:
+            raise ValueError(f"{self.retrieval_type} retrieval requires query_image")
+        return self
 
 
 class RagSearchResponse(StrictModel):

@@ -99,6 +99,12 @@ def validate_tool_arguments(arguments: dict[str, Any]) -> list[str]:
         errors.append(f"retrieval_type must be one of {RETRIEVAL_TYPES}")
     if arguments.get("image") not in IMAGE_HANDLES:
         errors.append(f"image must be one of {IMAGE_HANDLES}")
+    retrieval_type = arguments.get("retrieval_type")
+    image = arguments.get("image")
+    if retrieval_type in {"semantic", "name"} and image != "none":
+        errors.append(f"{retrieval_type} retrieval requires image=none")
+    if retrieval_type in {"visual", "balanced", "rrf"} and image != "query_image":
+        errors.append(f"{retrieval_type} retrieval requires image=query_image")
     top_k = arguments.get("top_k")
     if not isinstance(top_k, int) or not 1 <= top_k <= 10:
         errors.append("top_k must be an integer from 1 to 10")

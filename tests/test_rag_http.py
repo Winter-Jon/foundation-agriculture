@@ -24,8 +24,12 @@ def test_health_and_search_contract(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.json()["schema_version"] == "agrinet.rag.search/v1"
     assert response.json()["evidence"][0]["artifact_id"] == "N04001"
-    for preset in ("visual", "balanced", "semantic", "name", "rrf"):
+    for preset in ("visual", "balanced", "rrf"):
         legacy = client.post(f"/search/{preset}", json={"image_path": str(image), "top_k": 1})
+        assert legacy.status_code == 200
+        assert legacy.json()["hybrid"][0]["id"] == "N04001"
+    for preset in ("semantic", "name"):
+        legacy = client.post(f"/search/{preset}", json={"text": "apple black rot", "top_k": 1})
         assert legacy.status_code == 200
         assert legacy.json()["hybrid"][0]["id"] == "N04001"
 
@@ -60,3 +64,15 @@ def test_search_preserves_catalog_similar_classes(tmp_path: Path) -> None:
     metadata = response.json()["hybrid"][0]
     assert metadata["similar_english_classes"] == ["Grape Black rot"]
     assert metadata["similar_chinese_classes"] == ["葡萄黑腐病"]
+
+
+def test_http_enforces_mode_specific_image_contract(tmp_path: Path) -> None:
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"fixture")
+    client = TestClient(create_app(lambda: RetrievalService(Backend())))
+    assert client.post("/search/semantic", json={"text": "leaf lesion"}).status_code == 200
+    assert client.post("/search/name", json={"text": "Apple Black Rot"}).status_code == 200
+    assert client.post("/search/visual", json={"text": "leaf lesion"}).status_code == 400
+    assert client.post("/search/balanced", json={"text": "leaf lesion"}).status_code == 400
+    assert client.post("/search/semantic", json={"text": "leaf lesion", "image_path": str(image)}).status_code == 400
+    assert client.post("/search/name", json={"text": "Apple Black Rot", "image_path": str(image)}).status_code == 400

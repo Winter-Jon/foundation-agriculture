@@ -272,6 +272,59 @@ def _execute_rag_call(rag_api: str, image_path: Path, arguments: dict[str, Any],
     return tool_response, ledger
 
 
+def _normalize_public_name(value: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", value.lower().replace("_", " ")))
+
+
+def _public_name_terms(tool_history: list[dict[str, Any]]) -> set[str]:
+    terms: set[str] = set()
+    for item in tool_history:
+        for result in (item.get("tool_response") or {}).get("results") or []:
+            if not isinstance(result, dict):
+                continue
+            for key in ("class_name", "chinese_name"):
+                value = result.get(key)
+                if isinstance(value, str) and value.strip():
+                    terms.add(_normalize_public_name(value))
+            for key in ("aliases", "chinese_aliases"):
+                for value in result.get(key) or []:
+                    if isinstance(value, str) and value.strip():
+                        terms.add(_normalize_public_name(value))
+            for similar in result.get("similar_classes") or []:
+                if isinstance(similar, dict):
+                    for key in ("name", "name_zh"):
+                        value = similar.get(key)
+                        if isinstance(value, str) and value.strip():
+                            terms.add(_normalize_public_name(value))
+    return {term for term in terms if term}
+
+
+def _call_signature(arguments: dict[str, Any]) -> str:
+    fields = ("query", "retrieval_type", "image", "top_k", "ranker", "text_weight", "image_weight", "sparse_weight")
+    return json.dumps({key: arguments.get(key) for key in fields if arguments.get(key) is not None}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _call_lineage_errors(arguments: dict[str, Any], tool_history: list[dict[str, Any]]) -> list[str]:
+    """Reject non-public name lookups and no-value repeated calls.
+
+    The check uses only model-emitted arguments and previous public tool turns;
+    it never sees manifest labels, option targets, or teacher metadata.
+    """
+    errors: list[str] = []
+    kind = arguments.get("retrieval_type")
+    query = str(arguments.get("query") or "")
+    if kind == "name":
+        normalized = _normalize_public_name(query)
+        if not tool_history:
+            errors.append("name retrieval is not allowed before public retrieval evidence")
+        elif not normalized or normalized not in _public_name_terms(tool_history):
+            errors.append("name retrieval query must exactly copy a class name or alias from public evidence")
+    signature = _call_signature(arguments)
+    if any(_call_signature((item.get("tool_call") or {}).get("arguments") or {}) == signature for item in tool_history):
+        errors.append("duplicate retrieval request would not add public evidence")
+    return errors
+
+
 def _fallback_final_answer(text: str) -> str:
     stripped = text.strip()
     if "<answer>" in stripped.lower():
@@ -681,11 +734,15 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
 
                 if calls and tool_turns < args.max_tool_turns:
                     call = calls[0]
-                    call_args = clamp_tool_args(dict(call.get("arguments") or {}), args.top_k, sample, sft_messages)
+                    emitted_args = dict(call.get("arguments") or {})
+                    call_args = clamp_tool_args(emitted_args, args.top_k, sample, sft_messages)
                     visible_call = {"name": TOOL_NAME, "arguments": call_args}
                     sft_messages.append({"role": "tool_call", "content": json.dumps(visible_call, ensure_ascii=False, separators=(",", ":"))})
 
-                    validation_errors = validate_tool_arguments(call_args)
+                    validation_errors = [
+                        *validate_tool_arguments(call_args),
+                        *_call_lineage_errors(emitted_args, tool_history),
+                    ]
                     if validation_errors:
                         tool_response = {"status": "error", "errors": validation_errors}
                         ledger = {"ok": False, "validation_errors": validation_errors, "request": visible_call, "visible_reference_images": []}

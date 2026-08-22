@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-08-20 20:41:16 CST
+Last updated: 2026-08-22 17:50:13 CST
 
 ## Current focus
 
@@ -30,6 +30,7 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 - The planned next route is `docs/plan/multi-query-rag-retrieval-roadmap.md`: selective, public-evidence-driven multi-query RAG using visual refinement, balanced/semantic text search, and confirmation of previously returned similar class names. It is explicitly gated on an `image=none` text/name API-contract repair and image-disjoint data preflight; no new SFT or formal run is authorized by the plan alone.
 - Paper-facing motivation is now consolidated in [docs/motivation.md](../motivation.md). It frames the proposed route as Hypothesize--Contrast--Verify (HCV): comparison-centred open-vocabulary agricultural diagnosis, with Direct visual evidence as an anchor and retrieval as similar-class differential verification. It distinguishes this proposed framework from the already verified M1/M3 results and treats distillation as an implementation mechanism rather than the headline contribution.
 - The existing wiki similar-class lists are now part of public RAG evidence. The live 8077 retrieval service returns up to five bilingual neighbours for each hit, and the evaluator preserves them in the model-visible native tool turn. Current protocol fingerprint is v4, so no old snapshot is reused with the expanded evidence contract.
+- MQ-0 is complete: `semantic` and `name` now use strict image-free requests; visual/fused modes require the query image. The evaluator rejects first-turn or ungrounded `name` lookups and exact duplicate requests before execution, while accepting names that appeared in prior public similar-class evidence. The live Lite RAG service at 8077 was restarted under `outputs/runs/rag/rag-serve-siglip2-milvus-local-v1/20260822T175013-865e28b9-a01/`; a real semantic query returns readable class and similar-class metadata.
 
 - B2+M2 3:1 mixed SFT is complete: 1,680 current-contract B2 Direct rows plus 560 M2 Hermes RAG rows, initialized from B2, one epoch at 1e-6, 70 steps; checkpoint `outputs/vlm_sft/qwen3_vl_4b_b2_m2_direct3_rag1/v0-20260819-162307/checkpoint-70`. The view has 2,240 unique IDs and a verified Direct/RAG image-set separation.
 - Its Direct native-DP8 formal run (`outputs/runs/vlm/vlm-direct-b2-m2-direct3-rag1-formal618-dp8-v1/formal618-native-dp8-20260819-170224/artifacts/`) has 618 unique IDs and zero explicit errors per route. Mixed Direct is 54.53%, versus M1 68.28%: -13.75pp, paired 95% CI [-17.31,-10.36]pp; it remains +14.40pp over raw base. This decisively fails Direct retention.

@@ -853,8 +853,8 @@ def clamp_tool_args(arguments: dict[str, Any], default_top_k: int, sample: dict[
     _, sequence, strategy_top_k = sample_strategy(sample or {}, default_top_k)
     default_top_k = strategy_top_k
     args.setdefault("top_k", default_top_k)
-    args.setdefault("image", "none")
     args.setdefault("retrieval_type", "balanced")
+    args.setdefault("image", "none" if args["retrieval_type"] in {"semantic", "name"} else "query_image")
     args.setdefault("rationale", "Check relevant AgriNet evidence.")
     requested_top_k = args.get("top_k", default_top_k)
     args["top_k"] = requested_top_k if isinstance(requested_top_k, int) and 1 <= requested_top_k <= 10 else default_top_k
@@ -913,6 +913,7 @@ def clamp_tool_args(arguments: dict[str, Any], default_top_k: int, sample: dict[
             args["rationale"] = neutral_rationale(args.get("retrieval_type"), str(args.get("query") or "visible crop traits"))
     if args.get("ranker") is None:
         args.pop("ranker", None)
+    args["image"] = "none" if args.get("retrieval_type") in {"semantic", "name"} else "query_image"
     return args
 
 
@@ -1755,6 +1756,15 @@ def result_aliases(result: dict[str, Any]) -> list[str]:
         raw_values = result.get(key)
         if isinstance(raw_values, list):
             values.extend(value for value in raw_values if isinstance(value, str) and value.strip())
+    # Curated confusable neighbours are public evidence too: a later exact
+    # name lookup may confirm one only after it appeared in this result.
+    for similar in result.get("similar_classes") or []:
+        if not isinstance(similar, dict):
+            continue
+        for key in ("name", "name_zh"):
+            value = similar.get(key)
+            if isinstance(value, str) and value.strip():
+                values.append(value)
     return values
 
 

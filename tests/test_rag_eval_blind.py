@@ -195,6 +195,29 @@ def test_eval_prefers_training_aligned_bare_tool_json() -> None:
     assert reason is None
 
 
+def test_name_lookup_requires_public_evidence_and_accepts_similar_class_lineage() -> None:
+    runner = _module()
+    name_args = {"query": "Grape Black rot", "retrieval_type": "name", "image": "none", "top_k": 3}
+    assert runner._call_lineage_errors(name_args, [])
+    history = [{
+        "tool_call": {"arguments": {"query": "apple leaf rot", "retrieval_type": "visual", "image": "query_image", "top_k": 3}},
+        "tool_response": {"results": [{
+            "class_name": "Apple Black Rot",
+            "similar_classes": [{"name": "Grape Black rot", "name_zh": "葡萄黑腐病"}],
+        }]},
+    }]
+    assert not runner._call_lineage_errors(name_args, history)
+    unknown = {**name_args, "query": "Private ground truth"}
+    assert runner._call_lineage_errors(unknown, history)
+
+
+def test_call_lineage_rejects_exact_duplicate_request() -> None:
+    runner = _module()
+    arguments = {"query": "brown leaf lesions", "retrieval_type": "visual", "image": "query_image", "top_k": 3}
+    history = [{"tool_call": {"arguments": arguments}, "tool_response": {"results": []}}]
+    assert runner._call_lineage_errors(arguments, history) == ["duplicate retrieval request would not add public evidence"]
+
+
 def test_eval_recovers_one_schema_valid_bare_call_mixed_with_thinking_and_answer() -> None:
     runner = _module()
     content = (

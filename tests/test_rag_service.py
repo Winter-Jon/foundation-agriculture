@@ -42,6 +42,15 @@ def test_tool_schema_rejects_name_without_required_fields() -> None:
     assert errors
 
 
+def test_tool_schema_enforces_mode_specific_image_handles() -> None:
+    base = {"query": "leaf symptoms", "top_k": 3, "rationale": "compare evidence"}
+    assert not validate_tool_arguments({**base, "retrieval_type": "semantic", "image": "none"})
+    assert not validate_tool_arguments({**base, "retrieval_type": "name", "image": "none"})
+    assert not validate_tool_arguments({**base, "retrieval_type": "visual", "image": "query_image"})
+    assert validate_tool_arguments({**base, "retrieval_type": "semantic", "image": "query_image"})
+    assert validate_tool_arguments({**base, "retrieval_type": "visual", "image": "none"})
+
+
 def test_http_presets_forward_real_retrieval_contract() -> None:
     requests = []
     class RecordingBackend:
@@ -51,12 +60,15 @@ def test_http_presets_forward_real_retrieval_contract() -> None:
             return [{"entry_id": request.retrieval_type, "score": 0.8, "english_name": request.retrieval_type}]
     client = TestClient(create_app(lambda: RetrievalService(RecordingBackend())))
     body = {"image_path": "query.jpg", "text": "brown folded-wing moth", "top_k": 5, "text_weight": 0.7, "image_weight": 0.3}
-    for preset in ("visual", "semantic", "balanced", "rrf", "name"):
+    for preset in ("visual", "balanced", "rrf"):
         response = client.post(f"/search/{preset}", json=body)
         assert response.status_code == 200, response.text
-    assert [request.retrieval_type for request in requests] == ["visual", "semantic", "balanced", "rrf", "name"]
+    for preset in ("semantic", "name"):
+        response = client.post(f"/search/{preset}", json={key: value for key, value in body.items() if key != "image_path"})
+        assert response.status_code == 200, response.text
+    assert [request.retrieval_type for request in requests] == ["visual", "balanced", "rrf", "semantic", "name"]
     assert all(request.query_text == body["text"] for request in requests)
-    assert requests[2].weights == {"text": 0.7, "image": 0.3}
+    assert requests[1].weights == {"text": 0.7, "image": 0.3}
     assert client.post("/search/visual", json={**body, "ignored": True}).status_code == 422
 
 
@@ -73,3 +85,9 @@ def test_old_milvus_index_falls_back_to_public_catalog_similar_classes() -> None
     row = backend._plain_row({"entry_id": "wiki::N04001", "english_name": "Apple Black Rot"})
     assert row["similar_english_classes"] == ["Grape Black rot"]
     assert row["similar_chinese_classes"] == ["葡萄黑腐病"]
+
+
+def test_milvus_output_fields_accept_lite_and_nested_schema_layouts() -> None:
+    backend = object.__new__(MilvusSiglipBackend)
+    backend.class_fields = {"entry_id", "english_name", "similar_english_classes"}
+    assert backend._class_output_fields == ["entry_id", "english_name", "similar_english_classes"]
