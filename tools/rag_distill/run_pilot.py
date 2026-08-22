@@ -271,6 +271,17 @@ def sample_strategy(sample: dict[str, Any], fallback_top_k: int) -> tuple[str, t
     return strategy_id, sequence, top_k
 
 
+def strategy_top_k_for_turn(sample: dict[str, Any], fallback_top_k: int, turn_index: int) -> int:
+    """Return a bounded per-turn retrieval budget for an approved strategy."""
+    spec = strategy_spec(sample.get("strategy_id"), fallback_top_k)
+    budgets = spec.get("turn_top_k")
+    if isinstance(budgets, (tuple, list)) and budgets:
+        value = budgets[min(max(turn_index, 0), len(budgets) - 1)]
+        if isinstance(value, int) and 1 <= value <= 10:
+            return value
+    return sample_strategy(sample, fallback_top_k)[2]
+
+
 def public_option_question(sample: dict[str, Any]) -> str:
     language = str(sample.get("language") or "en")
     choices = [str(item.get("name") or "").strip() for item in sample.get("candidate_labels", [])]
@@ -858,8 +869,6 @@ def clamp_tool_args(arguments: dict[str, Any], default_top_k: int, sample: dict[
     args.setdefault("rationale", "Check relevant AgriNet evidence.")
     requested_top_k = args.get("top_k", default_top_k)
     args["top_k"] = requested_top_k if isinstance(requested_top_k, int) and 1 <= requested_top_k <= 10 else default_top_k
-    if sample and sample.get("strategy_id"):
-        args["top_k"] = default_top_k
     query = str(args.get("query") or "").strip()
     visible_messages = sft_messages or []
     # The first strict tool call is stored as an assistant JSON message, while
@@ -881,6 +890,8 @@ def clamp_tool_args(arguments: dict[str, Any], default_top_k: int, sample: dict[
                 parsed = None
             if isinstance(parsed, dict) and parsed.get("name") == TOOL_NAME:
                 prior_calls += 1
+    if sample and sample.get("strategy_id"):
+        args["top_k"] = strategy_top_k_for_turn(sample, default_top_k, prior_calls)
     if sample and sample.get("strategy_id") and prior_calls < len(sequence):
         required_type = sequence[prior_calls]
         if required_type == "name" and not name_query_allowed(query, sample, visible_messages):
@@ -1413,6 +1424,24 @@ def append_tool_execution(
     return tool_response, ledger
 
 
+def hcv_visual_expand_args(first_call: dict[str, Any], sample: dict[str, Any], fallback_top_k: int) -> dict[str, Any]:
+    """Construct the audited HCV 3->10 visual evidence expansion.
+
+    The query image and visual phrase are held fixed deliberately; the changed
+    top-k budget makes the public candidate set materially larger.  This is
+    used only for rows preselected by an offline, label-blind retrieval audit.
+    """
+    previous = first_call.get("arguments") if isinstance(first_call.get("arguments"), dict) else {}
+    query = str(previous.get("query") or "visible agricultural symptoms").strip()
+    return {
+        "query": query,
+        "retrieval_type": "visual",
+        "image": "query_image",
+        "top_k": strategy_top_k_for_turn(sample, fallback_top_k, 1),
+        "rationale": "Expand the public visual candidate set because the compact initial hypotheses remain unresolved.",
+    }
+
+
 def pre_tool_think(call_args: dict[str, Any], language: str = "en", first_turn: bool = False) -> str:
     retrieval_type = str(call_args.get("retrieval_type") or "balanced")
     query = str(call_args.get("query") or "evidence").strip()
@@ -1458,7 +1487,11 @@ def execute_rag_call(rag_api: str, sample: dict[str, Any], arguments: dict[str, 
     query = str(arguments.get("query") or "").strip()
     if query:
         body["text"] = query
-    body["image_path"] = sample["query_image"]
+    # Keep collection on the same mode/input contract as the evaluator:
+    # semantic/name evidence is text-only and must not silently receive the
+    # query image.  Visual, balanced, and RRF retrieval explicitly carry it.
+    if arguments.get("image") == "query_image":
+        body["image_path"] = sample["query_image"]
     for key in ("ranker", "text_weight", "image_weight", "sparse_weight"):
         if key in arguments and arguments[key] not in (None, ""):
             body[key] = arguments[key]
@@ -2115,6 +2148,20 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                     before_count = len(retrieval_ledgers)
                     tool_response, ledger = append_tool_execution(args, sample, sft_messages, retrieval_ledgers, api_messages, call["arguments"], str(call.get("id") or "call_manual"))
                     if (
+                        ledger.get("ok")
+                        and call["arguments"].get("retrieval_type") == "visual"
+                        and before_count == 0
+                        and len(retrieval_ledgers) < args.max_tool_turns
+                        and sample.get("strategy_id") == "hcv_visual_expand"
+                    ):
+                        expand_args = hcv_visual_expand_args(visible_call, sample, sample_top_k)
+                        expand_args = clamp_tool_args(expand_args, sample_top_k, sample, sft_messages)
+                        append_tool_execution(
+                            args, sample, sft_messages, retrieval_ledgers, api_messages, expand_args,
+                            f"hcv_expand_{uuid.uuid4().hex[:12]}",
+                            pre_tool_think(expand_args, str(sample.get("language") or "en")),
+                        )
+                    elif (
                         ledger.get("ok")
                         and call["arguments"].get("retrieval_type") == "visual"
                         and before_count == 0

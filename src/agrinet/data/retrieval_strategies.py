@@ -4,6 +4,11 @@ import hashlib
 from typing import Any
 
 STRATEGIES: dict[str, dict[str, Any]] = {
+    # HCV first forms a compact visual hypothesis set, then expands the same
+    # public visual evidence budget only for audited recall-repair samples.
+    # Per-turn budgets are intentionally explicit: a visual 3 -> visual 10
+    # transition is not an exact duplicate request.
+    "hcv_visual_expand": {"sequence": ("visual", "visual"), "top_k": 3, "turn_top_k": (3, 10)},
     "visual_then_balanced": {"sequence": ("visual", "balanced"), "top_k": 5},
     "balanced_then_name": {"sequence": ("balanced", "name"), "top_k": 5},
     "semantic_then_visual": {"sequence": ("semantic", "visual"), "top_k": 5},
