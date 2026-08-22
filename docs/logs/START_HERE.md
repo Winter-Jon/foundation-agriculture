@@ -1,10 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-08-22 17:56:58 CST
+Last updated: 2026-08-22 18:30:00 CST
 
 ## Current focus
 
-The committed HCV baseline is now `380ce126a` (`feat(rag): enforce multi-query evidence contracts`). MQ-0 is complete: strict image-free text/name retrieval, public-name lineage, duplicate-call rejection, and readable similar-class evidence are implemented and tested. The next active phase is an image-isolated HCV retrieval preflight; it must pass its audit gates before new SFT data or training begins.
+The committed HCV baseline is `380ce126a` (`feat(rag): enforce multi-query evidence contracts`). MQ-0 and the Phase-1 image-isolated retrieval preflight are complete. The verified useful second action is selective visual candidate expansion (`top_k` 3→10); the fixed public-similar-class text/name follow-ups produced evidence churn but no recall repair and are not bulk-training candidates. The next phase is a frozen, token-balanced SFT candidate pool with per-trajectory evidence-value audit.
 
 Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
 
@@ -121,7 +121,7 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 
 ## Next safe action
 
-Do not start another unchanged 3:1 SFT or expand collection. Run and audit the HCV image-isolated retrieval preflight defined in `docs/logs/plans/2026-W34-0817-0823.md`; only then freeze data, train, and use the existing five-turn strict DP8 protocol for acceptance.
+Do not start another unchanged 3:1 SFT. Build and audit the image-isolated HCV SFT candidate pool from the successful visual-expansion mechanism; only then freeze data, train, and use the existing five-turn strict DP8 protocol for acceptance.
 
 ## Records and archive
 

@@ -1,9 +1,8 @@
 # Multi-Query RAG Retrieval Roadmap
 
-Status: Phase 0 completed on 2026-08-22. The public retrieval and evaluator
-contract changed (v4) to return curated similar classes and permit strict
-text-only retrieval; no new model, SFT dataset, retrieval-index rebuild, or
-formal evaluation has been run under this roadmap.
+Status: Phase 0 and the Phase-1 image-isolated retrieval preflight completed
+on 2026-08-22. The preflight validates a selective visual-candidate expansion
+path; it does not yet authorize SFT, training, or a formal evaluation.
 
 ## Goal
 
@@ -48,6 +47,7 @@ existing `agrinet_rag_search` schema; no hidden oracle tool is introduced.
 | Action | Tool fields | When it is allowed | Intended value |
 | --- | --- | --- | --- |
 | Stop and answer | no tool call | Current evidence separates the viable option/name | Avoid needless latency and repeated evidence |
+| Visual candidate expansion | `visual`, `image=query_image`, larger `top_k` | Compact first candidate set lacks a viable class | Request additional visual candidates with a strictly larger evidence budget; not an exact repeat |
 | Visual refinement | `visual`, `image=query_image` | First visual query is generic or misses discriminative anatomy/lesion/site features | Reframe the image with a materially different visual description |
 | Balanced fusion | `balanced`, `image=query_image`, descriptive text | Image evidence and textual morphology should jointly disambiguate candidates | Combine observed morphology with the image embedding |
 | Semantic attribute search | `semantic`, `image=none`, text | First result exposes a morphology/host/symptom ambiguity that needs class-description evidence | Search wiki descriptions and aliases using public visual attributes |
@@ -108,6 +108,18 @@ per-turn ledger.
 the accepted pool reports first/second query mode, evidence-change rate,
 truth-hit change, and final-answer correctness.
 
+**Phase-1 preflight evidence (2026-08-22):**
+`outputs/experiments/hcv_multi_query_rag/preflight/20260822T183000-phase1-visual-expand/`
+uses 32 images (4 per Open/Option × en/zh × disease/pest cell), each hash
+disjoint from the fixed formal-618 manifest, current M3 SFT derivatives,
+diagnostic and historical exposed sources. All rows executed the strict
+mode/image contract and public-name lineage with zero errors. A compact
+visual top-3 followed by a visual top-10 expansion changed evidence on 32/32
+rows and repaired 6 first-turn misses across five cells. The fixed first-public
+similar-class `balanced`, `semantic`, and `name` follow-ups changed evidence
+but repaired 0 rows, so they are not eligible as bulk two-call supervision
+without a future per-trajectory value audit.
+
 ## Phase 2 — Freeze a Controlled SFT Derivative
 
 1. Keep the selected checkpoint-72 as the protocol-clean baseline and retain a
@@ -164,7 +176,9 @@ diagnostic gates.
 
 ## Immediate Next Action
 
-Produce a small, image-disjoint candidate-pool preflight that measures whether
-public similar-class, semantic, balanced, and name follow-ups actually change
-public evidence before constructing SFT data. Do not launch SFT or formal 618
-evaluation until its predefined evidence-delta and isolation gates pass.
+Build a deterministic, image-isolated SFT candidate pool with three groups:
+Direct replay, one-call/stop RAG, and selective top-3→top-10 visual-expansion
+RAG. Require every expansion trace to show an evidence delta; retain
+balanced/semantic/name calls only when their individual public-evidence audit
+demonstrates non-duplicate value. Do not launch SFT or formal 618 evaluation
+until the frozen data has token, cell, image-isolation, and protocol audits.
