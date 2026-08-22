@@ -526,6 +526,7 @@ def closed_finalization_messages(
             " rejected (an array of at least two objects containing exact class_name and a short public-trait reason),"
             " and uncertainty (a short string)."
             " Score host, organ, and symptom against the query image and the public card; 0 means contradicted, 1 partial/uncertain, 2 clearly supported."
+            " Apply specificity calibration: a specific species/disease label may beat a broader label only when the image shows a diagnostic trait that separates it from the broader candidate and the public card supports that trait; otherwise prefer the broader candidate and record the unresolved distinction in uncertainty."
             " The selected class must be one of the public candidate cards and must have the highest score sum; never use a private label or class code."
         )
         if sample.get("question_type") == "option":

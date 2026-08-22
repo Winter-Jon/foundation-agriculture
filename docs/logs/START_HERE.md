@@ -119,6 +119,12 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 - v2 accepted freeze and training: `outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/large-20260819-freeze-preflight-v8/`, `outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/`, `outputs/artifacts/datasets/agrinet-hermes-long-direct-blind-rag-1to1-v2/sft-hermes/`, and `outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/20260819T075708-e259e1da-a01/`.
 - first per-cell shard: outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/shards/first-per-cell/ and collection/{direct-first-shard,rag-first-shard}/.
 
+## Latest HCV Micu diagnostic state (2026-08-23)
+
+The fresh machine-adjudication Micu v15 pilot completed with exit code 0, 15/15 protocol-accepted trajectories, exactly three retrieval calls per row, and no unknown delivery. Independent private audit accuracy was 13/15 (86.7%). All four Option cells were 100%; the only two errors were Chinese Open candidate-selection errors while the private truth was already present in visual top-10 evidence. The artifact remains diagnostic-only: it has 15 rows rather than four valid rows in each of eight cells, so `freeze_authorized=false` and `training_authorized=false`.
+
+The two errors are qualitatively different from retrieval failure: (1) `Tomato Bacterial spot` was selected as `Tomato Spider mites Two` under ambiguous yellow stippling and marginal browning; (2) generic `catterpillar` was over-specialized to `Helicoverpa armigera larva` despite both candidates matching. The next method change should address public candidate discrimination and specificity calibration before another scaled Micu collection. Do not replay v15 images.
+
 ## Next safe action
 
 Do not start another unchanged 3:1 SFT or an additional HCV collection. The Micu credential and strict two-turn collection path are verified. Before another provider request, improve the public evidence representation / discriminative decision method and validate it on a newly image-isolated, private-audited pilot. Only a passing quality audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
