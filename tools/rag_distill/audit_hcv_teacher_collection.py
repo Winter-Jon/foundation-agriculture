@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 
 from agrinet.data.rebuild_sft import CELLS
 from tools.rag_distill.catalog_and_isolation import read_jsonl
+from tools.rag_distill.run_pilot import hcv_final_decision_is_complete
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--accepted", type=Path, required=True)
     parser.add_argument("--private-audit", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--pilot", action="store_true", help="Audit a fresh diagnostic pilot without the 32-row freeze quota.")
     return parser.parse_args()
 
 
@@ -66,6 +68,8 @@ def audit_row(row: dict[str, Any], truth: dict[str, Any]) -> list[str]:
         second = {normalized(str(item.get("class_name") or "")) for item in responses[1].get("results") or [] if isinstance(item, dict)}
         if len(second) <= len(first) or not (second - first):
             errors.append("no_second_turn_public_evidence_delta")
+    if not hcv_final_decision_is_complete(metadata, next((str(message.get("content") or "") for message in reversed(messages) if message.get("role") == "assistant"), ""), messages):
+        errors.append("hcv_expanded_candidate_comparison_incomplete")
     answer = answer_body(messages)
     if metadata.get("question_type") == "option":
         if answer != truth.get("audit_correct_option"):
@@ -75,7 +79,7 @@ def audit_row(row: dict[str, Any], truth: dict[str, Any]) -> list[str]:
     return errors
 
 
-def audit(rows: list[dict[str, Any]], private: list[dict[str, Any]]) -> dict[str, Any]:
+def audit(rows: list[dict[str, Any]], private: list[dict[str, Any]], pilot: bool = False) -> dict[str, Any]:
     truth_by_id = {str(item.get("sample_id") or ""): item for item in private}
     details = []
     images = []
@@ -96,22 +100,24 @@ def audit(rows: list[dict[str, Any]], private: list[dict[str, Any]]) -> dict[str
         "errors": [item for item in details if item["errors"]],
         "invariants": {
             "exact_32_rows": len(rows) == 32,
-            "private_audit_complete": len(truth_by_id) == 32,
+            "private_audit_complete": len(truth_by_id) == len(rows) if pilot else len(truth_by_id) == 32,
             "unique_image_hashes": all(images) and len(images) == len(set(images)),
             "all_cells_four_valid": dict(counts) == expected,
         },
     }
-    report["freeze_authorized"] = not report["errors"] and all(report["invariants"].values())
+    report["pilot"] = pilot
+    report["pilot_authorized"] = pilot and bool(rows) and not report["errors"] and report["invariants"]["private_audit_complete"] and report["invariants"]["unique_image_hashes"]
+    report["freeze_authorized"] = not pilot and not report["errors"] and all(report["invariants"].values())
     return report
 
 
 def main() -> int:
     args = parse_args()
-    report = audit(read_jsonl(args.accepted), read_jsonl(args.private_audit))
+    report = audit(read_jsonl(args.accepted), read_jsonl(args.private_audit), args.pilot)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False))
-    return 0 if report["freeze_authorized"] else 1
+    return 0 if (report["pilot_authorized"] if args.pilot else report["freeze_authorized"]) else 1
 
 
 if __name__ == "__main__":

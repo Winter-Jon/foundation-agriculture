@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-visual-expand-micu-decision-pilot-v1
+display_name: {en: HCV Micu expanded-candidate decision pilot, zh: HCV Micu 扩展候选决策试验}
+domain: rag
+task: distill
+description: >-
+  Serialized, fresh-image, diagnostic-only HCV teacher pilot. It tests the
+  public top-10 candidate-comparison contract once per evaluation cell and is
+  never an SFT freeze input.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823T010500-micu-decision-contract-pilot/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T010600-micu-decision-contract-pilot
+  model: gpt-5.6-terra
+  limit: 8
+  max_concurrent: 1
+  max_tool_turns: 2
+  top_k: 3
+  temperature: 0.2
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, blind-evidence, visual-expand, candidate-comparison, micu-slb, diagnostic-pilot, image-isolated]

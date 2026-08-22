@@ -45,6 +45,13 @@ def test_hcv_teacher_plan_rejects_duplicate_image_across_audits() -> None:
     assert any(item["reason"] == "missing_or_duplicate_audit_image_hash" for item in report["excluded"])
 
 
+def test_hcv_teacher_plan_excludes_prior_teacher_image_hashes() -> None:
+    audit = _audit("sample-1", "open", "en", "disease")
+    plan, _, report = build([audit], [_source("sample-1")], per_cell_cap=1, excluded_hashes={"hash-sample-1"})
+    assert plan == []
+    assert any(item["reason"] == "excluded_prior_teacher_image_hash" for item in report["excluded"])
+
+
 def test_hcv_rebuild_retires_contacted_rows_and_refills_cell() -> None:
     old = _audit("old", "open", "en", "disease")
     old_plan, old_private, _ = build([old], [_source("old")], per_cell_cap=1)

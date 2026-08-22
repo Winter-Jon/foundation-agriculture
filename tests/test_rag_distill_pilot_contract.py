@@ -91,6 +91,63 @@ def test_hcv_first_valid_visual_call_expands_without_unknown_tool_branch(tmp_pat
     assert all(call["retrieval_type"] == "visual" for call in seen_calls)
 
 
+def _hcv_public_messages() -> list[dict]:
+    import json
+    return [
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Top One"},
+            {"rank": 2, "class_name": "Top Two"},
+            {"rank": 3, "class_name": "Top Three"},
+        ]})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Top One"},
+            {"rank": 2, "class_name": "Top Two"},
+            {"rank": 3, "class_name": "Top Three"},
+            {"rank": 4, "class_name": "Expanded Four"},
+        ]})},
+    ]
+
+
+def test_hcv_expanded_decision_prompt_requires_public_candidate_comparison(tmp_path) -> None:
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {
+        "strategy_id": "hcv_visual_expand", "generation_route": "blind_evidence",
+        "language": "en", "question_type": "open",
+        # Private fields deliberately exist in the local sample but must not
+        # cross the teacher prompt boundary.
+        "final_label": "N99999", "final_label_name": "Private Truth",
+    }
+    messages = _hcv_public_messages()
+    prompt = run_pilot.hcv_final_decision_prompt(sample, messages)
+    assert prompt is not None
+    assert "rank and score are weak clues" in prompt["content"]
+    assert "Expanded Four" in prompt["content"]
+    assert "Private Truth" not in prompt["content"]
+    assert "N99999" not in prompt["content"]
+    closed = run_pilot.closed_finalization_messages(sample, image, messages)
+    rendered = str(closed[0]["content"]) + str(closed[1]["content"][0]["text"])
+    assert "Expanded Four" in rendered
+    assert "Private Truth" not in rendered and "N99999" not in rendered
+
+
+def test_hcv_final_decision_gate_rejects_rank_only_and_accepts_trait_comparison() -> None:
+    sample = {"strategy_id": "hcv_visual_expand", "language": "en"}
+    messages = _hcv_public_messages()
+    rank_only = (
+        "<think>Predicted class name: Top One\nEvidence: Top One has rank 1.\n"
+        "Rejected alternatives: Top Two and Top Three have lower ranks.\nUncertainty: low.</think><answer>Top One</answer>"
+    )
+    assert not run_pilot.hcv_final_decision_is_complete(sample, rank_only, messages)
+    comparison = (
+        "<think>Predicted class name: Expanded Four\nEvidence: The image leaf spot pattern supports Expanded Four; "
+        "Top One lacks the visible lesion layout; Top Two has a different leaf symptom.\n"
+        "Rejected alternatives: Top One is rejected because the image lacks its broad spot trait; "
+        "Top Two is rejected because the lesion margin is absent.\nUncertainty: moderate.</think><answer>Expanded Four</answer>"
+    )
+    assert run_pilot.hcv_final_decision_is_complete(sample, comparison, messages)
+
+
 def test_public_option_question_uses_blind_public_order() -> None:
     sample = {
         "language": "zh",

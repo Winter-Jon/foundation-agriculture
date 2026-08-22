@@ -35,6 +35,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retain-plan", type=Path, help="Public prior teacher plan from which untouched rows are retained.")
     parser.add_argument("--retain-private-audit", type=Path, help="Private audit paired with --retain-plan.")
     parser.add_argument("--retire-sample-ids", type=Path, help="JSONL records whose sample_id values must never be reused.")
+    parser.add_argument(
+        "--exclude-plan", type=Path, nargs="*", default=(),
+        help="Public teacher plans whose image hashes must never be selected (for fresh diagnostic pilots).",
+    )
+    parser.add_argument(
+        "--diagnostic-pilot", action="store_true",
+        help="Mark this as a quality diagnostic: it is never eligible for SFT freeze.",
+    )
     parser.add_argument("--supplement-only", action="store_true", help="When rebuilding, emit only newly selected replacement rows.")
     return parser.parse_args()
 
@@ -90,10 +98,14 @@ def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> di
     return output
 
 
-def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], per_cell_cap: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+def build(
+    audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], per_cell_cap: int,
+    excluded_hashes: set[str] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     if per_cell_cap < 1:
         raise ValueError("per_cell_cap must be positive")
     source_by_id = {str(row.get("sample_id") or ""): row for row in source_rows}
+    excluded_hashes = excluded_hashes or set()
     candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
     excluded: list[dict[str, str]] = []
     seen_hashes: set[str] = set()
@@ -101,6 +113,9 @@ def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], p
         if not is_visual_expand_repair(row):
             continue
         image_hash = str(row.get("image_sha256") or "")
+        if image_hash in excluded_hashes:
+            excluded.append({"id": str(row.get("id") or ""), "reason": "excluded_prior_teacher_image_hash"})
+            continue
         if not image_hash or image_hash in seen_hashes:
             excluded.append({"id": str(row.get("id") or ""), "reason": "missing_or_duplicate_audit_image_hash"})
             continue
@@ -276,8 +291,22 @@ def main() -> int:
             report["supplement_only"] = True
             report["supplement_rows"] = len(selected)
     else:
-        selected, private_audit, report = build(audit_rows, read_jsonl(args.source), args.per_cell_cap)
+        excluded_hashes = {
+            str(row.get("image_sha256") or "")
+            for path in args.exclude_plan
+            for row in read_jsonl(path)
+            if str(row.get("image_sha256") or "")
+        }
+        selected, private_audit, report = build(
+            audit_rows, read_jsonl(args.source), args.per_cell_cap, excluded_hashes
+        )
+        if args.exclude_plan:
+            report["excluded_teacher_plans"] = [str(path) for path in args.exclude_plan]
+            report["excluded_teacher_image_hashes"] = len(excluded_hashes)
     report["preflight_audits"] = [str(path) for path in args.preflight_audits]
+    if args.diagnostic_pilot:
+        report["diagnostic_pilot"] = True
+        report["freeze_authorized"] = False
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write_jsonl(args.output_dir / "teacher_plan.jsonl", selected)
     write_jsonl(args.output_dir / "private_audit.jsonl", private_audit)

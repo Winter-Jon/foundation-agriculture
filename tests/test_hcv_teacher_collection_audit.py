@@ -11,7 +11,12 @@ def _row(question_type: str = "open") -> dict:
             {"role": "tool", "content": str(first).replace("'", '"')},
             {"role": "tool_call", "content": '{"arguments":{"retrieval_type":"visual","image":"query_image","top_k":10}}'},
             {"role": "tool", "content": str(second).replace("'", '"')},
-            {"role": "assistant", "content": "<think>Evidence: Truth</think><answer>Truth</answer>"},
+            {"role": "assistant", "content": (
+                "<think>Predicted class name: Truth\n"
+                "Evidence: The image leaf symptom supports Truth; Wrong lacks the visible lesion pattern; Other has a different spot layout.\n"
+                "Rejected alternatives: Wrong is rejected because its leaf trait is absent; Other is rejected because the image lacks its spot margin.\n"
+                "Uncertainty: moderate.</think><answer>Truth</answer>"
+            )},
         ],
         "metadata": {"generation_route": "blind_evidence", "label_visible_to_teacher": False, "strategy_id": "hcv_visual_expand", "question_type": question_type, "language": "en", "task_domain": "disease", "image_sha256": "image-1"},
     }

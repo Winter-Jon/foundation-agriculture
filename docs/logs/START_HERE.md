@@ -1,10 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-08-22 20:45:00 CST
+Last updated: 2026-08-23 01:09:56 CST
 
 ## Current focus
 
-The HCV data path now has a complete freeze-eligible teacher plan, but not a frozen SFT dataset: 32 blind-evidence visual-expansion targets cover all Open/Option × en/zh × disease/pest cells (4 each), with unique image hashes and no truth fields in the public plan. Teacher collection is paused before any provider request because the local Yunwu GPG key requires an interactive unlock; no unknown delivery was created.
+The active HCV path uses `micu_slb` / `gpt-5.6-terra`, never the unreachable Yunwu route. The 32-row Micu collection was protocol-clean but failed its private answer-quality freeze gate (13/32 correct). A subsequent eight-cell, fresh-image Micu diagnostic pilot validates the new public top-10 candidate-comparison contract but still reaches only 5/8 correct; it is explicitly non-freezable.
 
 Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
 
@@ -121,7 +121,7 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 
 ## Next safe action
 
-Do not start another unchanged 3:1 SFT. After interactive credential unlock, run the one-image HCV teacher preflight, collect the 32 blind trajectories, and apply the HCV teacher-collection audit. Only a passing audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
+Do not start another unchanged 3:1 SFT or an additional HCV collection. The Micu credential and strict two-turn collection path are verified. Before another provider request, improve the public evidence representation / discriminative decision method and validate it on a newly image-isolated, private-audited pilot. Only a passing quality audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
 
 The registered HCV DP8 queue is intentionally fail-closed: it checks
 `outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/validation.json` for
@@ -151,6 +151,9 @@ unknown-delivery exclusions and were replaced without replay. Do not freeze the
 merged set. The remaining uncontacted true-repair pool is only 25 images and
 lacks Chinese Option repairs, so the next phase must strengthen selection or
 teacher decision quality rather than scale the same route.
+
+The fresh, image-isolated eight-cell decision-contract pilot completed under
+Micu at `outputs/runs/rag/rag-hcv-visual-expand-micu-decision-pilot-v1/20260823T010403-5bacde03-a01/`: 8/8 trajectories followed visual top-3→top-10, with zero rejects and zero unknown deliveries. Its private audit at `outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T010600-micu-decision-contract-pilot/reports/hcv_collection_pilot_audit.json` rejects promotion: 5/8 answers are correct. For the three errors, the truth was nevertheless publicly present at expanded rank 4, 8, or 5. This is a teacher discrimination failure, not a retrieval-recall or protocol-format failure; do not freeze, train, evaluate, or scale this route yet.
 
 ## Records and archive
 
