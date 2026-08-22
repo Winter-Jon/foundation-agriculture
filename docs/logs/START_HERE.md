@@ -1,10 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-08-22 18:30:00 CST
+Last updated: 2026-08-22 20:45:00 CST
 
 ## Current focus
 
-The committed HCV baseline is `380ce126a` (`feat(rag): enforce multi-query evidence contracts`). MQ-0 and the Phase-1 image-isolated retrieval preflight are complete. The verified useful second action is selective visual candidate expansion (`top_k` 3→10); the fixed public-similar-class text/name follow-ups produced evidence churn but no recall repair and are not bulk-training candidates. The next phase is a frozen, token-balanced SFT candidate pool with per-trajectory evidence-value audit.
+The HCV data path now has a complete freeze-eligible teacher plan, but not a frozen SFT dataset: 32 blind-evidence visual-expansion targets cover all Open/Option × en/zh × disease/pest cells (4 each), with unique image hashes and no truth fields in the public plan. Teacher collection is paused before any provider request because the local Yunwu GPG key requires an interactive unlock; no unknown delivery was created.
 
 Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
 
@@ -121,7 +121,7 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 
 ## Next safe action
 
-Do not start another unchanged 3:1 SFT. Build and audit the image-isolated HCV SFT candidate pool from the successful visual-expansion mechanism; only then freeze data, train, and use the existing five-turn strict DP8 protocol for acceptance.
+Do not start another unchanged 3:1 SFT. After interactive credential unlock, run the one-image HCV teacher preflight, collect the 32 blind trajectories, and apply the HCV teacher-collection audit. Only a passing audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
 
 ## Records and archive
 

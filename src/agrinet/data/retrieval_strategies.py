@@ -15,7 +15,10 @@ STRATEGIES: dict[str, dict[str, Any]] = {
     "rrf_then_name": {"sequence": ("rrf", "name"), "top_k": 5},
     "balanced_stop": {"sequence": ("balanced",), "top_k": 5},
 }
-STRATEGY_ORDER = tuple(STRATEGIES)
+# HCV expansion is selected only by its audited teacher plan.  Keeping it out
+# of generic candidate rotation prevents legacy collection experiments from
+# receiving a two-visual-call policy without the corresponding evidence audit.
+STRATEGY_ORDER = tuple(name for name in STRATEGIES if name != "hcv_visual_expand")
 
 
 def strategy_for_candidate(candidate_index: int) -> str:
