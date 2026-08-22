@@ -13,8 +13,8 @@ def _source(sample_id: str) -> dict:
     return {
         "sample_id": sample_id, "final_label": "N1", "final_label_zh": "类别一",
         "candidate_labels": [
-            {"code": "N1", "name": "Class One"}, {"code": "N2", "name": "Class Two"},
-            {"code": "N3", "name": "Class Three"}, {"code": "N4", "name": "Class Four"},
+            {"code": "N1", "name": "Class One", "chinese_name": "类别一"}, {"code": "N2", "name": "Class Two", "chinese_name": "类别二"},
+            {"code": "N3", "name": "Class Three", "chinese_name": "类别三"}, {"code": "N4", "name": "Class Four", "chinese_name": "类别四"},
         ],
     }
 
@@ -28,7 +28,8 @@ def test_hcv_teacher_plan_excludes_truth_and_uses_blind_strategy() -> None:
     assert public["generation_route"] == "blind_evidence"
     assert public["label_visible_to_teacher"] is False
     assert "final_label" not in public and "correct_option" not in public
-    assert len(public["public_option_choices"]) == 4
+    assert len(public["public_option_labels"]) == 4
+    assert all({"name", "chinese_name"} <= set(item) for item in public["public_option_labels"])
     assert private[0]["audit_correct_option"] in "ABCD"
     assert report["invariants"]["no_truth_in_public_plan"]
     assert report["ready_for_teacher_pilot"]

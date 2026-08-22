@@ -42,3 +42,15 @@ def test_hcv_strategy_uses_distinct_top_k_per_turn() -> None:
     assert expanded["image"] == "query_image"
     assert expanded["query"] == "brown leaf lesions"
     assert expanded["top_k"] == 10
+
+
+def test_public_option_question_uses_blind_public_order() -> None:
+    sample = {
+        "language": "zh",
+        "public_option_labels": [
+            {"name": "One", "chinese_name": "一"}, {"name": "Two", "chinese_name": "二"},
+            {"name": "Three", "chinese_name": "三"}, {"name": "Four", "chinese_name": "四"},
+        ],
+    }
+    prompt = run_pilot.public_option_question(sample)
+    assert "A. 一" in prompt and "D. 四" in prompt

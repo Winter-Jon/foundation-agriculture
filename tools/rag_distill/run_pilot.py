@@ -293,6 +293,18 @@ def strategy_top_k_for_turn(sample: dict[str, Any], fallback_top_k: int, turn_in
 
 def public_option_question(sample: dict[str, Any]) -> str:
     language = str(sample.get("language") or "en")
+    public_labels = sample.get("public_option_labels")
+    if isinstance(public_labels, list) and len(public_labels) == 4 and all(isinstance(item, dict) for item in public_labels):
+        key = "chinese_name" if language == "zh" else "name"
+        choices = [str(item.get(key) or "").strip() for item in public_labels]
+        if any(not choice for choice in choices):
+            raise RuntimeError("public_option_labels lacks a display name")
+        prompt = (
+            "请选择图中病虫害的规范名称，只在答案标签中输出选项字母。"
+            if language == "zh"
+            else "Select the canonical name shown in the image; output only the option letter in the answer tag."
+        )
+        return prompt + "\n" + "\n".join(f"{letter}. {choice}" for letter, choice in zip("ABCD", choices))
     public_choices = sample.get("public_option_choices")
     if isinstance(public_choices, list) and len(public_choices) == 4 and all(isinstance(item, str) and item.strip() for item in public_choices):
         choices = [str(item).strip() for item in public_choices]
@@ -2352,6 +2364,8 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
             "question_type": sample.get("question_type", "open"),
             "trajectory_mode": sample.get("trajectory_mode", "standard"),
             "correct_option": sample.get("correct_option"),
+            "candidate_labels": sample.get("public_option_labels") or sample.get("candidate_labels"),
+            "image_sha256": sample.get("image_sha256"),
             "reserve": bool(sample.get("reserve", False)),
         },
     }

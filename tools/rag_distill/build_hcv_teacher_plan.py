@@ -76,10 +76,13 @@ def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> di
         # correct letter.  A private audit joins source_sample_id afterward to
         # evaluate the returned letter; neither label nor correct option enters
         # the teacher-plan JSONL.
-        choices = [str(item.get("name") or "").strip() for item in source_row.get("candidate_labels") or []]
-        if len(choices) != 4 or any(not choice for choice in choices):
+        labels = [
+            {"name": str(item.get("name") or "").strip(), "chinese_name": str(item.get("chinese_name") or "").strip()}
+            for item in source_row.get("candidate_labels") or [] if isinstance(item, dict)
+        ]
+        if len(labels) != 4 or any(not item["name"] or not item["chinese_name"] for item in labels):
             raise ValueError(f"option source row lacks four public names: {source_row.get('sample_id')}")
-        output["public_option_choices"] = sorted(choices, key=lambda choice: hashlib.sha256(f"{SEED}:{audit_row['id']}:{choice}".encode()).hexdigest())
+        output["public_option_labels"] = sorted(labels, key=lambda item: hashlib.sha256(f"{SEED}:{audit_row['id']}:{item['name']}".encode()).hexdigest())
     return output
 
 
@@ -126,7 +129,8 @@ def build(audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], p
             }
             if plan["question_type"] == "option":
                 target_name = str(private["audit_truth_name"] or "")
-                private["audit_correct_option"] = "ABCD"[plan["public_option_choices"].index(target_name)] if target_name in plan["public_option_choices"] else None
+                names = [item["name"] for item in plan["public_option_labels"]]
+                private["audit_correct_option"] = "ABCD"[names.index(target_name)] if target_name in names else None
             private_audit.append(private)
 
     ids = [str(row["sample_id"]) for row in selected]
