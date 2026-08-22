@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: rag-serve-siglip2-milvus-public-evidence-v2
+display_name: {en: Local SigLIP2 Milvus public-evidence retrieval service, zh: 带公开描述证据的本地 SigLIP2 检索服务}
+domain: rag
+task: serve
+description: >-
+  Development service exposing bounded public catalogue descriptions and
+  visual descriptions alongside readable class and similar-class evidence.
+  This service is for HCV diagnostic validation and does not alter historical
+  formal evaluation outputs.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+inputs:
+  database: outputs/milvus/agrinet_wiki_lite.db
+  model: models/siglip2-so400m-patch16-naflex
+outputs: {}
+parameters:
+  host: 127.0.0.1
+  port: 8078
+  device: cuda
+tags: [rag, milvus, siglip2, public-evidence, hcv, diagnostic]

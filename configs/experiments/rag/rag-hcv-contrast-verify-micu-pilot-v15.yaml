@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-pilot-v15
+display_name: {en: HCV Micu expanded-hit machine adjudication pilot v15, zh: HCV Micu top10命中机器裁决试验 v15}
+domain: rag
+task: distill
+description: Diagnostic-only fresh HCV rows with truth present in visual top-10 retrieval, testing machine-readable public adjudication.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823Tsource-pool-v4-expanded-hit/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823Tsource-pool-v4-expanded-hit
+  model: gpt-5.6-terra
+  limit: 15
+  max_concurrent: 1
+  max_tool_turns: 3
+  top_k: 3
+  temperature: 0.0
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, machine-adjudication, expanded-hit, image-isolated, micu-slb, diagnostic-pilot]

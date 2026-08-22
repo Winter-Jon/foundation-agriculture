@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-pilot-v3
+display_name: {en: HCV Micu canonical-evidence contrast verification pilot v3, zh: HCV Micu canonical 公开证据对比验证试验 v3}
+domain: rag
+task: distill
+description: >-
+  Fresh diagnostic-only rerun after canonical source selection was fixed for
+  duplicate public class names. This output is isolated from v1/v2 and is not
+  an SFT freeze input until private audit approval.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823T020200-micu-contrast-verify-pilot/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T023000-micu-contrast-verify-pilot-v3
+  model: gpt-5.6-terra
+  limit: 4
+  max_concurrent: 1
+  max_tool_turns: 3
+  top_k: 3
+  temperature: 0.2
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, canonical-evidence, candidate-lineage, contrast-verify, micu-slb, diagnostic-pilot]

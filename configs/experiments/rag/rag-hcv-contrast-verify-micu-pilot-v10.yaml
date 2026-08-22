@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-pilot-v10
+display_name: {en: HCV Micu bilingual candidate-card diagnostic pilot v10, zh: HCV Micu 双语候选卡诊断试验 v10}
+domain: rag
+task: distill
+description: >-
+  Diagnostic-only fresh-image HCV collection testing bilingual candidate
+  cards and strict Chinese Open answer names after visual 3 -> visual 10 ->
+  semantic 10. Never eligible for SFT freeze.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823Tsource-pool-v6-bilingual-cards/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823Tsource-pool-v6-bilingual-cards
+  model: gpt-5.6-terra
+  limit: 8
+  max_concurrent: 1
+  max_tool_turns: 3
+  top_k: 3
+  temperature: 0.2
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, contrast-verify, bilingual-cards, image-isolated, micu-slb, diagnostic-pilot]

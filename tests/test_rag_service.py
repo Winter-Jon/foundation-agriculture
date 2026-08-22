@@ -87,7 +87,49 @@ def test_old_milvus_index_falls_back_to_public_catalog_similar_classes() -> None
     assert row["similar_chinese_classes"] == ["葡萄黑腐病"]
 
 
+def test_old_milvus_index_falls_back_to_bounded_public_visual_evidence() -> None:
+    backend = object.__new__(MilvusSiglipBackend)
+    backend._catalog_similar_classes = {
+        "wiki::N04001": {
+            "public_description": "A bounded public disease description.",
+            "visual_descriptions": ["Visible lesion pattern."],
+        }
+    }
+    row = backend._plain_row({"entry_id": "wiki::N04001", "english_name": "Apple Black Rot"})
+    assert row["public_description"] == "A bounded public disease description."
+    assert row["visual_descriptions"] == ["Visible lesion pattern."]
+
+
 def test_milvus_output_fields_accept_lite_and_nested_schema_layouts() -> None:
     backend = object.__new__(MilvusSiglipBackend)
     backend.class_fields = {"entry_id", "english_name", "similar_english_classes"}
     assert backend._class_output_fields == ["entry_id", "english_name", "similar_english_classes"]
+
+
+def test_name_hits_prioritize_canonical_source_over_mismatched_duplicate() -> None:
+    backend = object.__new__(MilvusSiglipBackend)
+    backend._catalog_similar_classes = {}
+    backend.class_collection = "classes"
+    backend.class_fields = {
+        "entry_id", "english_name", "source_dataset", "public_description",
+    }
+    rows = [
+        {
+            "entry_id": "Disease_pest_dataset_seg_wiki::N04025",
+            "english_name": "Carambola Hooded Hopper Insect Disease",
+            "source_dataset": "Disease_pest_dataset_seg_wiki",
+            "public_description": "A coffee leaf rust description.",
+        },
+        {
+            "entry_id": "agri_disease_pest_wiki::N04025",
+            "english_name": "Carambola Hooded Hopper Insect Disease",
+            "source_dataset": "agri_disease_pest_wiki",
+            "public_description": "Carambola hosts and hopper symptoms.",
+        },
+    ]
+    class QueryClient:
+        def query(self, **kwargs): return rows
+    backend.client = QueryClient()
+    hits = backend._name_hits("Carambola Hooded Hopper Insect Disease", 3)
+    assert len(hits) == 1
+    assert hits[0]["entry_id"] == "agri_disease_pest_wiki::N04025"

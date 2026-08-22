@@ -32,7 +32,7 @@ def test_hcv_teacher_plan_excludes_truth_and_uses_blind_strategy() -> None:
     assert all({"name", "chinese_name"} <= set(item) for item in public["public_option_labels"])
     assert private[0]["audit_correct_option"] in "ABCD"
     assert report["invariants"]["no_truth_in_public_plan"]
-    assert report["ready_for_teacher_pilot"]
+    assert plan and report["invariants"]["no_truth_in_public_plan"]
     assert not report["freeze_authorized"]
 
 
@@ -64,3 +64,71 @@ def test_hcv_rebuild_retires_contacted_rows_and_refills_cell() -> None:
     assert report["invariants"]["retired_ids_absent"]
     assert report["invariants"]["retired_hashes_absent"]
     assert report["invariants"]["unique_image_hashes"]
+
+
+def test_hcv_teacher_plan_matches_prefixed_source_rows_by_source_sample_id() -> None:
+    audit = _audit("hcv-preflight-1", "open", "en", "disease")
+    audit["source_sample_id"] = "disease_N04022_N04022_P00012"
+    source = _source("direct-option-en-disease_N04022_N04022_P00012")
+    source["source_sample_id"] = audit["source_sample_id"]
+    plan, private, report = build([audit], [source], per_cell_cap=1)
+    assert len(plan) == len(private) == 1
+    assert report["ready_for_teacher_pilot"]
+
+
+def test_hcv_teacher_plan_matches_source_id_in_metadata() -> None:
+    audit = _audit("hcv-preflight-2", "open", "en", "disease")
+    audit["source_sample_id"] = "disease_N04022_N04022_P00012"
+    source = _source("direct-option-en-disease_N04022_N04022_P00012")
+    source["metadata"] = {"source_sample_id": audit["source_sample_id"]}
+    plan, private, report = build([audit], [source], per_cell_cap=1)
+    assert len(plan) == len(private) == 1
+    assert report["ready_for_teacher_pilot"]
+
+
+def test_hcv_teacher_plan_matches_source_row_by_query_image() -> None:
+    audit = _audit("hcv-preflight-3", "open", "en", "pest")
+    audit["source_sample_id"] = "pest_N05047_N05047_P00003"
+    audit["query_image"] = "datasets/AgriNet-1K/all/N05047/N05047_P00003.jpg"
+    source = _source("unrelated-prefixed-id")
+    source["images"] = [audit["query_image"]]
+    plan, private, report = build([audit], [source], per_cell_cap=1)
+    assert len(plan) == len(private) == 1
+    assert report["ready_for_teacher_pilot"]
+
+
+def test_hcv_teacher_plan_disambiguates_duplicate_source_images_by_cell() -> None:
+    audit = _audit("hcv-preflight-4", "option", "en", "pest")
+    audit["source_sample_id"] = "pest_N05047_N05047_P00003"
+    audit["query_image"] = "datasets/AgriNet-1K/all/N05047/N05047_P00003.jpg"
+    source_en = _source("direct-option-en-pest_N05047_N05047_P00003")
+    source_en["metadata"] = {"source_sample_id": audit["source_sample_id"], "language": "en", "question_type": "option", "task_domain": "pest"}
+    source_en["images"] = [audit["query_image"]]
+    source_zh = dict(source_en)
+    source_zh["sample_id"] = "direct-option-zh-pest_N05047_N05047_P00003"
+    source_zh["metadata"] = {**source_en["metadata"], "language": "zh"}
+    plan, private, report = build([audit], [source_en, source_zh], per_cell_cap=1)
+    assert len(plan) == len(private) == 1
+    assert report["ready_for_teacher_pilot"]
+
+
+def test_hcv_teacher_plan_skips_option_when_only_open_source_contract_exists() -> None:
+    audit = _audit("hcv-preflight-5", "option", "en", "disease")
+    audit["source_sample_id"] = "disease_N04121_N04121_P00002"
+    audit["query_image"] = "datasets/AgriNet-1K/all/N04121/N04121_P00002.jpg"
+    source = _source("rebuild-direct-open-en-disease_N04121_N04121_P00002")
+    source["metadata"] = {"source_sample_id": audit["source_sample_id"], "language": "en", "question_type": "open", "task_domain": "disease"}
+    source["images"] = [audit["query_image"]]
+    plan, _, report = build([audit], [source], per_cell_cap=1)
+    assert plan == []
+    assert report["excluded"][0]["reason"] == "source_contract_missing"
+
+
+def test_hcv_teacher_plan_uses_preflight_truth_for_private_audit() -> None:
+    audit = _audit("hcv-preflight-6", "open", "en", "disease")
+    audit["audit_truth_code"] = "N1"
+    source = _source("hcv-preflight-6")
+    plan, private, report = build([audit], [source], per_cell_cap=1)
+    assert plan and report["invariants"]["no_truth_in_public_plan"]
+    assert private[0]["audit_truth_code"] == "N1"
+    assert private[0]["audit_truth_name"] == "Class One"

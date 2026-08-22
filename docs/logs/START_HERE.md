@@ -1,10 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-08-23 01:09:56 CST
+Last updated: 2026-08-23 03:20:20 CST
 
 ## Current focus
 
-The active HCV path uses `micu_slb` / `gpt-5.6-terra`, never the unreachable Yunwu route. The 32-row Micu collection was protocol-clean but failed its private answer-quality freeze gate (13/32 correct). A subsequent eight-cell, fresh-image Micu diagnostic pilot validates the new public top-10 candidate-comparison contract but still reaches only 5/8 correct; it is explicitly non-freezable.
+The active HCV path uses `micu_slb` / `gpt-5.6-terra`, never the unreachable Yunwu route. The 32-row Micu collection was protocol-clean but failed its private answer-quality freeze gate (13/32 correct). A subsequent eight-cell, fresh-image Micu diagnostic pilot validates the new public top-10 candidate-comparison contract but still reaches only 5/8 correct; it is explicitly non-freezable. The latest one-row fresh Micu candidate-boundary pilot is protocol-clean and truth-correct, but remains diagnostic-only.
 
 Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
 
@@ -154,6 +154,17 @@ teacher decision quality rather than scale the same route.
 
 The fresh, image-isolated eight-cell decision-contract pilot completed under
 Micu at `outputs/runs/rag/rag-hcv-visual-expand-micu-decision-pilot-v1/20260823T010403-5bacde03-a01/`: 8/8 trajectories followed visual top-3→top-10, with zero rejects and zero unknown deliveries. Its private audit at `outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T010600-micu-decision-contract-pilot/reports/hcv_collection_pilot_audit.json` rejects promotion: 5/8 answers are correct. For the three errors, the truth was nevertheless publicly present at expanded rank 4, 8, or 5. This is a teacher discrimination failure, not a retrieval-recall or protocol-format failure; do not freeze, train, evaluate, or scale this route yet.
+
+The subsequent candidate-aware semantic pilot repaired a separate public-evidence
+lineage bug. Duplicate class names now prefer the canonical `agri_disease_pest_wiki`
+record over mismatched secondary-source descriptions; 23 focused tests pass and the
+live 8078 replay is coherent. However, the fresh Micu v3 pilot
+`outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T023000-micu-contrast-verify-pilot-v3/`
+accepted only three rows (one was correctly rejected for incomplete comparison), and
+all three accepted Open answers still mismatched private truth. The route remains
+`pilot_authorized=false`; database integrity is fixed but candidate discrimination is
+not. Do not train, freeze, expand, or run DP8 until a stronger offline-tested decision
+mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
 

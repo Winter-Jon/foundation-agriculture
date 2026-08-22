@@ -52,30 +52,45 @@ def audit_row(row: dict[str, Any], truth: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if metadata.get("generation_route") != "blind_evidence" or metadata.get("label_visible_to_teacher") is not False:
         errors.append("not_blind_evidence")
-    if metadata.get("strategy_id") != "hcv_visual_expand":
+    if metadata.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify"}:
         errors.append("wrong_strategy")
     calls = [parse_json(message).get("arguments") for message in messages if message.get("role") == "tool_call"]
     calls = [call for call in calls if isinstance(call, dict)]
-    expected_calls = [("visual", "query_image", 3), ("visual", "query_image", 10)]
+    if metadata.get("strategy_id") == "hcv_contrast_verify":
+        expected_calls = [("visual", "query_image", 3), ("visual", "query_image", 10), ("semantic", "none", 10)]
+    else:
+        expected_calls = [("visual", "query_image", 3), ("visual", "query_image", 10)]
     actual_calls = [(call.get("retrieval_type"), call.get("image"), call.get("top_k")) for call in calls]
     if actual_calls != expected_calls:
         errors.append(f"not_visual_3_to_10:{actual_calls}")
     responses = [parse_json(message) for message in messages if message.get("role") in {"tool", "tool_response"}]
-    if len(responses) != 2:
+    expected_response_count = 3 if metadata.get("strategy_id") == "hcv_contrast_verify" else 2
+    if len(responses) != expected_response_count:
         errors.append(f"tool_response_count:{len(responses)}")
     else:
         first = {normalized(str(item.get("class_name") or "")) for item in responses[0].get("results") or [] if isinstance(item, dict)}
         second = {normalized(str(item.get("class_name") or "")) for item in responses[1].get("results") or [] if isinstance(item, dict)}
         if len(second) <= len(first) or not (second - first):
             errors.append("no_second_turn_public_evidence_delta")
+    if expected_response_count == 3:
+            third = {normalized(str(item.get("class_name") or "")) for item in responses[2].get("results") or [] if isinstance(item, dict)}
+            if not third:
+                errors.append("empty_semantic_verification_evidence")
+            if not any(
+                (item.get("public_description") or item.get("visual_descriptions"))
+                for item in responses[2].get("results") or [] if isinstance(item, dict)
+            ):
+                errors.append("semantic_verification_missing_public_attributes")
     if not hcv_final_decision_is_complete(metadata, next((str(message.get("content") or "") for message in reversed(messages) if message.get("role") == "assistant"), ""), messages):
         errors.append("hcv_expanded_candidate_comparison_incomplete")
     answer = answer_body(messages)
     if metadata.get("question_type") == "option":
         if answer != truth.get("audit_correct_option"):
             errors.append("option_answer_mismatch")
-    elif normalized(answer) != normalized(str(truth.get("audit_truth_name") or "")):
-        errors.append("open_answer_mismatch")
+    else:
+        expected_name = truth.get("audit_truth_name_zh") if metadata.get("language") == "zh" else truth.get("audit_truth_name")
+        if normalized(answer) != normalized(str(expected_name or "")):
+            errors.append("open_answer_mismatch")
     return errors
 
 

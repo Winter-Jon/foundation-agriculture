@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cell-offset", type=int, default=0, help="Deterministic per-cell candidate offset for non-overlapping follow-up audits.")
     parser.add_argument("--exclude-manifests", type=Path, nargs="*", default=(), help="Prior public preflight manifests whose image hashes must be excluded.")
     parser.add_argument("--timeout", type=int, default=60)
+    parser.add_argument("--resume", action="store_true", help="Rebuild a report from an existing manifest/audit without issuing retrieval calls.")
     return parser.parse_args()
 
 
@@ -292,6 +293,30 @@ def main() -> int:
     selected, shortages, isolation_audit = select_rows(read_jsonl(args.source), args.per_cell, cells=requested_cells, cell_offset=args.cell_offset, excluded_hashes=prior_hashes)
     if any(shortages.values()):
         raise SystemExit(f"insufficient image-isolated rows: {shortages}")
+    if args.resume:
+        manifest_path = args.output_dir / "manifest.jsonl"
+        audit_path = args.output_dir / "audit.jsonl"
+        if not manifest_path.is_file() or not audit_path.is_file():
+            raise SystemExit("--resume requires existing manifest.jsonl and audit.jsonl")
+        selected = read_jsonl(manifest_path)
+        rows = read_jsonl(audit_path)
+        report = {
+            "schema_version": "agrinet.hcv-retrieval-preflight/v1",
+            "source": str(args.source.resolve().relative_to(ROOT)),
+            "rag_api": args.rag_api, "per_cell": args.per_cell,
+            "cells": sorted(requested_cells) if requested_cells else ["/".join(cell) for cell in CELLS],
+            "cell_offset": args.cell_offset,
+            "exclude_manifests": [str(path) for path in args.exclude_manifests],
+            "top_k": args.top_k, "expand_top_k": args.expand_top_k, "resume": True,
+            "label_policy": "audit-only; labels never form retrieval queries or HTTP requests",
+            "isolation": {"policy": "excluded formal/diagnostic/SFT/historical exposed image hashes", **isolation_audit},
+            **summarize(rows, shortages),
+        }
+        report["quality_gate"] = quality_gate(report, rows, selected)
+        report["quality_gate"]["passed"] = all(report["quality_gate"].values())
+        (args.output_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + chr(10), encoding="utf-8")
+        print(json.dumps(report, ensure_ascii=False))
+        return 0
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write_jsonl(args.output_dir / "manifest.jsonl", public_manifest(selected))
     rows = []
@@ -303,7 +328,7 @@ def main() -> int:
     write_jsonl(args.output_dir / "audit.jsonl", rows)
     report = {
         "schema_version": "agrinet.hcv-retrieval-preflight/v1",
-        "source": str(args.source.relative_to(ROOT)),
+        "source": str(args.source.resolve().relative_to(ROOT)),
         "rag_api": args.rag_api,
         "per_cell": args.per_cell,
         "cells": sorted(requested_cells) if requested_cells else ["/".join(cell) for cell in CELLS],

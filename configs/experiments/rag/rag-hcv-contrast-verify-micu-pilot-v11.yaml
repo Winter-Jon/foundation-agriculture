@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-pilot-v11
+display_name: {en: HCV Micu repaired-candidate deterministic pilot v11, zh: HCV Micu 修复候选确定性试验 v11}
+domain: rag
+task: distill
+description: >-
+  Diagnostic-only fresh images where retrieval preflight proved visual
+  top-3 miss to top-10 truth repair; deterministic Micu HCV collection.
+  Never eligible for SFT freeze.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823Tsource-pool-v5-candidate-cards/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823Tsource-pool-v5-candidate-cards
+  model: gpt-5.6-terra
+  limit: 4
+  max_concurrent: 1
+  max_tool_turns: 3
+  top_k: 3
+  temperature: 0.0
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, contrast-verify, repaired-candidate, deterministic, image-isolated, micu-slb, diagnostic-pilot]

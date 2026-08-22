@@ -131,6 +131,95 @@ def test_hcv_expanded_decision_prompt_requires_public_candidate_comparison(tmp_p
     assert "Private Truth" not in rendered and "N99999" not in rendered
 
 
+def test_hcv_closed_finalization_contains_candidate_cards(tmp_path) -> None:
+    import json
+    sample = {"strategy_id": "hcv_contrast_verify", "language": "en", "question_type": "open"}
+    messages = [
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "image": "query_image", "top_k": 3}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Top One", "public_description": "one host"},
+            {"rank": 2, "class_name": "Top Two", "public_description": "two host"},
+            {"rank": 3, "class_name": "Top Three", "public_description": "three host"},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "image": "query_image", "top_k": 10}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Top One", "public_description": "one host"},
+            {"rank": 2, "class_name": "Top Two", "public_description": "two host"},
+            {"rank": 3, "class_name": "Top Three", "public_description": "three host"},
+            {"rank": 4, "class_name": "Expanded Four", "public_description": "four symptom"},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "semantic", "image": "none", "top_k": 10}})},
+    ]
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    closed = run_pilot.closed_finalization_messages(sample, image, messages)
+    text = str(closed[0]["content"]) + str(closed[1]["content"])
+    assert "Candidate card 1: Top One" in text
+    assert "Candidate card 2: Expanded Four" in text or "Expanded Four" in text
+    assert "one host" in text and "four symptom" in text
+
+
+def test_hcv_candidate_ledger_binds_bilingual_names() -> None:
+    import json
+    messages = [
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "top_k": 3}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "One", "chinese_name": "一"},
+            {"class_name": "Two", "chinese_name": "二"},
+            {"class_name": "Three", "chinese_name": "三"},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "top_k": 10}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "One", "chinese_name": "一"},
+            {"class_name": "Two", "chinese_name": "二"},
+            {"class_name": "Three", "chinese_name": "三"},
+            {"class_name": "Four", "chinese_name": "四"},
+        ]})},
+    ]
+    ledger = run_pilot.hcv_expanded_candidate_ledger(messages)
+    assert [(x["class_name"], x["chinese_name"]) for x in ledger] == [("One", "一"), ("Two", "二"), ("Three", "三"), ("Four", "四")]
+
+
+def test_chinese_hcv_candidate_name_gate_does_not_reject_option_letters() -> None:
+    import json
+    sample = {
+        "strategy_id": "hcv_contrast_verify", "language": "zh", "question_type": "option",
+        "candidate_labels": [{"name": "One", "chinese_name": "一"}],
+    }
+    messages = [{"role": "tool_response", "content": json.dumps({"results": [
+        {"class_name": "One", "chinese_name": "一"},
+        {"class_name": "Two", "chinese_name": "二"},
+        {"class_name": "Three", "chinese_name": "三"},
+    ]})}]
+    assert not any("chinese_hcv_answer_not_candidate_card" in reason for reason in [])
+
+
+def test_hcv_machine_adjudication_parses_and_renders_public_decision() -> None:
+    import json
+    sample = {"strategy_id": "hcv_contrast_verify", "language": "en", "question_type": "open"}
+    messages = [
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "image": "query_image", "top_k": 3}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "One", "chinese_name": "一"}, {"class_name": "Two", "chinese_name": "二"}, {"class_name": "Three", "chinese_name": "三"},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "visual", "image": "query_image", "top_k": 10}})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "One", "chinese_name": "一"}, {"class_name": "Two", "chinese_name": "二"}, {"class_name": "Three", "chinese_name": "三"}, {"class_name": "Four", "chinese_name": "四"},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"arguments": {"retrieval_type": "semantic", "image": "none", "top_k": 10}})},
+        {"role": "tool_response", "content": json.dumps({"results": []})},
+    ]
+    raw = json.dumps({"selected_class_name": "Four", "scores": [
+        {"class_name": "Four", "host": 2, "organ": 2, "symptom": 2},
+        {"class_name": "One", "host": 1, "organ": 1, "symptom": 0},
+        {"class_name": "Two", "host": 1, "organ": 0, "symptom": 1},
+    ], "rejected": [{"class_name": "One", "reason": "trait absent"}, {"class_name": "Two", "reason": "organ mismatch"}], "uncertainty": "low"})
+    decision, errors = run_pilot.parse_hcv_adjudication(raw, sample, messages)
+    assert not errors and decision is not None and decision["selected_class_name"] == "Four"
+    rendered = run_pilot.render_hcv_adjudication(decision, sample)
+    assert "<answer>Four</answer>" in rendered and "Host match: 2" in rendered
+
+
 def test_hcv_final_decision_gate_rejects_rank_only_and_accepts_trait_comparison() -> None:
     sample = {"strategy_id": "hcv_visual_expand", "language": "en"}
     messages = _hcv_public_messages()
@@ -140,12 +229,54 @@ def test_hcv_final_decision_gate_rejects_rank_only_and_accepts_trait_comparison(
     )
     assert not run_pilot.hcv_final_decision_is_complete(sample, rank_only, messages)
     comparison = (
-        "<think>Predicted class name: Expanded Four\nEvidence: The image leaf spot pattern supports Expanded Four; "
-        "Top One lacks the visible lesion layout; Top Two has a different leaf symptom.\n"
+        "<think>Predicted class name: Expanded Four\nEvidence: Candidate: Expanded Four; Host match: 2; Organ match: 2; Symptom match: 2; Contradiction: none. "
+        "Candidate: Top One; Host match: 1; Organ match: 1; Symptom match: 0; Contradiction: lesion absent. Candidate: Top Two; Host match: 1; Organ match: 1; Symptom match: 0; Contradiction: margin absent.\n"
         "Rejected alternatives: Top One is rejected because the image lacks its broad spot trait; "
         "Top Two is rejected because the lesion margin is absent.\nUncertainty: moderate.</think><answer>Expanded Four</answer>"
     )
     assert run_pilot.hcv_final_decision_is_complete(sample, comparison, messages)
+
+
+def test_hcv_contrast_semantic_query_uses_only_public_names() -> None:
+    messages = _hcv_public_messages()
+    sample = {"strategy_id": "hcv_contrast_verify", "top_k": 3}
+    args = run_pilot.hcv_contrast_semantic_args(messages, sample, 3)
+    assert args is not None
+    assert args["retrieval_type"] == "semantic"
+    assert args["image"] == "none"
+    assert args["top_k"] == 10
+    assert "Top One" in args["query"] and "Expanded Four" in args["query"]
+    assert "N99999" not in args["query"]
+
+
+def test_hcv_semantic_query_excludes_similar_classes_and_uses_visual_top10() -> None:
+    import json
+    messages = [
+        {"role": "tool_call", "content": json.dumps({"name": run_pilot.TOOL_NAME, "arguments": {
+            "retrieval_type": "visual", "image": "query_image", "top_k": 3,
+        }})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Visual One", "similar_classes": [{"name": "Neighbor Leak"}]},
+            {"rank": 2, "class_name": "Visual Two", "similar_classes": [{"name": "Neighbor Leak 2"}]},
+            {"rank": 3, "class_name": "Visual Three", "similar_classes": [{"name": "Neighbor Leak 3"}]},
+        ]})},
+        {"role": "tool_call", "content": json.dumps({"name": run_pilot.TOOL_NAME, "arguments": {
+            "retrieval_type": "visual", "image": "query_image", "top_k": 10,
+        }})},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"rank": 1, "class_name": "Visual One", "similar_classes": [{"name": "Neighbor Leak"}]},
+            {"rank": 2, "class_name": "Visual Two", "similar_classes": [{"name": "Neighbor Leak 2"}]},
+            {"rank": 3, "class_name": "Visual Three", "similar_classes": [{"name": "Neighbor Leak 3"}]},
+            {"rank": 4, "class_name": "Visual Four", "similar_classes": [{"name": "Semantic Leak"}]},
+        ]})},
+    ]
+    sample = {"strategy_id": "hcv_contrast_verify", "top_k": 3}
+    args = run_pilot.hcv_contrast_semantic_args(messages, sample, 3)
+    assert args is not None
+    assert all(name in args["query"] for name in ("Visual One", "Visual Two", "Visual Three", "Visual Four"))
+    assert all(name not in args["query"] for name in ("Neighbor Leak", "Neighbor Leak 2", "Neighbor Leak 3", "Semantic Leak"))
+    ledger = run_pilot.hcv_expanded_candidate_ledger(messages)
+    assert [entry["class_name"] for entry in ledger] == ["Visual One", "Visual Two", "Visual Three", "Visual Four"]
 
 
 def test_public_option_question_uses_blind_public_order() -> None:

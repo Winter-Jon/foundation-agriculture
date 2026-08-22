@@ -19,11 +19,18 @@ CLASS_FIELDS = [
     # Curated same-domain neighbours stored in the wiki class collection.
     # Return them with a hit so callers can compare alternatives.
     "similar_english_classes", "similar_chinese_classes",
+    "public_description", "visual_descriptions",
 ]
 IMAGE_FIELDS = [
     "image_id", "entry_id", "code", "english_name", "chinese_name",
     "source_dataset", "local_reference_image",
 ]
+CATALOG_HOST_TERMS = {
+    "apple", "apricot", "bean", "cherry", "corn", "cotton",
+    "grape", "orange", "peach", "pepper", "potato", "rice",
+    "soybean", "strawberry", "tomato", "wheat", "coffee",
+}
+CANDIDATE_COMPARE_PREFIX = "Compare public agricultural candidate classes and their host, organ, and symptom distinctions:"
 
 
 class MilvusSiglipBackend:
@@ -49,7 +56,7 @@ class MilvusSiglipBackend:
         self.client.load_collection(self.class_collection)
         self.client.load_collection(self.image_collection)
 
-    def _load_catalog_similar_classes(self) -> dict[str, dict[str, list[str]]]:
+    def _load_catalog_similar_classes(self) -> dict[str, dict[str, Any]]:
         """Load public curated neighbours when serving a pre-extension index.
 
         Existing Lite files predate the two similar-class scalar fields.  The
@@ -63,14 +70,35 @@ class MilvusSiglipBackend:
             descriptions = payload.get("description") or {}
             if not isinstance(descriptions, dict):
                 return {}
-            return {
-                str(entry_id): {
+            catalog: dict[str, dict[str, Any]] = {}
+            for entry_id, item in descriptions.items():
+                if not isinstance(item, dict):
+                    continue
+                description = item.get("description") or {}
+                text_parts = [
+                    str(value).strip() for key, value in sorted(description.items())
+                    if str(key).startswith("content_") and str(value).strip()
+                ] if isinstance(description, dict) else []
+                visual_parts = [
+                    str(value).strip() for value in (item.get("gemini_desc") or [])
+                    if str(value).strip()
+                ]
+                name_text = " ".join(str(item.get(key) or "") for key in ("english_name", "chinese_name"))
+                name_hosts = {term for term in CATALOG_HOST_TERMS if re.search(rf"\b{term}\b", name_text.lower())}
+                def compatible(text: str) -> bool:
+                    text_hosts = {term for term in CATALOG_HOST_TERMS if re.search(rf"\b{term}\b", text.lower())}
+                    return not name_hosts or not text_hosts or bool(name_hosts & text_hosts)
+                text_parts = [value for value in text_parts if compatible(value)]
+                visual_parts = [value for value in visual_parts if compatible(value)]
+                catalog[str(entry_id)] = {
                     "similar_english_classes": [str(value) for value in (item.get("similar_english_classes") or []) if str(value).strip()],
                     "similar_chinese_classes": [str(value) for value in (item.get("similar_chinese_classes") or []) if str(value).strip()],
+                    # These are public catalogue facts, bounded here before
+                    # they cross the retrieval HTTP boundary.
+                    "public_description": text_parts[0][:420] if text_parts else "",
+                    "visual_descriptions": [value[:300] for value in visual_parts[:2]],
                 }
-                for entry_id, item in descriptions.items()
-                if isinstance(item, dict)
-            }
+            return catalog
         except (OSError, json.JSONDecodeError, IndexError):
             return {}
 
@@ -128,9 +156,11 @@ class MilvusSiglipBackend:
         output = dict(row)
         entry_id = str(output.get("entry_id") or output.get("id") or "")
         fallback = self._catalog_similar_classes.get(entry_id, {})
-        for key in ("similar_english_classes", "similar_chinese_classes"):
+        for key in ("similar_english_classes", "similar_chinese_classes", "visual_descriptions"):
             if not output.get(key) and fallback.get(key):
                 output[key] = list(fallback[key])
+        if not output.get("public_description") and fallback.get("public_description"):
+            output["public_description"] = str(fallback["public_description"])
         return output
 
     def _plain_row(self, row: dict[str, Any]) -> dict[str, Any]:
@@ -138,6 +168,7 @@ class MilvusSiglipBackend:
         for key in (
             "local_reference_images", "alias_en", "alias_cn",
             "similar_english_classes", "similar_chinese_classes",
+            "visual_descriptions",
         ):
             value = output.get(key)
             if value is not None and not isinstance(value, list):
@@ -192,20 +223,75 @@ class MilvusSiglipBackend:
         if not normalized:
             raise ValueError("query_text is required for name retrieval")
         rows = self.client.query(collection_name=self.class_collection, filter="entry_id != ''", output_fields=self._class_output_fields, limit=1000)
-        matches: dict[str, dict[str, Any]] = {}
+        matches: dict[str, list[dict[str, Any]]] = {}
         for raw_row in rows:
             row = self._plain_row(raw_row)
             names = [row.get("english_name"), row.get("chinese_name"), *(row.get("alias_en") or []), *(row.get("alias_cn") or [])]
             if any(self._normalize_name(str(name or "")) == normalized for name in names):
                 key = self._normalize_name(str(row.get("english_name") or row.get("chinese_name") or row.get("entry_id")))
-                matches.setdefault(key, {"score": 1.0, **row})
-        return sorted(matches.values(), key=lambda item: str(item.get("entry_id")))[:top_k]
+                matches.setdefault(key, []).append({"score": 1.0, **row})
+        # Multiple historical source datasets can expose the same public name.
+        # The canonical agricultural wiki is the authoritative description
+        # lineage; lexical entry_id ordering is not a safe tie-breaker because
+        # it can select a cross-dataset image/description mismatch.
+        selected: list[dict[str, Any]] = []
+        for candidates in matches.values():
+            selected.append(min(candidates, key=self._name_hit_priority))
+        return sorted(selected, key=lambda item: str(item.get("entry_id")))[:top_k]
+
+    @staticmethod
+    def _name_hit_priority(row: dict[str, Any]) -> tuple[int, int, str]:
+        source = str(row.get("source_dataset") or "")
+        entry_id = str(row.get("entry_id") or "")
+        canonical = int(source != "agri_disease_pest_wiki" and not entry_id.startswith("agri_disease_pest_wiki::"))
+        compatible = int(not MilvusSiglipBackend._catalog_description_is_name_compatible(row))
+        return canonical, compatible, entry_id
+
+    def _candidate_compare_hits(self, query: str, top_k: int) -> list[dict[str, Any]]:
+        """Resolve a public candidate set without a second unconstrained ANN search."""
+        if CANDIDATE_COMPARE_PREFIX not in query:
+            return []
+        suffix = query.split(CANDIDATE_COMPARE_PREFIX, 1)[1]
+        names = [value.strip() for value in suffix.split(";") if value.strip()]
+        rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for name in names:
+            for row in self._name_hits(name, top_k=4):
+                key = str(row.get("entry_id") or "")
+                if not key or key in seen:
+                    continue
+                # Prefer the canonical AgriNet wiki record when duplicate
+                # source datasets disagree on the same public class.
+                if not self._catalog_description_is_name_compatible(row):
+                    continue
+                seen.add(key)
+                rows.append(row)
+                break
+            if len(rows) >= top_k:
+                break
+        return rows
+
+    @staticmethod
+    def _catalog_description_is_name_compatible(row: dict[str, Any]) -> bool:
+        description = str(row.get("public_description") or "").lower()
+        name = " ".join(str(row.get(key) or "") for key in ("english_name", "chinese_name")).lower()
+        if not description:
+            return True
+        # A description with a clearly different crop host is not safe as
+        # discriminative evidence for this class.
+        hosts = ["apple", "apricot", "bean", "carambola", "cherry", "citrus", "corn", "cotton", "grape", "orange", "peach", "pepper", "potato", "rice", "soybean", "strawberry", "tomato", "wheat", "coffee"]
+        name_hosts = {host for host in hosts if re.search(rf"\b{host}\b", name)}
+        desc_hosts = {host for host in hosts if re.search(rf"\b{host}\b", description)}
+        return not name_hosts or not desc_hosts or bool(name_hosts & desc_hosts)
 
     def search(self, request: RagSearchRequest) -> list[dict[str, Any]]:
         kind = request.retrieval_type
         if kind in {"image", "image-to-class", "visual"}:
             return self._image_hits(request.query_image, request.top_k)
         if kind == "semantic":
+            candidate_hits = self._candidate_compare_hits(request.query_text, request.top_k)
+            if candidate_hits:
+                return candidate_hits
             return self._text_hits(request.query_text, request.top_k)
         if kind == "name":
             return self._name_hits(request.query_text, request.top_k)

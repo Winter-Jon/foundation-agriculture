@@ -9,6 +9,13 @@ STRATEGIES: dict[str, dict[str, Any]] = {
     # Per-turn budgets are intentionally explicit: a visual 3 -> visual 10
     # transition is not an exact duplicate request.
     "hcv_visual_expand": {"sequence": ("visual", "visual"), "top_k": 3, "turn_top_k": (3, 10)},
+    # HCV contrast verification adds one public text-only comparison after
+    # visual expansion. The query is assembled only from names already shown
+    # by the public visual results.
+    # The final semantic turn is candidate-addressed, so it must have enough
+    # budget for the whole visual top-10 ledger; a 6-row cap silently dropped
+    # expansion candidates before verification.
+    "hcv_contrast_verify": {"sequence": ("visual", "visual", "semantic"), "top_k": 3, "turn_top_k": (3, 10, 10)},
     "visual_then_balanced": {"sequence": ("visual", "balanced"), "top_k": 5},
     "balanced_then_name": {"sequence": ("balanced", "name"), "top_k": 5},
     "semantic_then_visual": {"sequence": ("semantic", "visual"), "top_k": 5},

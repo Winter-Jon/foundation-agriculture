@@ -43,6 +43,11 @@ def parse_args() -> argparse.Namespace:
         "--diagnostic-pilot", action="store_true",
         help="Mark this as a quality diagnostic: it is never eligible for SFT freeze.",
     )
+    parser.add_argument("--strategy-id", default="hcv_visual_expand", choices=("hcv_visual_expand", "hcv_contrast_verify"))
+    parser.add_argument(
+        "--selection-mode", default="repair_only", choices=("repair_only", "expanded_truth_hit", "all_diagnostic"),
+        help="Select only top-3 misses repaired by expansion (default), or retain all retrieval-valid rows for a diagnostic-only teacher pilot.",
+    )
     parser.add_argument("--supplement-only", action="store_true", help="When rebuilding, emit only newly selected replacement rows.")
     return parser.parse_args()
 
@@ -61,7 +66,10 @@ def is_visual_expand_repair(row: dict[str, Any]) -> bool:
     return not bool(audit.get("first_truth_hit")) and bool((actions.get("visual_expand") or {}).get("truth_hit"))
 
 
-def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> dict[str, Any]:
+def public_plan_row(
+    audit_row: dict[str, Any], source_row: dict[str, Any], strategy_id: str = "hcv_visual_expand",
+    selection_reason: str = "first_visual_top3_miss_repaired_by_public_visual_top10",
+) -> dict[str, Any]:
     # Keep the public task fields needed to form an Open/Option question, but
     # explicitly omit final_label and all audit truth information.  The teacher
     # receives only the image and public task presentation.
@@ -74,23 +82,24 @@ def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> di
         "question_type": audit_row["question_type"],
         "language": audit_row["language"],
         "candidate_labels": source_row.get("candidate_labels") or [],
-        "strategy_id": "hcv_visual_expand",
-        "preferred_sequence": ["visual", "visual"],
+        "strategy_id": strategy_id,
+        "preferred_sequence": ["visual", "visual", "semantic"] if strategy_id == "hcv_contrast_verify" else ["visual", "visual"],
         "top_k": 3,
-        "max_tool_turns": 2,
+        "max_tool_turns": 3 if strategy_id == "hcv_contrast_verify" else 2,
         "generation_route": "blind_evidence",
         "label_visible_to_teacher": False,
         "trajectory_mode": "standard",
-        "hcv_selection_reason": "first_visual_top3_miss_repaired_by_public_visual_top10",
+        "hcv_selection_reason": selection_reason,
     }
     if output["question_type"] == "option":
         # The public option order is deterministically unrelated to its hidden
         # correct letter.  A private audit joins source_sample_id afterward to
         # evaluate the returned letter; neither label nor correct option enters
         # the teacher-plan JSONL.
+        source_metadata = source_row.get("metadata") if isinstance(source_row.get("metadata"), dict) else {}
         labels = [
-            {"name": str(item.get("name") or "").strip(), "chinese_name": str(item.get("chinese_name") or "").strip()}
-            for item in source_row.get("candidate_labels") or [] if isinstance(item, dict)
+            {"name": str(item.get("name") or item.get("english_name") or "").strip(), "chinese_name": str(item.get("chinese_name") or "").strip()}
+            for item in (source_row.get("candidate_labels") or source_metadata.get("candidate_labels") or []) if isinstance(item, dict)
         ]
         if len(labels) != 4 or any(not item["name"] or not item["chinese_name"] for item in labels):
             raise ValueError(f"option source row lacks four public names: {source_row.get('sample_id')}")
@@ -98,19 +107,115 @@ def public_plan_row(audit_row: dict[str, Any], source_row: dict[str, Any]) -> di
     return output
 
 
+def _source_matches_audit(source: dict[str, Any], audit: dict[str, Any]) -> bool:
+    metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+    for key in ("language", "question_type", "task_domain"):
+        audit_value = str(audit.get(key) or "")
+        source_value = str(source.get(key) or metadata.get(key) or "")
+        if audit_value and source_value and audit_value != source_value:
+            return False
+    query_image = str(audit.get("query_image") or "")
+    source_images = {str(value) for value in source.get("images") or []}
+    paired_image = str(metadata.get("paired_image_id") or "")
+    return not query_image or not source_images or query_image in source_images or query_image == paired_image
+
+
+def _source_contract_matches_audit(source: dict[str, Any], audit: dict[str, Any]) -> bool:
+    metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+    for key in ("language", "question_type", "task_domain"):
+        audit_value = str(audit.get(key) or "")
+        source_value = str(source.get(key) or metadata.get(key) or "")
+        if audit_value and source_value and audit_value != source_value:
+            return False
+    if str(audit.get("question_type") or "") == "option":
+        labels = source.get("candidate_labels") or metadata.get("candidate_labels") or []
+        return isinstance(labels, list) and len(labels) == 4 and all(
+            isinstance(item, dict) and str(item.get("name") or item.get("english_name") or "").strip() and str(item.get("chinese_name") or "").strip()
+            for item in labels
+        )
+    return True
+
+
+def _audit_truth_name(audit: dict[str, Any], source: dict[str, Any]) -> str | None:
+    source_metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+    truth_code = str(audit.get("audit_truth_code") or source.get("final_label") or source_metadata.get("final_label") or "")
+    labels = source.get("candidate_labels") or source_metadata.get("candidate_labels") or []
+    for item in labels:
+        if isinstance(item, dict) and str(item.get("code") or "") == truth_code:
+            return str(item.get("name") or item.get("english_name") or "").strip() or None
+    # Reconstructive Direct rows may intentionally omit private labels and
+    # candidate metadata. The retrieval preflight still carries the private
+    # truth code; resolve its public canonical name only in the private audit.
+    wiki_path = SCRIPT_ROOT / "datasets/AgriNet-1K/wiki/base.json"
+    try:
+        payload = json.loads(wiki_path.read_text(encoding="utf-8"))
+        for item in (payload.get("description") or {}).values():
+            if isinstance(item, dict) and str(item.get("code") or "") == truth_code:
+                return str(item.get("english_name") or "").strip() or None
+    except (OSError, json.JSONDecodeError):
+        pass
+    return None
+
+
+def _audit_truth_name_zh(audit: dict[str, Any], source: dict[str, Any]) -> str | None:
+    """Resolve the private canonical Chinese label for bilingual audits."""
+    source_metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+    truth_code = str(audit.get("audit_truth_code") or source.get("final_label") or source_metadata.get("final_label") or "")
+    labels = source.get("candidate_labels") or source_metadata.get("candidate_labels") or []
+    for item in labels:
+        if isinstance(item, dict) and str(item.get("code") or "") == truth_code:
+            return str(item.get("chinese_name") or "").strip() or None
+    wiki_path = SCRIPT_ROOT / "datasets/AgriNet-1K/wiki/base.json"
+    try:
+        payload = json.loads(wiki_path.read_text(encoding="utf-8"))
+        for item in (payload.get("description") or {}).values():
+            if isinstance(item, dict) and str(item.get("code") or "") == truth_code:
+                return str(item.get("chinese_name") or "").strip() or None
+    except (OSError, json.JSONDecodeError):
+        pass
+    return None
+
+
 def build(
     audit_rows: list[dict[str, Any]], source_rows: list[dict[str, Any]], per_cell_cap: int,
-    excluded_hashes: set[str] | None = None,
+    excluded_hashes: set[str] | None = None, strategy_id: str = "hcv_visual_expand",
+    selection_mode: str = "repair_only", diagnostic_pilot: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     if per_cell_cap < 1:
         raise ValueError("per_cell_cap must be positive")
-    source_by_id = {str(row.get("sample_id") or ""): row for row in source_rows}
+    if selection_mode not in {"repair_only", "expanded_truth_hit", "all_diagnostic"}:
+        raise ValueError(f"unknown selection_mode: {selection_mode}")
+    if selection_mode == "all_diagnostic" and not diagnostic_pilot:
+        raise ValueError("--selection-mode all_diagnostic requires --diagnostic-pilot")
+    # Preflight artifacts identify the underlying sample by source_sample_id,
+    # while historical source datasets may prefix that ID with route/cell
+    # information in their own sample_id.  Index both forms, but reject
+    # ambiguous aliases rather than silently choosing a wrong label.
+    source_by_id: dict[str, list[dict[str, Any]]] = {}
+    source_by_image: dict[str, list[dict[str, Any]]] = {}
+    for row in source_rows:
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        for key in (
+            str(row.get("sample_id") or ""),
+            str(row.get("source_sample_id") or ""),
+            str(metadata.get("source_sample_id") or ""),
+        ):
+            if not key:
+                continue
+            source_by_id.setdefault(key, []).append(row)
+        for image in row.get("images") or []:
+            image_key = str(image)
+            source_by_image.setdefault(image_key, []).append(row)
     excluded_hashes = excluded_hashes or set()
     candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
     excluded: list[dict[str, str]] = []
     seen_hashes: set[str] = set()
     for row in audit_rows:
-        if not is_visual_expand_repair(row):
+        audit = row.get("audit") if isinstance(row.get("audit"), dict) else {}
+        expanded_hit = bool((audit.get("actions") or {}).get("visual_expand", {}).get("truth_hit"))
+        if selection_mode == "repair_only" and not is_visual_expand_repair(row):
+            continue
+        if selection_mode == "expanded_truth_hit" and not expanded_hit:
             continue
         image_hash = str(row.get("image_sha256") or "")
         if image_hash in excluded_hashes:
@@ -120,9 +225,14 @@ def build(
             excluded.append({"id": str(row.get("id") or ""), "reason": "missing_or_duplicate_audit_image_hash"})
             continue
         seen_hashes.add(image_hash)
-        source = source_by_id.get(str(row.get("source_sample_id") or ""))
+        source_key = str(row.get("source_sample_id") or row.get("sample_id") or "")
+        image_key = str(row.get("query_image") or "")
+        source_candidates = source_by_id.get(source_key, []) or source_by_image.get(image_key, [])
+        source = next((candidate for candidate in source_candidates if _source_matches_audit(candidate, row) and _source_contract_matches_audit(candidate, row)), None)
         if source is None:
-            excluded.append({"id": str(row.get("id") or ""), "reason": "source_row_missing"})
+            source = next((candidate for candidate in source_candidates if _source_contract_matches_audit(candidate, row) and image_key in {str(value) for value in candidate.get("images") or []}), None)
+        if source is None:
+            excluded.append({"id": str(row.get("id") or ""), "reason": "source_contract_missing"})
             continue
         candidates.append((row, source))
 
@@ -135,17 +245,25 @@ def build(
         chosen = sorted(cell, key=lambda pair: sort_key(pair[0], key))[:per_cell_cap]
         shortages[key] = max(0, per_cell_cap - len(chosen))
         for row, source in chosen:
-            plan = public_plan_row(row, source)
+            reason = {
+                "all_diagnostic": "all_retrieval_valid_diagnostic",
+                "expanded_truth_hit": "public_visual_top10_truth_hit",
+                "repair_only": "first_visual_top3_miss_repaired_by_public_visual_top10",
+            }[selection_mode]
+            plan = public_plan_row(row, source, strategy_id, reason)
             selected.append(plan)
             private = {
                 "sample_id": plan["sample_id"],
                 "source_sample_id": plan["source_sample_id"],
-                "audit_truth_code": source.get("final_label"),
-                "audit_truth_name": next((item.get("name") for item in source.get("candidate_labels") or [] if item.get("code") == source.get("final_label")), None),
+                "audit_truth_code": str(row.get("audit_truth_code") or source.get("final_label") or (source.get("metadata") or {}).get("final_label") or "") or None,
+                "audit_truth_name": _audit_truth_name(row, source),
+                "audit_truth_name_zh": _audit_truth_name_zh(row, source),
                 "cell": key,
                 "first_codes": (row.get("audit", {}).get("actions", {}).get("visual_first", {}) or {}).get("codes", []),
                 "expand_new_codes": (row.get("audit", {}).get("actions", {}).get("visual_expand", {}) or {}).get("new_codes_vs_first", []),
             }
+            if not private["audit_truth_code"] or not private["audit_truth_name"]:
+                raise ValueError(f"missing private truth for {plan['sample_id']}")
             if plan["question_type"] == "option":
                 target_name = str(private["audit_truth_name"] or "")
                 names = [item["name"] for item in plan["public_option_labels"]]
@@ -158,6 +276,7 @@ def build(
         "schema_version": "agrinet.hcv-teacher-plan/v1",
         "seed": SEED,
         "candidate_repair_rows": len(candidates),
+        "selection_mode": selection_mode,
         "selected_rows": len(selected),
         "selected_by_cell": dict(sorted(Counter(cell_key(row) for row in selected).items())),
         "shortages": shortages,
@@ -165,7 +284,7 @@ def build(
         "invariants": {
             "unique_plan_ids": len(ids) == len(set(ids)),
             "unique_image_hashes": len(hashes) == len(set(hashes)),
-            "all_hcv_strategy": all(row["strategy_id"] == "hcv_visual_expand" for row in selected),
+            "all_hcv_strategy": all(row["strategy_id"] == strategy_id for row in selected),
             "all_blind_teacher": all(row["generation_route"] == "blind_evidence" and row["label_visible_to_teacher"] is False for row in selected),
             "no_truth_in_public_plan": all(not ({"final_label", "final_label_zh", "audit_truth_code"} & set(row)) for row in selected),
         },
@@ -238,6 +357,7 @@ def rebuild(
                 "sample_id": plan["sample_id"], "source_sample_id": plan["source_sample_id"],
                 "audit_truth_code": source.get("final_label"),
                 "audit_truth_name": next((item.get("name") for item in source.get("candidate_labels") or [] if item.get("code") == source.get("final_label")), None),
+                "audit_truth_name_zh": next((item.get("chinese_name") for item in source.get("candidate_labels") or [] if item.get("code") == source.get("final_label")), None),
                 "cell": key,
                 "first_codes": (row.get("audit", {}).get("actions", {}).get("visual_first", {}) or {}).get("codes", []),
                 "expand_new_codes": (row.get("audit", {}).get("actions", {}).get("visual_expand", {}) or {}).get("new_codes_vs_first", []),
@@ -263,7 +383,7 @@ def rebuild(
             "unique_image_hashes": len(hashes) == len(set(hashes)) and all(hashes),
             "retired_ids_absent": not (set(ids) & retired_sample_ids),
             "retired_hashes_absent": not (set(hashes) & retired_hashes),
-            "all_hcv_strategy": all(row.get("strategy_id") == "hcv_visual_expand" for row in selected),
+            "all_hcv_strategy": all(row.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"} for row in selected),
             "all_blind_teacher": all(row.get("generation_route") == "blind_evidence" and row.get("label_visible_to_teacher") is False for row in selected),
             "no_truth_in_public_plan": all(not ({"final_label", "final_label_zh", "audit_truth_code"} & set(row)) for row in selected),
         },
@@ -298,7 +418,8 @@ def main() -> int:
             if str(row.get("image_sha256") or "")
         }
         selected, private_audit, report = build(
-            audit_rows, read_jsonl(args.source), args.per_cell_cap, excluded_hashes
+            audit_rows, read_jsonl(args.source), args.per_cell_cap, excluded_hashes, args.strategy_id,
+            selection_mode=args.selection_mode, diagnostic_pilot=args.diagnostic_pilot,
         )
         if args.exclude_plan:
             report["excluded_teacher_plans"] = [str(path) for path in args.exclude_plan]

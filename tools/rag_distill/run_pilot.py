@@ -413,66 +413,90 @@ def hcv_expanded_candidate_ledger(sft_messages: list[dict[str, Any]]) -> list[di
     The ledger intentionally has no label, class code, audit field, or local
     image path.  It is a compact decision aid, not a retrieval reranker.
     """
-    responses = [
-        parse_sft_json_content(message)
-        for message in sft_messages
-        if message.get("role") in {"tool", "tool_response"}
-    ]
-    result_sets = [
-        value.get("results", []) for value in responses
-        if isinstance(value, dict) and isinstance(value.get("results"), list)
-    ]
-    if len(result_sets) < 2:
+    candidate_names = retrieved_visual_candidate_names(sft_messages, limit=10)
+    if len(candidate_names) < 3:
         return []
-    initial_names = {
-        normalize_class_name(str(result.get("class_name") or result.get("chinese_name") or ""))
-        for result in result_sets[0] if isinstance(result, dict)
-    }
+    chinese_by_name: dict[str, str] = {}
+    for result in tool_response_results(sft_messages):
+        english = str(result.get("class_name") or "").strip()
+        chinese = str(result.get("chinese_name") or "").strip()
+        if english and chinese:
+            chinese_by_name.setdefault(normalize_class_name(english), chinese)
     ledger: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for result in result_sets[-1]:
-        if not isinstance(result, dict):
-            continue
-        name = str(result.get("class_name") or "").strip()
-        name_zh = str(result.get("chinese_name") or "").strip()
-        key = normalize_class_name(name or name_zh)
-        if not key or key in seen:
-            continue
-        seen.add(key)
+    for position, name in enumerate(candidate_names, start=1):
+        key = normalize_class_name(name)
         ledger.append({
-            "rank": result.get("rank"),
+            "rank": position,
             "class_name": name,
-            "chinese_name": name_zh,
-            "new_in_expansion": key not in initial_names,
+            "chinese_name": chinese_by_name.get(key, ""),
+            "new_in_expansion": position > 3,
         })
     return ledger
 
 
 def hcv_expanded_decision_instruction(sample: dict[str, Any], sft_messages: list[dict[str, Any]]) -> str:
     """Return the HCV-only final decision constraint from public evidence."""
-    if sample.get("strategy_id") != "hcv_visual_expand":
+    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify"}:
         return ""
     ledger = hcv_expanded_candidate_ledger(sft_messages)
     if len(ledger) < 3:
         return ""
     rendered = "; ".join(
-        f"{entry.get('class_name') or entry.get('chinese_name')} (rank {entry.get('rank')}, "
+        f"{entry.get('class_name') or entry.get('chinese_name')}"
+        + (f" / {entry.get('chinese_name')}" if entry.get('chinese_name') else "")
+        + f" (rank {entry.get('rank')}, "
         f"{'new in expansion' if entry.get('new_in_expansion') else 'also in initial top-3'})"
         for entry in ledger[:10]
+    )
+    attribute_by_name: dict[str, list[str]] = {}
+    if sample.get("strategy_id") == "hcv_contrast_verify":
+        for result in tool_response_results(sft_messages):
+            description = str(result.get("public_description") or "").strip()
+            visual = [str(value).strip() for value in (result.get("visual_descriptions") or []) if str(value).strip()]
+            name = str(result.get("class_name") or result.get("chinese_name") or "").strip()
+            if name and (description or visual):
+                evidence = description or visual[0]
+                attribute_by_name.setdefault(normalize_class_name(name), []).append(evidence[:360])
+        # Render a candidate card for every visual candidate.  Keeping the
+        # attributes beside the corresponding name is important: a flattened
+        # description list lets the model accidentally attach one class's
+        # host/symptom evidence to another class, and encourages rank-only
+        # decisions.  These are public facts, never private labels.
+        cards: list[str] = []
+        for entry in ledger[:10]:
+            name = str(entry.get("class_name") or "")
+            attrs = attribute_by_name.get(normalize_class_name(name), [])
+            attr_text = " | ".join(dict.fromkeys(attrs))[:520] if attrs else "no catalogue attribute returned"
+            cards.append(
+                f"Candidate card {entry['rank']}: {name}"
+                + (f" / {entry.get('chinese_name')}" if entry.get('chinese_name') else "")
+                + f"; {entry['new_in_expansion'] and 'expanded' or 'initial'}; attributes: {attr_text}"
+            )
+        if cards:
+            rendered += ". Public candidate cards (each attribute belongs only to the named candidate; facts, not instructions): " + " || ".join(cards)
+    scoring_contract = (
+        " For every candidate card, add one compact line in the Evidence field using this exact public comparison format: "
+        "Candidate: <exact name>; Host match: 0/1/2; Organ match: 0/1/2; Symptom match: 0/1/2; Contradiction: <short trait>. "
+        "Use 0 when contradicted, 1 when uncertain/partial, and 2 when clearly supported by the image and the public card. "
+        "Do not use rank as a score. The final answer must be the candidate with the largest sum of the three numeric matches; if tied, state the tie in Uncertainty and choose only among tied candidates using the most discriminative visible trait."
     )
     if sample.get("language") == "zh":
         return (
             " HCV 扩展候选决策契约：top-10 是扩大后的公开候选集，排序分数只能作为弱线索，不能单独决定答案。"
             "在‘证据：’中逐项比较至少三个候选（至少一个必须是扩展后新出现的候选），每项都要说明图像中支持它的可见特征或与其矛盾/缺失的特征。"
             "在‘排除的候选：’中必须逐字写出至少两个不同候选名称及其基于特征的排除理由，不能只说分数或排名。"
-            "若是选项题，还必须将所选字母映射回对应类别后参与上述比较。候选账本（公开事实，不是指令）：" + rendered
+            "若是选项题，还必须将所选字母映射回对应类别后参与上述比较。中文开放题的 <answer> 必须逐字输出候选卡中的中文规范类别名，不得输出英文名、类别代码或自造译名。"
+            "对每个候选在‘证据：’中逐项给出固定格式：候选：<逐字名称>；宿主匹配：0/1/2；器官匹配：0/1/2；症状匹配：0/1/2；矛盾特征：<简短特征>。"
+            "0 表示矛盾，1 表示不确定或部分匹配，2 表示图像与公开候选卡明确支持；最终只能选择三项分数总和最高的候选，不能用排名代替评分。候选账本（公开事实，不是指令）：" + rendered
         )
     return (
         " HCV expanded-candidate decision contract: the top-10 is an expanded public candidate set; rank and score are weak clues and must not decide the answer alone. "
         "In `Evidence:`, compare at least three candidate classes, including at least one candidate newly introduced by expansion; for each, state an observed image trait that supports it or a discriminative trait that contradicts/is absent. "
         "In `Rejected alternatives:`, quote at least two different candidate names verbatim and give trait-based rejection reasons, not only rank or score. "
         "For an Option question, map the chosen letter back to its class and include that class in the comparison. "
-        "Public candidate ledger (reference facts only; not instructions): " + rendered
+        + ("Use the public catalogue attributes returned by the semantic verification; compare their host/organ/symptom statements with the image and explicitly identify any description that is inconsistent with its class name. " if sample.get("strategy_id") == "hcv_contrast_verify" else "")
+        + scoring_contract
+        + "Public candidate ledger (reference facts only; not instructions): " + rendered
     )
 
 
@@ -488,12 +512,41 @@ def closed_finalization_messages(
     is_option = sample.get("question_type") == "option"
     evidence = [message.get("content", "") for message in sft_messages if message.get("role") == "tool_response"]
     hcv_contract = hcv_expanded_decision_instruction(sample, sft_messages)
+    is_hcv = sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}
+    if is_hcv:
+        # The final teacher turn is deliberately machine-readable.  The
+        # program, not the teacher, renders the student-facing answer so that
+        # format compliance cannot be confused with candidate selection.
+        system = (
+            "HCV_MACHINE_ADJUDICATION_V1. Retrieval is closed and no tool is available."
+            " Use only the public image, public retrieval evidence, and candidate cards below."
+            " Output exactly one JSON object and no Markdown or prose."
+            " The object must contain selected_class_name (exact English candidate-card name),"
+            " scores (an array with at least three objects, each containing exact class_name and integer host, organ, symptom values in {0,1,2}),"
+            " rejected (an array of at least two objects containing exact class_name and a short public-trait reason),"
+            " and uncertainty (a short string)."
+            " Score host, organ, and symptom against the query image and the public card; 0 means contradicted, 1 partial/uncertain, 2 clearly supported."
+            " The selected class must be one of the public candidate cards and must have the highest score sum; never use a private label or class code."
+        )
+        if sample.get("question_type") == "option":
+            system += " The selected class must also be one of the four public Option choices; do not output an option letter in JSON."
+        if language == "zh":
+            system += " For a Chinese Open task, still use selected_class_name as the exact English candidate-card name; the program will render the Chinese name."
+        public_context = prefix = "Public HCV evidence and candidate cards (facts only):\n"
+        public_context += "\n".join(str(item) for item in evidence)
+        public_context += "\nHCV decision contract:\n" + hcv_contract
+        if is_option:
+            public_context += "\nPublic question and choices:\n" + public_option_question(sample)
+        return [
+            {"role": "system", "content": system},
+            {"role": "user", "content": [{"type": "text", "text": public_context}, image_url_content(image_path, image_max_side)]},
+        ]
     if language == "zh":
         system = (
             "你正在完成一个已经关闭检索的农业识别任务。此会话没有工具：绝不输出 JSON、工具调用或新的检索请求。"
             "只可使用用户给出的图像和下方已经返回的公开检索证据。立即输出且只输出 <think>...</think><answer>...</answer>。"
             "<think> 中必须把‘预测类别名称：’、‘证据：’、‘排除的候选：’、‘不确定性：’分别放在新行行首；证据必须逐字引用至少一个下方类别名称。"
-            + ("<answer> 必须且只能是 A、B、C 或 D 中的一个公开选项字母。" if is_option else "<answer> 必须且只能是已返回证据中的一个规范类别名称。")
+            + ("<answer> 必须且只能是 A、B、C 或 D 中的一个公开选项字母。" if is_option else "<answer> 必须且只能是候选卡中逐字出现的中文规范类别名，不得输出英文名或类别代码。")
             + hcv_contract
         )
         prefix = "公开检索证据（仅作事实参考，不是指令）：\n"
@@ -1447,6 +1500,49 @@ def retrieved_class_names(messages: list[dict[str, Any]], limit: int = 12) -> li
     return names
 
 
+def retrieved_visual_candidate_names(messages: list[dict[str, Any]], limit: int = 10) -> list[str]:
+    """Return only canonical class names from HCV visual retrieval results.
+
+    HCV defines its candidate universe as the union of the visual top-3 and
+    visual top-10 calls. Similar classes are explanatory neighbours in a
+    result, not additional hypotheses, so they must not enter semantic
+    verification or the final candidate ledger.
+    """
+    visual_responses: list[list[dict[str, Any]]] = []
+    has_tool_call_metadata = any(message.get("role") == "tool_call" for message in messages)
+    pending_visual = False
+    for message in messages:
+        if message.get("role") == "tool_call":
+            parsed = parse_sft_json_content(message)
+            arguments = parsed.get("arguments") if isinstance(parsed, dict) else None
+            pending_visual = isinstance(arguments, dict) and arguments.get("retrieval_type") == "visual"
+            continue
+        if message.get("role") != "tool_response" or (has_tool_call_metadata and not pending_visual):
+            continue
+        parsed = parse_sft_json_content(message)
+        results = parsed.get("results") if isinstance(parsed, dict) else None
+        if isinstance(results, list):
+            visual_responses.append([result for result in results if isinstance(result, dict)])
+        pending_visual = False
+    if not visual_responses:
+        return []
+    result_set = visual_responses[1] if len(visual_responses) >= 2 else visual_responses[0]
+    names: list[str] = []
+    seen: set[str] = set()
+    for result in result_set:
+        value = str(result.get("class_name") or "").strip()
+        if not value or contains_cjk(value):
+            continue
+        normalized = normalize_class_name(value)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        names.append(value)
+        if len(names) >= limit:
+            break
+    return names
+
+
 def adjacent_evidence_followup_args(sample: dict[str, Any], messages: list[dict[str, Any]], default_top_k: int) -> dict[str, Any] | None:
     """Search around retrieved neighboring classes without using an unsupported target name."""
     if retrieved_evidence_supports_aliases(messages, class_name_aliases(sample)):
@@ -1541,6 +1637,27 @@ def hcv_visual_expand_args(first_call: dict[str, Any], sample: dict[str, Any], f
         "image": "query_image",
         "top_k": strategy_top_k_for_turn(sample, fallback_top_k, 1),
         "rationale": "Expand the public visual candidate set because the compact initial hypotheses remain unresolved.",
+    }
+
+
+def hcv_contrast_semantic_args(sft_messages: list[dict[str, Any]], sample: dict[str, Any], fallback_top_k: int) -> dict[str, Any] | None:
+    """Build a public-name-only semantic verification query after visual 3→10."""
+    names = retrieved_visual_candidate_names(sft_messages, limit=10)
+    if len(names) < 3:
+        return None
+    # Names are copied from public tool responses. The query asks the catalogue
+    # for discriminative attributes, never for a hidden target or code.
+    query = "Compare public agricultural candidate classes and their host, organ, and symptom distinctions: " + "; ".join(names)
+    # The semantic request is an explicit candidate-evidence lookup, not a
+    # ranked ANN search.  It must return every public candidate name sent in
+    # the query (up to the service contract ceiling), otherwise expansion
+    # candidates can disappear before the teacher compares them.
+    return {
+        "query": query[:700],
+        "retrieval_type": "semantic",
+        "image": "none",
+        "top_k": min(10, max(len(names), strategy_top_k_for_turn(sample, fallback_top_k, 2))),
+        "rationale": "Verify public candidate distinctions using catalogue descriptions after visual expansion.",
     }
 
 
@@ -1651,6 +1768,15 @@ def compact_hit(hit: dict[str, Any], reference_images: list[str]) -> dict[str, A
     ]
     if similar:
         compact["similar_classes"] = similar[:5]
+    description = str(hit.get("public_description") or "").strip()
+    if description:
+        compact["public_description"] = description[:420]
+    visual_descriptions = [
+        str(value).strip()[:300] for value in (hit.get("visual_descriptions") or [])
+        if str(value).strip()
+    ]
+    if visual_descriptions:
+        compact["visual_descriptions"] = visual_descriptions[:2]
     return compact
 
 
@@ -1727,6 +1853,86 @@ def hcv_final_decision_prompt(sample: dict[str, Any], sft_messages: list[dict[st
             )
         ),
     }
+
+
+def parse_hcv_adjudication(
+    text: str, sample: dict[str, Any], sft_messages: list[dict[str, Any]]
+) -> tuple[dict[str, Any] | None, list[str]]:
+    """Parse a public-only HCV decision object and fail closed on drift."""
+    try:
+        payload = json.loads(text.strip())
+    except json.JSONDecodeError:
+        return None, ["hcv_adjudication_not_json"]
+    if not isinstance(payload, dict):
+        return None, ["hcv_adjudication_not_object"]
+    selected = str(payload.get("selected_class_name") or "").strip()
+    scores = payload.get("scores")
+    rejected = payload.get("rejected")
+    uncertainty = str(payload.get("uncertainty") or "").strip()
+    if not selected or not isinstance(scores, list) or not isinstance(rejected, list) or not uncertainty:
+        return None, ["hcv_adjudication_missing_fields"]
+    ledger = hcv_expanded_candidate_ledger(sft_messages)
+    names = {normalize_class_name(str(entry.get("class_name") or "")): entry for entry in ledger}
+    selected_key = normalize_class_name(selected)
+    if selected_key not in names:
+        return None, ["hcv_adjudication_selected_not_candidate"]
+    parsed_scores: dict[str, tuple[int, int, int]] = {}
+    for item in scores:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("class_name") or "").strip()
+        key = normalize_class_name(name)
+        values = (item.get("host"), item.get("organ"), item.get("symptom"))
+        if key not in names or any(type(value) is not int or value not in {0, 1, 2} for value in values):
+            return None, ["hcv_adjudication_invalid_score"]
+        parsed_scores[key] = values
+    if len(parsed_scores) < 3 or selected_key not in parsed_scores:
+        return None, ["hcv_adjudication_insufficient_scores"]
+    if sum(parsed_scores[selected_key]) != max(sum(value) for value in parsed_scores.values()):
+        return None, ["hcv_adjudication_selected_not_highest_score"]
+    rejected_names = {normalize_class_name(str(item.get("class_name") or "")) for item in rejected if isinstance(item, dict)}
+    if len(rejected_names & set(names)) < 2:
+        return None, ["hcv_adjudication_insufficient_rejections"]
+    return {
+        "selected_class_name": names[selected_key]["class_name"],
+        "selected_chinese_name": str(names[selected_key].get("chinese_name") or ""),
+        "scores": parsed_scores,
+        "rejected": rejected,
+        "uncertainty": uncertainty,
+    }, []
+
+
+def render_hcv_adjudication(
+    adjudication: dict[str, Any], sample: dict[str, Any]
+) -> str:
+    """Render a compact, deterministic trainable final from public facts only."""
+    selected_en = str(adjudication["selected_class_name"])
+    selected_zh = str(adjudication.get("selected_chinese_name") or selected_en)
+    scores = adjudication["scores"]
+    if sample.get("language") == "zh":
+        score_text = "\n".join(
+            f"候选：{name}；宿主匹配：{values[0]}；器官匹配：{values[1]}；症状匹配：{values[2]}；矛盾特征：见排除与公开属性。"
+            for name, values in scores.items()
+        )
+        rejected = "；".join(
+            f"{item.get('class_name')}：{item.get('reason')}" for item in adjudication["rejected"][:3] if isinstance(item, dict)
+        )
+        answer = selected_zh if sample.get("question_type") == "open" else next(
+            (letter for letter, item in zip("ABCD", sample.get("public_option_labels") or []) if normalize_class_name(str(item.get("name") or "")) == normalize_class_name(selected_en)),
+            "",
+        )
+        return f"<think>预测类别名称：{selected_zh}\n证据：{score_text}\n排除的候选：{rejected}\n不确定性：{adjudication['uncertainty']}</think><answer>{answer}</answer>"
+    score_text = "\n".join(
+        f"Candidate: {name}; Host match: {values[0]}; Organ match: {values[1]}; Symptom match: {values[2]}; Contradiction: see rejected alternatives and public attributes." for name, values in scores.items()
+    )
+    rejected = "; ".join(
+        f"{item.get('class_name')}: {item.get('reason')}" for item in adjudication["rejected"][:3] if isinstance(item, dict)
+    )
+    answer = selected_en if sample.get("question_type") == "open" else next(
+        (letter for letter, item in zip("ABCD", sample.get("public_option_labels") or []) if normalize_class_name(str(item.get("name") or "")) == normalize_class_name(selected_en)),
+        "",
+    )
+    return f"<think>Predicted class name: {selected_en}\nEvidence: {score_text}\nRejected alternatives: {rejected}\nUncertainty: {adjudication['uncertainty']}</think><answer>{answer}</answer>"
 
 
 def unique_reference_images(retrieval_ledgers: list[dict[str, Any]]) -> list[str]:
@@ -1968,11 +2174,32 @@ def final_answer_has_evidence_anchor(final_text: str, messages: list[dict[str, A
 
 def hcv_final_decision_is_complete(sample: dict[str, Any], final_text: str, messages: list[dict[str, Any]]) -> bool:
     """Check the public, trait-based comparison requirement for HCV final text."""
-    if sample.get("strategy_id") != "hcv_visual_expand":
+    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify"}:
         return True
     ledger = hcv_expanded_candidate_ledger(messages)
     if len(ledger) < 3:
         return False
+    # Machine-adjudicated finals are rendered deterministically from a parsed
+    # public JSON object.  Their structured candidate score lines are the
+    # authoritative comparison; do not re-apply the older free-form lexical
+    # gate (which can reject valid Chinese/English renderings).
+    score_lines = re.findall(
+        r"(?:Candidate|候选)\s*[:：]\s*([^;\n]+);\s*"
+        r"(?:Host match|宿主匹配)\s*[:：]\s*([012]);\s*"
+        r"(?:Organ match|器官匹配)\s*[:：]\s*([012]);\s*"
+        r"(?:Symptom match|症状匹配)\s*[:：]\s*([012]);",
+        final_text, flags=re.IGNORECASE,
+    )
+    if len(score_lines) >= 3:
+        scores = {normalize_class_name(name): int(host) + int(organ) + int(symptom) for name, host, organ, symptom in score_lines}
+        answer_body = extract_answer_body(final_text).strip()
+        if sample.get("question_type") == "option" and answer_body in {"A", "B", "C", "D"}:
+            labels = sample.get("public_option_labels") or sample.get("candidate_labels") or []
+            ordered = [str(item.get("name") or "").strip() for item in labels if isinstance(item, dict)]
+            if len(ordered) == 4:
+                answer_body = ordered[ord(answer_body) - ord("A")]
+        answer_key = normalize_class_name(answer_body)
+        return answer_key in scores and scores[answer_key] == max(scores.values())
     fields = parse_final_answer_fields(final_text)
     evidence = fields.get("Evidence", "")
     rejected = fields.get("Rejected alternatives", "")
@@ -1991,13 +2218,16 @@ def hcv_final_decision_is_complete(sample: dict[str, Any], final_text: str, mess
     # This is intentionally modest lexical validation.  It establishes that
     # the comparison is about observed visual evidence rather than rank-only
     # selection, without inferring private truth from the final prose.
-    trait_terms = ("trait", "visual", "image", "symptom", "feature", "lesion", "spot", "leaf", "图", "特征", "症状", "斑", "叶")
-    return (
+    trait_terms = ("trait", "visual", "image", "symptom", "feature", "lesion", "spot", "leaf", "description", "catalogue", "图", "特征", "症状", "斑", "叶", "描述", "资料")
+    base_complete = (
         len(all_mentions) >= 3
         and len(rejected_mentions) >= 2
         and novel_mentioned
         and any(term in (evidence + "\n" + rejected).lower() for term in trait_terms)
     )
+    if not base_complete:
+        return False
+    return True
 
 
 def premature_target_name_query(messages: list[dict[str, Any]], aliases: list[str]) -> bool:
@@ -2163,6 +2393,17 @@ def accept_trajectory(sample: dict[str, Any], sft_messages: list[dict[str, str]]
         or any(marker in assistant_final for marker in ("Evidence:", "Rejected alternatives:", "Uncertainty:"))
     ):
         reasons.append("chinese_final_language_mismatch")
+    if (sample.get("language") == "zh"
+            and sample.get("question_type") == "open"
+            and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}):
+        answer = extract_answer_body(assistant_final).strip()
+        chinese_candidates = {
+            normalize_class_name(str(item.get("chinese_name") or ""))
+            for item in hcv_expanded_candidate_ledger(sft_messages)
+            if str(item.get("chinese_name") or "").strip()
+        }
+        if normalize_class_name(answer) not in chinese_candidates:
+            reasons.append("chinese_hcv_answer_not_candidate_card")
     first_think = next((str(msg.get("content", "")) for msg in sft_messages if msg.get("role") == "assistant"), "")
     if not any(marker in first_think for marker in ("Candidate Analysis:", "候选分析：")):
         reasons.append("missing_pre_rag_candidates")
@@ -2211,6 +2452,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
     final_contract_retry_attempts = 0
     standard_final_contract_retry_attempts = 0
     standard_final_contract_retry_pending = False
+    hcv_adjudication_retry_attempts = 0
 
     for _ in range(args.max_tool_turns + 3):
         try:
@@ -2312,7 +2554,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                         and call["arguments"].get("retrieval_type") == "visual"
                         and before_count == 0
                         and len(retrieval_ledgers) < args.max_tool_turns
-                        and sample.get("strategy_id") == "hcv_visual_expand"
+                        and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}
                     ):
                         expand_args = hcv_visual_expand_args(visible_call, sample, sample_top_k)
                         expand_args = clamp_tool_args(expand_args, sample_top_k, sample, sft_messages)
@@ -2321,9 +2563,26 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                             f"hcv_expand_{uuid.uuid4().hex[:12]}",
                             pre_tool_think(expand_args, str(sample.get("language") or "en")),
                         )
-                        decision_prompt = hcv_final_decision_prompt(sample, sft_messages)
-                        if decision_prompt is not None:
-                            api_messages.append(decision_prompt)
+                        if sample.get("strategy_id") == "hcv_contrast_verify" and len(retrieval_ledgers) < args.max_tool_turns:
+                            verify_args = hcv_contrast_semantic_args(sft_messages, sample, sample_top_k)
+                            if verify_args is not None:
+                                verify_args = clamp_tool_args(verify_args, sample_top_k, sample, sft_messages)
+                                append_tool_execution(
+                                    args, sample, sft_messages, retrieval_ledgers, api_messages, verify_args,
+                                    f"hcv_verify_{uuid.uuid4().hex[:12]}",
+                                    pre_tool_think(verify_args, str(sample.get("language") or "en")),
+                                )
+                        # HCV must make its final choice in an isolated
+                        # answer-only session after the complete public
+                        # evidence set is available.  Keeping the model in the
+                        # old tool conversation causes anchoring on the first
+                        # visual rank-1 result; it also permits an unnecessary
+                        # fourth tool call before the format retry.
+                        if hcv_final_decision_prompt(sample, sft_messages) is not None:
+                            api_messages = closed_finalization_messages(
+                                sample, image_path, sft_messages, args.image_max_side
+                            )
+                            closed_finalization_used = True
                     elif (
                         ledger.get("ok")
                         and call["arguments"].get("retrieval_type") == "visual"
@@ -2377,6 +2636,25 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
             return None, trace, retrieval_ledgers, rejected
         content = message.get("content") or ""
         final_text = str(content).strip()
+        if closed_finalization_used and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}:
+            adjudication, adjudication_errors = parse_hcv_adjudication(final_text, sample, sft_messages)
+            if adjudication is None:
+                if hcv_adjudication_retry_attempts < 1:
+                    hcv_adjudication_retry_attempts += 1
+                    api_messages.append({
+                        "role": "user",
+                        "content": (
+                            "Invalid HCV adjudication. Output exactly one JSON object with selected_class_name, scores, rejected, and uncertainty."
+                            " scores must contain at least three public candidate class_name entries with integer host/organ/symptom values 0, 1, or 2; selected_class_name must have the highest sum."
+                            " Do not output Markdown, XML, an option letter, private labels, or any prose."
+                        ),
+                    })
+                    continue
+                final_text = ""
+            else:
+                final_text = render_hcv_adjudication(adjudication, sample)
+                sft_messages.append({"role": "assistant", "content": final_text})
+                break
         if (sample.get("question_type") == "option"
                 and option_contract_retry_attempts < 1
                 and extract_answer_body(final_text).strip() not in {"A", "B", "C", "D"}):

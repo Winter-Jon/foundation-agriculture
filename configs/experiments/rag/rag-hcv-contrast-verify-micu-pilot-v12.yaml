@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-pilot-v12
+display_name: {en: HCV Micu structured-score repair pilot v12, zh: HCV Micu 结构化候选评分修复试验 v12}
+domain: rag
+task: distill
+description: >-
+  Diagnostic-only fresh-image HCV collection for preflight-proven top-3 to
+  top-10 repair rows, testing explicit host/organ/symptom candidate scores.
+  Never eligible for SFT freeze.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823Tsource-pool-v2-candidate-cards/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823Tsource-pool-v2-candidate-cards
+  model: gpt-5.6-terra
+  limit: 4
+  max_concurrent: 1
+  max_tool_turns: 3
+  top_k: 3
+  temperature: 0.0
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, contrast-verify, structured-score, repaired-candidate, image-isolated, micu-slb, diagnostic-pilot]
