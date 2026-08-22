@@ -1,10 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-08-22 17:50:13 CST
+Last updated: 2026-08-22 17:56:58 CST
 
 ## Current focus
 
-The contract-correct B2+M2 3:1 successor still fails the valid Direct gate, while the repaired manual-JSON RAG route now has a positive strict-DP8 result. The actual native-JSON training/serving mismatch is located: v4 trained with the Hermes agent adapter, which silently serialized its `tool_call` targets as XML. The selected current RAG checkpoint is now milestone M3: the protocol-clean epoch-4 LR5e-6 manual-JSON checkpoint.
+The committed HCV baseline is now `380ce126a` (`feat(rag): enforce multi-query evidence contracts`). MQ-0 is complete: strict image-free text/name retrieval, public-name lineage, duplicate-call rejection, and readable similar-class evidence are implemented and tested. The next active phase is an image-isolated HCV retrieval preflight; it must pass its audit gates before new SFT data or training begins.
 
 Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
 
@@ -121,10 +121,10 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 
 ## Next safe action
 
-Do not start another unchanged 3:1 SFT or expand collection. Use checkpoint-72 for a held-out confirmation or diagnostic comparison, while retaining the current five-turn DP8 strict protocol. Decide explicitly whether noncanonical recovered tool calls should become a future release gate before changing the evaluator.
+Do not start another unchanged 3:1 SFT or expand collection. Run and audit the HCV image-isolated retrieval preflight defined in `docs/logs/plans/2026-W34-0817-0823.md`; only then freeze data, train, and use the existing five-turn strict DP8 protocol for acceptance.
 
 ## Records and archive
 
-- Current weekly records: [experiments/2026-W34-0817-0823.md](experiments/2026-W34-0817-0823.md) and [changes/2026-W34-0817-0823.md](changes/2026-W34-0817-0823.md).
+- Current weekly records: [experiments/2026-W34-0817-0823.md](experiments/2026-W34-0817-0823.md), [changes/2026-W34-0817-0823.md](changes/2026-W34-0817-0823.md), and [plans/2026-W34-0817-0823.md](plans/2026-W34-0817-0823.md).
 - The complete chronological index is [INDEX.md](INDEX.md).
 - Superseded handoff, reports, configurations, builders, and launchers are preserved under [docs/archive/rag_sft/](../archive/rag_sft/), [configs/archive/rag_sft/](../../configs/archive/rag_sft/), [tools/rag_distill/archive/](../../tools/rag_distill/archive/), and [scripts/archive/rag_sft/](../../scripts/archive/rag_sft/). They are reproducibility evidence, not current entrypoints.
