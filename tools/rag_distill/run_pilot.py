@@ -13,6 +13,7 @@ import os
 import re
 import signal
 import subprocess
+import sys
 import time
 import uuid
 from collections import Counter
@@ -20,10 +21,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+SCRIPT_ROOT = Path(__file__).resolve().parents[2]
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
+
 from agrinet.data.retrieval_strategies import strategy_spec
 from urllib import error, request, parse
 
-from .schema import TOOL_NAME, tool_schema, tools_json, tools_list, validate_tool_arguments
+try:  # Supports both ``python -m`` and the repository's documented script entrypoint.
+    from .schema import TOOL_NAME, tool_schema, tools_json, tools_list, validate_tool_arguments
+except ImportError:  # pragma: no cover - exercised only by direct script launch
+    from tools.rag_distill.schema import TOOL_NAME, tool_schema, tools_json, tools_list, validate_tool_arguments
 
 
 PROMPT_VERSION = "agrinet_rag_toolcall_v6_visual_observation_candidate_followup"
@@ -284,6 +293,15 @@ def strategy_top_k_for_turn(sample: dict[str, Any], fallback_top_k: int, turn_in
 
 def public_option_question(sample: dict[str, Any]) -> str:
     language = str(sample.get("language") or "en")
+    public_choices = sample.get("public_option_choices")
+    if isinstance(public_choices, list) and len(public_choices) == 4 and all(isinstance(item, str) and item.strip() for item in public_choices):
+        choices = [str(item).strip() for item in public_choices]
+        prompt = (
+            "请选择图中病虫害的规范名称，只在答案标签中输出选项字母。"
+            if language == "zh"
+            else "Select the canonical name shown in the image; output only the option letter in the answer tag."
+        )
+        return prompt + "\n" + "\n".join(f"{letter}. {choice}" for letter, choice in zip("ABCD", choices))
     choices = [str(item.get("name") or "").strip() for item in sample.get("candidate_labels", [])]
     if len(choices) != 4 or any(not choice for choice in choices):
         raise RuntimeError("option sample requires four named public candidates")
@@ -1972,7 +1990,7 @@ def accept_trajectory(sample: dict[str, Any], sft_messages: list[dict[str, str]]
         expected_option = str(sample.get("correct_option") or "")
         if answer not in {"A", "B", "C", "D"}:
             reasons.append("option_answer_not_single_letter")
-        elif answer != expected_option:
+        elif expected_option and answer != expected_option:
             reasons.append("option_answer_mismatch")
         # Use the public option text for label validation, but never rewrite a
         # Blind answer from the private target after generation.
@@ -1983,7 +2001,7 @@ def accept_trajectory(sample: dict[str, Any], sft_messages: list[dict[str, str]]
         predicted = choices.get(answer, answer)
     if not predicted or predicted.lower() == "unknown":
         reasons.append("missing_or_unknown_predicted_name")
-    elif not class_name_matches(predicted, class_name_aliases(sample)):
+    elif class_name_aliases(sample) and not class_name_matches(predicted, class_name_aliases(sample)):
         reasons.append("final_name_mismatch")
     label_aliases = class_name_aliases(sample)
     if label_aliases and not retrieved_evidence_supports_aliases(sft_messages, label_aliases):
