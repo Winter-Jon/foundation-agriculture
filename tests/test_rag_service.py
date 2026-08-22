@@ -100,6 +100,22 @@ def test_old_milvus_index_falls_back_to_bounded_public_visual_evidence() -> None
     assert row["visual_descriptions"] == ["Visible lesion pattern."]
 
 
+def test_catalog_description_overrides_stale_index_payload_by_canonical_name() -> None:
+    backend = object.__new__(MilvusSiglipBackend)
+    backend._catalog_similar_classes = {
+        "agri_disease_pest_wiki::N1": {
+            "english_name": "Citrus Canker",
+            "public_description": "Citrus canker has raised corky lesions and yellow halos.",
+        }
+    }
+    row = backend._plain_row({
+        "entry_id": "stale::N1",
+        "english_name": "Citrus Canker",
+        "public_description": "Citrus scab description accidentally stored here.",
+    })
+    assert row["public_description"] == "Citrus canker has raised corky lesions and yellow halos."
+
+
 def test_milvus_output_fields_accept_lite_and_nested_schema_layouts() -> None:
     backend = object.__new__(MilvusSiglipBackend)
     backend.class_fields = {"entry_id", "english_name", "similar_english_classes"}

@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
         "--diagnostic-pilot", action="store_true",
         help="Mark this as a quality diagnostic: it is never eligible for SFT freeze.",
     )
-    parser.add_argument("--strategy-id", default="hcv_visual_expand", choices=("hcv_visual_expand", "hcv_contrast_verify"))
+    parser.add_argument("--strategy-id", default="hcv_contrast_verify", choices=("hcv_visual_expand", "hcv_contrast_verify"))
     parser.add_argument(
         "--selection-mode", default="repair_only", choices=("repair_only", "expanded_truth_hit", "all_diagnostic"),
         help="Select only top-3 misses repaired by expansion (default), or retain all retrieval-valid rows for a diagnostic-only teacher pilot.",

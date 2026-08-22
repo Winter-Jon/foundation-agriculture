@@ -91,6 +91,8 @@ class MilvusSiglipBackend:
                 text_parts = [value for value in text_parts if compatible(value)]
                 visual_parts = [value for value in visual_parts if compatible(value)]
                 catalog[str(entry_id)] = {
+                    "english_name": str(item.get("english_name") or "").strip(),
+                    "chinese_name": str(item.get("chinese_name") or "").strip(),
                     "similar_english_classes": [str(value) for value in (item.get("similar_english_classes") or []) if str(value).strip()],
                     "similar_chinese_classes": [str(value) for value in (item.get("similar_chinese_classes") or []) if str(value).strip()],
                     # These are public catalogue facts, bounded here before
@@ -156,10 +158,22 @@ class MilvusSiglipBackend:
         output = dict(row)
         entry_id = str(output.get("entry_id") or output.get("id") or "")
         fallback = self._catalog_similar_classes.get(entry_id, {})
+        if not fallback:
+            row_name = self._normalize_name(str(output.get("english_name") or output.get("chinese_name") or ""))
+            if row_name:
+                fallback = next(
+                    (value for value in self._catalog_similar_classes.values()
+                     if self._normalize_name(str(value.get("english_name") or value.get("chinese_name") or "")) == row_name),
+                    {},
+                )
         for key in ("similar_english_classes", "similar_chinese_classes", "visual_descriptions"):
             if not output.get(key) and fallback.get(key):
                 output[key] = list(fallback[key])
-        if not output.get("public_description") and fallback.get("public_description"):
+        # The canonical wiki is authoritative for public evidence.  Always
+        # replace a non-empty indexed description when a same-name canonical
+        # record exists; keeping a stale index payload can bind another class's
+        # description to this candidate and corrupt HCV adjudication.
+        if fallback.get("public_description"):
             output["public_description"] = str(fallback["public_description"])
         return output
 
