@@ -55,4 +55,5 @@ def test_hcv_rebuild_retires_contacted_rows_and_refills_cell() -> None:
     assert [row["source_sample_id"] for row in plan] == ["new"]
     assert [row["source_sample_id"] for row in private] == ["new"]
     assert report["invariants"]["retired_ids_absent"]
+    assert report["invariants"]["retired_hashes_absent"]
     assert report["invariants"]["unique_image_hashes"]

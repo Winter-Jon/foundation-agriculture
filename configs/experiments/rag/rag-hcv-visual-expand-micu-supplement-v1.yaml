@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-visual-expand-micu-supplement-v1
+display_name: {en: HCV Micu unknown-delivery replacement collection, zh: HCV Micu 未知交付替补采集}
+domain: rag
+task: distill
+description: Serialized collection of exactly the six fresh image-isolated HCV replacement trajectories; it never replays the 26 accepted rows or six unknown-delivery images.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-a800-1gpu-rag}
+runtime_profile: runtime/local-a800-1gpu-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823T004220-micu-unknown-delivery-supplement/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8077
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823T004300-micu-slb-terra-supplement
+  model: gpt-5.6-terra
+  limit: 6
+  max_concurrent: 1
+  max_tool_turns: 2
+  top_k: 3
+  temperature: 0.2
+  max_tokens: 2048
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, blind-evidence, visual-expand, micu-slb, terra, supplement, unknown-delivery-replacement]

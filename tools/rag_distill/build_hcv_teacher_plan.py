@@ -35,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retain-plan", type=Path, help="Public prior teacher plan from which untouched rows are retained.")
     parser.add_argument("--retain-private-audit", type=Path, help="Private audit paired with --retain-plan.")
     parser.add_argument("--retire-sample-ids", type=Path, help="JSONL records whose sample_id values must never be reused.")
+    parser.add_argument("--supplement-only", action="store_true", help="When rebuilding, emit only newly selected replacement rows.")
     return parser.parse_args()
 
 
@@ -184,6 +185,11 @@ def rebuild(
     retained_private_rows = [private_by_id[str(row["sample_id"])] for row in retained]
     retained_ids = {str(row["sample_id"]) for row in retained}
     retained_hashes = {str(row.get("image_sha256") or "") for row in retained}
+    retired_hashes = {
+        str(row.get("image_sha256") or "")
+        for row in retained_plan
+        if str(row.get("sample_id") or "") in retired_sample_ids
+    }
     source_by_id = {str(row.get("sample_id") or ""): row for row in source_rows}
     additions: list[dict[str, Any]] = []
     additions_private: list[dict[str, Any]] = []
@@ -199,6 +205,7 @@ def rebuild(
             row for row in audit_rows
             if cell_key(row) == key and is_visual_expand_repair(row)
             and str(row.get("image_sha256") or "") not in selected_hashes
+            and str(row.get("image_sha256") or "") not in retired_hashes
         ]
         for row in sorted(candidates, key=lambda item: sort_key(item, key))[:needed]:
             source = source_by_id.get(str(row.get("source_sample_id") or ""))
@@ -240,6 +247,7 @@ def rebuild(
             "unique_plan_ids": len(ids) == len(set(ids)),
             "unique_image_hashes": len(hashes) == len(set(hashes)) and all(hashes),
             "retired_ids_absent": not (set(ids) & retired_sample_ids),
+            "retired_hashes_absent": not (set(hashes) & retired_hashes),
             "all_hcv_strategy": all(row.get("strategy_id") == "hcv_visual_expand" for row in selected),
             "all_blind_teacher": all(row.get("generation_route") == "blind_evidence" and row.get("label_visible_to_teacher") is False for row in selected),
             "no_truth_in_public_plan": all(not ({"final_label", "final_label_zh", "audit_truth_code"} & set(row)) for row in selected),
@@ -261,6 +269,12 @@ def main() -> int:
             audit_rows, read_jsonl(args.source), read_jsonl(args.retain_plan),
             read_jsonl(args.retain_private_audit), retired, args.per_cell_cap,
         )
+        if args.supplement_only:
+            prior_ids = {str(row.get("sample_id") or "") for row in read_jsonl(args.retain_plan)}
+            selected = [row for row in selected if str(row.get("sample_id") or "") not in prior_ids]
+            private_audit = [row for row in private_audit if str(row.get("sample_id") or "") not in prior_ids]
+            report["supplement_only"] = True
+            report["supplement_rows"] = len(selected)
     else:
         selected, private_audit, report = build(audit_rows, read_jsonl(args.source), args.per_cell_cap)
     report["preflight_audits"] = [str(path) for path in args.preflight_audits]
