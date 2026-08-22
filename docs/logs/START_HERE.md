@@ -129,6 +129,13 @@ The registered HCV DP8 queue is intentionally fail-closed: it checks
 It is a prepared execution entrypoint, not evidence that collection, freeze,
 training, or evaluation has run.
 
+Credential decryption was later verified in the local execution environment,
+but the one-image teacher preflight could not reach `https://yunwu.ai/v1`
+(`Errno 101: Network is unreachable`). Its fail-closed report is at
+`outputs/experiments/hcv_multi_query_rag/teacher_plan/20260822T204000-expand-320-complete-bilingual/teacher_preflight.json`.
+No teacher trajectory was collected; restore outbound network connectivity and
+rerun that one-image preflight before starting the 32-row collection.
+
 ## Records and archive
 
 - Current weekly records: [experiments/2026-W34-0817-0823.md](experiments/2026-W34-0817-0823.md), [changes/2026-W34-0817-0823.md](changes/2026-W34-0817-0823.md), and [plans/2026-W34-0817-0823.md](plans/2026-W34-0817-0823.md).
