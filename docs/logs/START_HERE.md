@@ -123,6 +123,12 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 
 Do not start another unchanged 3:1 SFT. After interactive credential unlock, run the one-image HCV teacher preflight, collect the 32 blind trajectories, and apply the HCV teacher-collection audit. Only a passing audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
 
+The registered HCV DP8 queue is intentionally fail-closed: it checks
+`outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/validation.json` for
+`training_authorized: true` before it allocates queue artifacts or starts SFT.
+It is a prepared execution entrypoint, not evidence that collection, freeze,
+training, or evaluation has run.
+
 ## Records and archive
 
 - Current weekly records: [experiments/2026-W34-0817-0823.md](experiments/2026-W34-0817-0823.md), [changes/2026-W34-0817-0823.md](changes/2026-W34-0817-0823.md), and [plans/2026-W34-0817-0823.md](plans/2026-W34-0817-0823.md).

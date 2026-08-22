@@ -216,6 +216,11 @@ def manual_json_checkpoint_queue_command(config: dict) -> list[str]:
             if not isinstance(value, (str, int)) or not str(value):
                 raise ConfigError(f"{parameter} must be a non-empty string or integer when declared")
             command.append(f"{env_name}={value}")
+    hcv_audit = parameters.get("hcv_freeze_audit")
+    if hcv_audit is not None:
+        if not isinstance(hcv_audit, str) or not hcv_audit:
+            raise ConfigError("hcv_freeze_audit must be a non-empty path when declared")
+        command.append(f"HCV_FREEZE_AUDIT={hcv_audit}")
     command.extend(["bash", entrypoint])
     return command
 

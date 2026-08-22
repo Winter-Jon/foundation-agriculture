@@ -17,6 +17,16 @@ CHECKPOINT_SPECS="${CHECKPOINT_SPECS:-2:36 4:72 6:108}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}"
 
 [[ -f "$TRAINING_CONFIG" && -f "$MANIFEST" ]] || { echo "missing training config or formal manifest" >&2; exit 2; }
+if [[ -n "${HCV_FREEZE_AUDIT:-}" ]]; then
+  [[ -f "$HCV_FREEZE_AUDIT" ]] || { echo "missing HCV freeze audit: $HCV_FREEZE_AUDIT" >&2; exit 2; }
+  "$PYTHON_BIN" - "$HCV_FREEZE_AUDIT" <<'PY'
+import json, sys
+from pathlib import Path
+report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if report.get("training_authorized") is not True:
+    raise SystemExit("HCV freeze audit does not authorize training")
+PY
+fi
 mkdir -p "$QUEUE_ROOT"
 
 if [[ -n "${WAIT_FOR_RUN_DIR:-}" ]]; then

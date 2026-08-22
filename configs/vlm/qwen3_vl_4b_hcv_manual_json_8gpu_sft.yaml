@@ -1,0 +1,35 @@
+# Data is created only after tools/rag_distill/freeze_hcv_sft.py validates its immutable artifact.
+model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+model_type: qwen3_vl
+template: qwen3_vl
+agent_template: manual_json
+loss_scale: manual_json
+torch_dtype: bfloat16
+attn_impl: sdpa
+use_liger_kernel: true
+tuner_type: full
+freeze_vit: false
+freeze_llm: false
+freeze_aligner: false
+gradient_checkpointing: true
+gradient_checkpointing_kwargs: {use_reentrant: false}
+vit_gradient_checkpointing: true
+dataset: [outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/data.jsonl]
+split_dataset_ratio: 0.0
+streaming: false
+max_length: 8192
+truncation_strategy: left
+num_train_epochs: 6
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 5.0e-6
+warmup_ratio: 0.05
+save_strategy: epoch
+save_total_limit: 6
+save_only_model: true
+logging_steps: 1
+output_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_8gpu
+dataloader_num_workers: 8
+dataset_num_proc: 8
+deepspeed: zero3
+report_to: [tensorboard]

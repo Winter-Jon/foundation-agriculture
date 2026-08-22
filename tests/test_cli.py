@@ -40,6 +40,15 @@ def test_local_vloom_pilot_is_registered() -> None:
     assert "单样本本地 VLOOM 迁移试运行" in result.stdout
 
 
+def test_hcv_dp8_queue_dry_run_carries_freeze_gate() -> None:
+    result = runner.invoke(
+        app, ["vlm", "submit", "vlm-sft-qwen3vl4b-hcv-manual-json-8gpu-v1", "--operation", "manual-json-checkpoint-queue", "--dry-run"]
+    )
+    assert result.exit_code == 0
+    assert "HCV_FREEZE_AUDIT=outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/validation.json" in result.stdout
+    assert "CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7" in result.stdout
+
+
 def test_generate_preflight_happens_before_run_allocation(monkeypatch) -> None:
     monkeypatch.setattr(
         "agrinet.cli.data.yunwu_environment", lambda: (_ for _ in ()).throw(CredentialError("locked"))
