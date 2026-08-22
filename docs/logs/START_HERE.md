@@ -142,6 +142,16 @@ delivery; all 13 images are retired. The bug is fixed and regression-tested,
 but replacement image-isolated retrieval audits must replenish the affected
 cells before a fresh collection is authorized.
 
+The repaired route then collected 26 strict two-turn trajectories and a
+disjoint six-row supplement, but the complete 32-row post-collection audit
+correctly rejected freeze: every row obeyed the public HCV tool contract, while
+only 13 final answers matched the private audit and no cell had four valid
+trajectories. Six TLS EOF requests in the first repaired run are retained as
+unknown-delivery exclusions and were replaced without replay. Do not freeze the
+merged set. The remaining uncontacted true-repair pool is only 25 images and
+lacks Chinese Option repairs, so the next phase must strengthen selection or
+teacher decision quality rather than scale the same route.
+
 ## Records and archive
 
 - Current weekly records: [experiments/2026-W34-0817-0823.md](experiments/2026-W34-0817-0823.md), [changes/2026-W34-0817-0823.md](changes/2026-W34-0817-0823.md), and [plans/2026-W34-0817-0823.md](plans/2026-W34-0817-0823.md).
