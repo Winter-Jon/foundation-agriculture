@@ -1,0 +1,53 @@
+# Outputs Archive Index
+
+This index is the discovery entrypoint for large local artifacts. Raw outputs
+remain ignored by Git; this versioned document records their intended role and
+path shape.
+
+## Current Formal-618 evidence
+
+Keep these roots available for the current evaluation:
+
+- `outputs/runs/vlm/rag-v12-reassessment-vs-m1-v3-v4-20260901/`: paired
+  reassessment artifacts.
+- `outputs/runs/vlm/m1-latest-ms-swift-queue-v1/`: strict M1/v3 scoring
+  evidence.
+- `outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-latest-ms-swift-v4-m1-system-format-8gpu-v1/`:
+  v4 restored-system evidence.
+- `outputs/runs/vlm/vlm-hcv-v12-direct-anchor-mix-base-lr2e6-multicheckpoint-full-eval-v1/`:
+  current RAG source evaluation.
+- `outputs/vlm_eval/qwen3_vl_4b_rag_sft/`: the fixed Formal-618 manifest and
+  query images.
+
+Current model checkpoints are listed in
+`docs/results/CHECKPOINT_CLEANUP_REVIEW.md`; do not remove the corrected M1,
+current RAG, or v4 endpoints.
+
+## Reproducibility artifacts
+
+- `outputs/artifacts/datasets/`: immutable data freezes and evaluated data
+  views. Treat as archival evidence; review superseded recovery-pilot versions
+  one at a time before deletion.
+- `outputs/artifacts/authorizations/` and `outputs/artifacts/environments/`:
+  compact authorization and environment evidence; retain.
+- `outputs/experiments/hcv_multi_query_rag/` and
+  `outputs/experiments/reconstructive_direct_blind_rag_v1/`: active or
+  heavily referenced research evidence; retain in place.
+
+## Historical archive
+
+- `outputs/archive/historical-vision/`: 93GB of superseded ViT/Swin/Transformer
+  training outputs. Compatibility symlinks remain at the former top-level
+  `outputs/{vit*,swin*,dynamic_transformer_tiny_224,hybrid_transformer_base}`
+  paths, so legacy scripts continue to resolve them.
+
+## Retention policy
+
+1. Retain current Formal-618 manifests, scored predictions, summaries, and the
+   selected M1/RAG/v4 checkpoints.
+2. Prefer moving superseded large artifact families beneath `outputs/archive/`
+   with a compatibility symlink, rather than changing every legacy reference.
+3. Remove local model payloads only after an explicit checkpoint/data review;
+   retain compact summaries and scored predictions.
+4. Do not treat an ignored `outputs/` path as disposable merely because it is
+   untracked: configs and research records may reference it.
