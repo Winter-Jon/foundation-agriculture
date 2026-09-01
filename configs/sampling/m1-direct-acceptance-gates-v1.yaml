@@ -1,0 +1,74 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+sample_preflight:
+  images: 2
+  required_domains: [disease, pest]
+  views_per_image: 4
+  attempts: 8
+  accepted: 8
+  minimum_acceptance_rate: 1.0
+  minimum_teacher_answer_accuracy: 1.0
+  minimum_blind_auditor_accuracy: 1.0
+  require_all_reasoning_checks: true
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - invisible_fact
+    - protocol_error
+    - format_error
+    - candidate_comparison_error
+
+stratified_pilot:
+  cells:
+    question_types: [open, option]
+    languages: [en, zh]
+    domains: [disease, pest]
+  attempts_per_cell: 8
+  minimum_accepted_per_cell: 7
+  minimum_acceptance_rate_per_cell: 0.875
+  minimum_overall_acceptance_rate: 0.90
+  minimum_teacher_answer_accuracy: 0.95
+  minimum_blind_auditor_accuracy: 0.95
+  minimum_reasoning_check_rate: 0.95
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact
+
+full_freeze:
+  classes: 217
+  images_per_class: 5
+  unique_images: 1085
+  views_per_image: 4
+  student_rows: 4340
+  accepted_rate: 1.0
+  zero_hash_overlap: true
+  private_truth_separated: true
+
+sft:
+  initialization_model: models/Qwen3-VL-4B-Instruct
+  devices: 8
+  epochs: 3
+  per_device_batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-6
+  deepspeed: zero3
+  max_length: 16384
+
+promotion:
+  predictions_per_checkpoint: 618
+  paired_bootstrap_iterations: 10000
+  raw_base_overall_delta_min_pp: 0.0
+  raw_base_overall_bootstrap_lower_min_pp: -3.0
+  raw_base_major_subgroup_delta_min_pp: -3.0
+  required_subgroups:
+    - known
+    - unknown
+    - question_type=open
+    - question_type=option
+    - task_domain=disease
+    - task_domain=pest
+  require_m1_comparison: true

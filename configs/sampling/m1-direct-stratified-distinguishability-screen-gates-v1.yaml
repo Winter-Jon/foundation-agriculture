@@ -1,0 +1,18 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+# Candidate-specific, label-blind screen before the formal eight-cell Level-2
+# teacher/auditor pilot. This does not replace the formal pilot acceptance gate.
+stratified_distinguishability_screen:
+  cells:
+    question_types: [open, option]
+    languages: [en, zh]
+    domains: [disease, pest]
+  candidates_per_cell: 16
+  minimum_passed_per_cell: 8
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact

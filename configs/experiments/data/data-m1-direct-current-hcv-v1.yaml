@@ -1,0 +1,254 @@
+schema_version: agrinet.experiment/v1
+id: data-m1-direct-current-hcv-v1
+display_name:
+  en: M1-style current-contract Direct rebuild
+  zh: M1 风格当前协议 Direct 重建
+domain: data
+task: iteration_control
+description: Three-stage fail-closed plan, independent audit, and immutable freeze. No remote request is authorized by this definition.
+lifecycle: active
+components:
+  model: models/Qwen3-VL-4B-Instruct
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  # v2 evaluates safety/transport defects as per-sample rejections against a
+  # fixed denominator.  Do not apply it retroactively to already-contacted
+  # rounds, whose gate file is immutable.
+  acceptance_gates: configs/sampling/m1-direct-acceptance-gates-v2.yaml
+  stratified_screen_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v1.yaml
+  stratified_screen_v3_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  stratified_screen_v4_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  stratified_screen_v5_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  stratified_screen_v6_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  stratified_screen_v7_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  stratified_screen_v8_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  # v9 was launched with the immutable v2 gate; do not change its gate file
+  # after remote requests.  v3 is the policy for future screen versions.
+  stratified_screen_v9_gates: configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v2.yaml
+  option_zh_pest_screen_gates: configs/sampling/m1-direct-option-zh-pest-screen-gates-v1.yaml
+  open_pest_preflight_gates: configs/sampling/m1-direct-open-pest-preflight-gates-v1.yaml
+  open_pest_screen_gates: configs/sampling/m1-direct-open-pest-distinguishability-screen-gates-v1.yaml
+  open_pest_screen_v2_gates: configs/sampling/m1-direct-open-pest-distinguishability-screen-gates-v2.yaml
+  open_pest_screen_v3_gates: configs/sampling/m1-direct-open-pest-distinguishability-screen-gates-v3.yaml
+  open_pest_screen_v4_gates: configs/sampling/m1-direct-open-pest-distinguishability-screen-gates-v4.yaml
+  classes: outputs/artifacts/datasets/m1-direct-current-hcv-v1/classes.jsonl
+  image_pool: outputs/artifacts/datasets/m1-direct-current-hcv-v1/image_pool.jsonl
+  similar_classes: outputs/artifacts/datasets/m1-direct-current-hcv-v1/similar_classes.jsonl
+  n05053_supplemental: outputs/artifacts/datasets/m1-direct-current-hcv-v1/n05053_candidates/approved_manifest.jsonl
+  # User reviewed exactly these previously preflight-rejected, uncontacted
+  # images. The planner still excludes all contacted/retired/static-route
+  # hashes and accepts no other override scope.
+  user_review_approved_candidates: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/user_review_approved_uncontacted_v1.jsonl
+  pilot_contacted_hashes: outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation/pilot_contacted.jsonl
+  teacher_results: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/teacher_results.jsonl
+  auditor_results: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/auditor_results.jsonl
+  sample_preflight_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/sample_preflight_ledger.jsonl
+  repair_preflight_v9_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/repair_preflight_v9_ledger.jsonl
+  option_zh_pest_screen_v1_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/option_zh_pest_screen_v1_ledger.jsonl
+  option_zh_pest_preflight_v10_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/option_zh_pest_preflight_v10_ledger.jsonl
+  repair_preflight_v10_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/repair_preflight_v10_ledger.jsonl
+  open_pest_preflight_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_ledger.jsonl
+  open_pest_preflight_v2_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v2_ledger.jsonl
+  open_pest_preflight_v3_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v3_ledger.jsonl
+  open_pest_preflight_v4_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v4_ledger.jsonl
+  open_pest_preflight_v5_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v5_ledger.jsonl
+  open_pest_preflight_v6_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v6_ledger.jsonl
+  open_pest_screen_v1_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v1_ledger.jsonl
+  open_pest_screen_v2_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v2_ledger.jsonl
+  open_pest_screen_v3_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v3_ledger.jsonl
+  open_pest_screen_v4_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v4_ledger.jsonl
+  open_pest_preflight_v8_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v8_ledger.jsonl
+  open_pest_preflight_v7_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v7_ledger.jsonl
+  stratified_pilot_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_ledger.jsonl
+  stratified_screen_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_ledger.jsonl
+  stratified_screen_v2_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v2_ledger.jsonl
+  stratified_screen_v3_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v3_ledger.jsonl
+  stratified_screen_v4_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v4_ledger.jsonl
+  stratified_screen_v5_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v5_ledger.jsonl
+  stratified_screen_v6_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v6_ledger.jsonl
+  stratified_screen_v7_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v7_ledger.jsonl
+  stratified_screen_v8_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v8_ledger.jsonl
+  stratified_screen_v9_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v9_ledger.jsonl
+  stratified_pilot_v8_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v8_ledger.jsonl
+  stratified_pilot_v9_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v9_ledger.jsonl
+  stratified_pilot_v10_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v10_ledger.jsonl
+  excluded_hashes:
+    formal_evaluation: outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation/formal_evaluation.jsonl
+    historical_training: outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation/historical_training.jsonl
+    current_rag: outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation/current_rag.jsonl
+    contacted_or_retired: outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation/contacted_or_retired.jsonl
+    # Candidate-source preflight is binding: an image with a source/host or
+    # visible-symptom mismatch must never be silently selected in a later
+    # replenishment plan.  These are uncontacted source rejections, distinct
+    # from the append-only remote-contact retirement ledger.
+    candidate_preflight_rejected: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/replenishment_v2_candidate_preflight_rejected_hashes.jsonl
+outputs:
+  preflight_root: outputs/artifacts/datasets/m1-direct-current-hcv-v1
+  sample_preflight_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/sample_preflight_teacher_plan.jsonl
+  sample_preflight_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/sample_preflight_truth_alignment.jsonl
+  sample_preflight_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/sample_preflight_plan.json
+  repair_preflight_v9_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/repair_preflight_v9_teacher_plan.jsonl
+  repair_preflight_v9_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/repair_preflight_v9_truth_alignment.jsonl
+  repair_preflight_v9_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/repair_preflight_v9_plan.json
+  option_zh_pest_screen_v1_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/option_zh_pest_screen_v1_plan.jsonl
+  option_zh_pest_screen_v1_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/option_zh_pest_screen_v1_alignment.jsonl
+  option_zh_pest_screen_v1_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/option_zh_pest_screen_v1_plan.json
+  option_zh_pest_preflight_v10_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/option_zh_pest_preflight_v10_teacher_plan.jsonl
+  option_zh_pest_preflight_v10_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/option_zh_pest_preflight_v10_truth_alignment.jsonl
+  option_zh_pest_preflight_v10_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/option_zh_pest_preflight_v10_plan.json
+  open_pest_preflight_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_teacher_plan.jsonl
+  open_pest_preflight_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_truth_alignment.jsonl
+  open_pest_preflight_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_plan.json
+  open_pest_preflight_v2_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v2_teacher_plan.jsonl
+  open_pest_preflight_v2_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v2_truth_alignment.jsonl
+  open_pest_preflight_v2_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v2_plan.json
+  open_pest_preflight_v3_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v3_teacher_plan.jsonl
+  open_pest_preflight_v3_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v3_truth_alignment.jsonl
+  open_pest_preflight_v3_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v3_plan.json
+  open_pest_preflight_v4_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v4_teacher_plan.jsonl
+  open_pest_preflight_v4_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v4_truth_alignment.jsonl
+  open_pest_preflight_v4_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v4_plan.json
+  open_pest_preflight_v5_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v5_teacher_plan.jsonl
+  open_pest_preflight_v5_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v5_truth_alignment.jsonl
+  open_pest_preflight_v5_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v5_plan.json
+  open_pest_preflight_v6_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v6_teacher_plan.jsonl
+  open_pest_preflight_v6_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v6_truth_alignment.jsonl
+  open_pest_preflight_v6_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v6_plan.json
+  open_pest_screen_v1_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_screen_v1_plan.jsonl
+  open_pest_screen_v1_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v1_alignment.jsonl
+  open_pest_screen_v1_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v1_plan.json
+  open_pest_screen_v2_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_screen_v2_plan.jsonl
+  open_pest_screen_v2_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v2_alignment.jsonl
+  open_pest_screen_v2_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v2_plan.json
+  open_pest_screen_v3_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_screen_v3_plan.jsonl
+  open_pest_screen_v3_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v3_alignment.jsonl
+  open_pest_screen_v3_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v3_plan.json
+  open_pest_screen_v4_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_screen_v4_plan.jsonl
+  open_pest_screen_v4_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_screen_v4_alignment.jsonl
+  open_pest_screen_v4_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v4_plan.json
+  open_pest_preflight_v8_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v8_teacher_plan.jsonl
+  open_pest_preflight_v8_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v8_truth_alignment.jsonl
+  open_pest_preflight_v8_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v8_plan.json
+  open_pest_preflight_v7_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/open_pest_preflight_v7_teacher_plan.jsonl
+  open_pest_preflight_v7_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/open_pest_preflight_v7_truth_alignment.jsonl
+  open_pest_preflight_v7_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v7_plan.json
+  stratified_pilot_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_pilot_teacher_plan.jsonl
+  stratified_pilot_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_truth_alignment.jsonl
+  stratified_pilot_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_plan.json
+  pilot_screen_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/pilot_screen_plan.jsonl
+  pilot_screen_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/pilot_screen_alignment.jsonl
+  pilot_screen_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/pilot_screen_plan.json
+  stratified_screen_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_plan.jsonl
+  stratified_screen_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_alignment.jsonl
+  stratified_screen_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_plan.json
+  stratified_screen_v2_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v2_plan.jsonl
+  stratified_screen_v2_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v2_alignment.jsonl
+  stratified_screen_v2_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v2_plan.json
+  stratified_screen_v3_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v3_plan.jsonl
+  stratified_screen_v3_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v3_alignment.jsonl
+  stratified_screen_v3_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v3_plan.json
+  stratified_screen_v4_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v4_plan.jsonl
+  stratified_screen_v4_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v4_alignment.jsonl
+  stratified_screen_v4_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v4_plan.json
+  stratified_screen_v5_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v5_plan.jsonl
+  stratified_screen_v5_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v5_alignment.jsonl
+  stratified_screen_v5_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v5_plan.json
+  stratified_screen_v6_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v6_plan.jsonl
+  stratified_screen_v6_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v6_alignment.jsonl
+  stratified_screen_v6_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v6_plan.json
+  stratified_screen_v7_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v7_plan.jsonl
+  stratified_screen_v7_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v7_alignment.jsonl
+  stratified_screen_v7_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v7_plan.json
+  stratified_screen_v8_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v8_plan.jsonl
+  stratified_screen_v8_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v8_alignment.jsonl
+  stratified_screen_v8_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v8_plan.json
+  stratified_screen_v9_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_screen_v9_plan.jsonl
+  stratified_screen_v9_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v9_alignment.jsonl
+  stratified_screen_v9_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v9_plan.json
+  stratified_pilot_v8_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_pilot_v8_teacher_plan.jsonl
+  stratified_pilot_v8_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v8_truth_alignment.jsonl
+  stratified_pilot_v8_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v8_plan.json
+  stratified_pilot_v9_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_pilot_v9_teacher_plan.jsonl
+  stratified_pilot_v9_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v9_truth_alignment.jsonl
+  stratified_pilot_v9_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v9_plan.json
+  stratified_pilot_v10_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/stratified_pilot_v10_teacher_plan.jsonl
+  stratified_pilot_v10_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_pilot_v10_truth_alignment.jsonl
+  stratified_pilot_v10_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v10_plan.json
+  public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/teacher_plan.jsonl
+  private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/truth_alignment.jsonl
+  plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/plan.json
+  full_v1_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/full_v1_ledger.jsonl
+  full_v1_run_root: outputs/runs/data/data-m1-direct-current-hcv-v1/full-v1
+  replenishment_v1_public_plan: outputs/artifacts/datasets/m1-direct-current-hcv-v1/public/replenishment_v1_teacher_plan.jsonl
+  replenishment_v1_private_alignment: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/replenishment_v1_truth_alignment.jsonl
+  replenishment_v1_plan_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/replenishment_v1_plan.json
+  replenishment_v1_ledger: outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/replenishment_v1_ledger.jsonl
+  replenishment_v1_run_root: outputs/runs/data/data-m1-direct-current-hcv-v1/replenishment-v1
+  sample_preflight_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/sample_preflight_gate.json
+  repair_preflight_v9_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/repair_preflight_v9_gate.json
+  option_zh_pest_screen_v1_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/option_zh_pest_screen_v1_gate.json
+  repair_preflight_v10_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/repair_preflight_v10_gate.json
+  open_pest_preflight_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_gate.json
+  open_pest_preflight_v2_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v2_gate.json
+  open_pest_preflight_v3_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v3_gate.json
+  open_pest_preflight_v4_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v4_gate.json
+  open_pest_preflight_v5_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v5_gate.json
+  open_pest_preflight_v6_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v6_gate.json
+  open_pest_screen_v1_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v1_gate.json
+  open_pest_screen_v2_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v2_gate.json
+  open_pest_screen_v3_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v3_gate.json
+  open_pest_screen_v4_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_screen_v4_gate.json
+  open_pest_preflight_v8_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v8_gate.json
+  open_pest_preflight_v7_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/open_pest_preflight_v7_gate.json
+  stratified_pilot_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_gate.json
+  stratified_screen_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_gate.json
+  stratified_screen_v2_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v2_gate.json
+  stratified_screen_v3_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v3_gate.json
+  stratified_screen_v4_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v4_gate.json
+  stratified_screen_v5_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v5_gate.json
+  stratified_screen_v6_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v6_gate.json
+  stratified_screen_v7_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v7_gate.json
+  stratified_screen_v8_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v8_gate.json
+  stratified_screen_v9_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v9_gate.json
+  stratified_pilot_v8_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v8_gate.json
+  stratified_pilot_v9_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v9_gate.json
+  stratified_pilot_v10_gate: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v10_gate.json
+  accepted_sft: outputs/artifacts/datasets/m1-direct-current-hcv-v1/staging/accepted_sft.jsonl
+  audit_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/audit.json
+  full_v1_audit_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/full_v1_audit.json
+  replenishment_v1_audit_report: outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/replenishment_v1_audit.json
+  frozen_artifact: outputs/artifacts/datasets/m1-direct-current-hcv-v1/frozen
+parameters:
+  credential_profile: micu_slb
+  # Applied only to collection runs started after this immutable plan. Each
+  # worker owns one teacher→label-blind-auditor sample pipeline.
+  collection_workers: 8
+  # User-authorized capacity-partial replenishment: collect only classes whose
+  # full same-class shortfall can be supplied from fresh isolated candidates.
+  # Capacity-blocked classes remain explicitly deferred; this never weakens the
+  # per-class quota required by the eventual regular freeze.
+  allow_capacity_partial_replenishment: true
+  # User-authorized after v3: when a same-class isolated pool is exhausted, a
+  # terminally rejected image from this Direct lineage may be re-run.  Static
+  # evaluation/training/RAG exclusions and accepted groups remain forbidden.
+  allow_retired_replay_replenishment: true
+  class_target: 217
+  images_per_class: 5
+  views_per_image: 4
+  teacher_model: gpt-5.6-terra
+  auditor_model: gpt-5.6-terra
+  seed: m1-direct-current-hcv-v1
+  initialization_model: models/Qwen3-VL-4B-Instruct
+  sft:
+    devices: 8
+    epochs: 3
+    per_device_batch_size: 2
+    gradient_accumulation_steps: 4
+    learning_rate: 2.0e-6
+    deepspeed: zero3
+    max_length: 16384
+  evaluation:
+    route: native_dp8_direct
+    rows: 618
+    paired_bootstrap_iterations: 10000

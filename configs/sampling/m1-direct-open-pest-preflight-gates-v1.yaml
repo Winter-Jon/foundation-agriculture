@@ -1,0 +1,24 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+# Diagnostic-only gate for the two cells that failed Level-2 round 6. It
+# validates a method correction before a wholly fresh eight-cell pilot; it does
+# not replace the main stratified_pilot gate.
+open_pest_targeted_preflight:
+  cells:
+    question_type: open
+    languages: [en, zh]
+    domain: pest
+  attempts_per_cell: 8
+  minimum_accepted_per_cell: 8
+  minimum_acceptance_rate_per_cell: 1.0
+  minimum_overall_acceptance_rate: 1.0
+  minimum_teacher_answer_accuracy: 1.0
+  minimum_blind_auditor_accuracy: 1.0
+  minimum_reasoning_check_rate: 1.0
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact

@@ -1,0 +1,15 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+# Diagnostic-only recovery gate for the one failed repair-v9 cell. It does not
+# authorize a stratified pilot or relax any main Direct collection criterion.
+single_cell_distinguishability_screen:
+  cell: [option, zh, pest]
+  candidates: 32
+  minimum_passed_images: 8
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact

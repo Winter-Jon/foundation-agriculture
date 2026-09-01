@@ -1,0 +1,19 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+# v3 retains every pass criterion from v1/v2. It increases only the fixed
+# pre-contact candidate capacity so the screen can supply eight passable images
+# per language without repeatedly launching low-power 16-image redraws.
+open_pest_distinguishability_screen:
+  cells:
+    question_type: open
+    languages: [en, zh]
+    domain: pest
+  candidates_per_cell: 32
+  minimum_passed_per_cell: 8
+  zero_tolerance:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact

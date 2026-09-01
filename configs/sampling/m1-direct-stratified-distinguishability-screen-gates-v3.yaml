@@ -1,0 +1,27 @@
+schema_version: agrinet.m1-direct-acceptance-gates/v1
+immutable_after_first_remote_request: true
+
+# Policy v3: delivery/protocol defects reject individual candidates.  The
+# predeclared cohort remains usable if over 90% of requests have a known
+# terminal delivery and every cell still contributes enough visually
+# distinguishable candidates for the formal pilot.
+stratified_distinguishability_screen:
+  cells:
+    question_types: [open, option]
+    languages: [en, zh]
+    domains: [disease, pest]
+  candidates_per_cell: 32
+  minimum_passed_per_cell: 8
+  minimum_known_delivery_rate: 0.90
+  known_delivery_rate_strictly_greater: true
+  # With 256 fixed attempts, >= 0.90 means at least 231 accepted images,
+  # which is strictly above 90% in integer terms.
+  minimum_acceptance_rate: 0.90
+  acceptance_rate_strictly_greater: true
+  rejection_errors:
+    - unknown_delivery
+    - label_leakage
+    - protocol_error
+    - format_error
+    - invisible_fact
+  zero_tolerance: []
