@@ -1,0 +1,30 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v11-lr5e6-multicheckpoint-eval-v1
+display_name: {en: HCV v11 LR 5e-6 multi-checkpoint strict DP8 evaluation, zh: HCV v11 5e-6 多检查点严格 DP8 评测}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Evaluate epoch 2--6 checkpoints from the completed HCV v11 5e-6 run with
+  strict native SGLang DP8 smoke, then sequential formal Direct/RAG and paired
+  bootstrap only for checkpoints that pass smoke.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_e6_lr5e6, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft_e6_lr5e6.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_e6_lr5e6
+  run_root: outputs/runs/vlm/vlm-hcv-v11-lr5e6-multicheckpoint-eval-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  hcv_freeze_audit: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_e6_lr5e6/v0-20260824-184347
+  checkpoint_specs: 'step:92 step:138 step:184 step:230 step:276'
+  smoke_limit: 64
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29706}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260825, direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+tags: [hcv, v11, lr5e-6, multi-checkpoint, epoch2, epoch3, epoch4, epoch5, epoch6, micu, eight-gpu, dp8, strict-gated]

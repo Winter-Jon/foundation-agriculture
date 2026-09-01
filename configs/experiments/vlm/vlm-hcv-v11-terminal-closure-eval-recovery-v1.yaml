@@ -1,0 +1,30 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v11-terminal-closure-eval-recovery-v1
+display_name: {en: HCV v11 terminal-closure strict DP8 evaluation recovery, zh: HCV v11 终止闭合严格 DP8 评测恢复队列}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Reuse the completed HCV v11 terminal-closure checkpoint and run the strict
+  native SGLang DP8 smoke, Direct/RAG formal evaluation, and paired promotion
+  gates without repeating SFT.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu
+  run_root: outputs/runs/vlm/vlm-hcv-v11-terminal-closure-eval-recovery-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  hcv_freeze_audit: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu/v0-20260824-130627
+  checkpoint_specs: '1:0'
+  smoke_limit: 64
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29694}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260824, direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+tags: [hcv, v11, terminal-closure, protocol-safe, micu, eight-gpu, dp8, strict-gated, recovery]

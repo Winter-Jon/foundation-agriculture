@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v10-protocol-safe-8gpu-v1
+display_name: {en: HCV v10 protocol-safe eight-GPU SFT, zh: HCV v10 协议安全八卡 SFT}
+domain: vlm
+task: sft
+description: >-
+  Train immutable HCV v10 data with canonical terminal closure. The retired
+  v9 run is not resumed because its user-after-assistant representation was
+  incompatible with the ms-swift Qwen response contract.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v10_protocol_safe_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hcv-manual-json-v10-protocol-safe/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v10_protocol_safe_8gpu
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v10-protocol-safe-8gpu-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v10_protocol_safe_8gpu_sft.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29691}
+  training_authorized: outputs/artifacts/datasets/agrinet-hcv-manual-json-v10-protocol-safe/validation.json
+tags: [hcv, v10, protocol-safe, micu, eight-gpu, sft]

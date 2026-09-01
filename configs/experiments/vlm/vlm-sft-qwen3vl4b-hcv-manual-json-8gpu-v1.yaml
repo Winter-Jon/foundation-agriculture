@@ -9,12 +9,16 @@ components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0
 runtime_profile: runtime/local-a800-8gpu-train-and-eval
 inputs:
   config: configs/vlm/qwen3_vl_4b_hcv_manual_json_8gpu_sft.yaml
-  immutable_source: outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/manifest.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hcv-manual-json-v3-prompt-contract/manifest.yaml
   formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
-outputs: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_8gpu, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-8gpu-v1/}
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v3_prompt_contract_8gpu, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-8gpu-v1/}
 parameters:
   entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
-  hcv_freeze_audit: outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/validation.json
+  hcv_freeze_audit: outputs/artifacts/datasets/agrinet-hcv-manual-json-v3-prompt-contract/validation.json
+  hcv_token_fraction_cap: 0.50
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  gpu_wait_interval_seconds: 60
   epochs: 6
   per_device_train_batch_size: 2
   gradient_accumulation_steps: 8

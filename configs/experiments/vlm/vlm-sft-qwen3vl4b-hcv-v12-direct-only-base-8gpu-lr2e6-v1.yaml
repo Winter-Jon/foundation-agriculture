@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v12-direct-only-base-8gpu-lr2e6-v1
+display_name: {en: HCV v12 Direct-only Qwen-base ablation at LR 2e-6, zh: HCV v12 仅 Direct Qwen-base 消融（LR 2e-6）}
+domain: vlm
+task: sft
+description: >-
+  Isolate the Direct supervision route by training only the original zero-tool
+  v12 anchors. Qwen-base initialization and standard 4B optimizer settings are
+  held fixed; no RAG or tool trajectory is present.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_only_base_8gpu_lr2e6_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-only/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_only_base_8gpu_lr2e6
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-only-base-8gpu-lr2e6-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_only_base_8gpu_lr2e6_sft.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29724, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-only/validation.json
+  ablation: {train_data: original_zero_tool_direct_anchors_only, initialization: models/Qwen3-VL-4B-Instruct, epochs: 3, per_device_train_batch_size: 2, gradient_accumulation_steps: 4, learning_rate: 2.0e-6, no_rag_trajectories: true}
+tags: [hcv, v12, direct-only, qwen-base, e3, batch2, gradacc4, lr2e-6, eight-gpu, ablation]

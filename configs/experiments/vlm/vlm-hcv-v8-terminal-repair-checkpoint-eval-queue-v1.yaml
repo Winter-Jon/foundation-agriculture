@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v8-terminal-repair-checkpoint-eval-queue-v1
+display_name: {en: HCV v8 terminal-repair checkpoint DP8 evaluation queue, zh: HCV v8 终止修复 checkpoint DP8 评测队列}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Wait for the active Micu v8 six-epoch SFT, then evaluate its immutable
+  epoch-2/4/6 checkpoints with strict 64-row smoke and native DP8 Direct/RAG
+  formal gates. This queue never launches training and is isolated from v7.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hcv-manual-json-v8-terminal-repair/validation.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu
+  run_root: outputs/runs/vlm/vlm-hcv-v8-terminal-repair-checkpoint-eval-queue-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  hcv_freeze_audit: outputs/artifacts/datasets/agrinet-hcv-manual-json-v8-terminal-repair/validation.json
+  wait_for_run_dir: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-terminal-repair-v8-8gpu-v1/20260824T072424-2ef993b1-a01
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu/v0-20260824-072440
+  checkpoint_specs: '2:0 4:0 6:0'
+  smoke_limit: 64
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29687}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260824, direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+tags: [hcv, v8, terminal-repair, checkpoint-queue, micu, 8gpu, dp8, strict-gated]

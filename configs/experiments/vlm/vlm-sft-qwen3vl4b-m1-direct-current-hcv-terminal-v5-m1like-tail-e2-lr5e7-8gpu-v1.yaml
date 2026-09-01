@@ -1,0 +1,36 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-m1-direct-current-hcv-terminal-v5-m1like-tail-e2-lr5e7-8gpu-v1
+display_name: {en: M1-like terminal-v5 checkpoint-128 conservative tail, zh: M1 类终止 v5 checkpoint-128 保守尾段训练}
+domain: vlm
+task: sft
+description: >-
+  Controlled two-epoch Direct-only tail from the gate-passing checkpoint-128.
+  It holds the immutable data and all optimization settings fixed relative to
+  the LR-1e-6 tail except for a constant LR of 5e-7, then automatically runs
+  native Direct-618 evaluation for both tail checkpoints.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_tail_e2_lr5e7_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/datasets/m1-direct-current-hcv-v1/terminal-v5-m1-comparison-v1/validation.json
+  parent_checkpoint: outputs/vlm_sft/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_8gpu/v0-20260831-013140/checkpoint-128
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_tail_e2_lr5e7_8gpu
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-current-hcv-terminal-v5-m1like-tail-e2-lr5e7-8gpu-v1/
+parameters:
+  entrypoint: scripts/vlm/run_m1_direct_checkpoint_queue.sh
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29767, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  training_authorized: outputs/artifacts/datasets/m1-direct-current-hcv-v1/terminal-v5-m1-comparison-v1/validation.json
+  required_authorization_type: user_authorized_terminal_replenishment_cap_v5
+  freeze_sha256: aa07c568e3e23445de198b6647a3227295a838d1c2c881c32da9095512b5f6a7
+  allowed_sft_runs_for_freeze_hash: 1
+  m1_direct_freeze_audit: outputs/artifacts/datasets/m1-direct-current-hcv-v1/terminal-v5-m1-comparison-v1/validation.json
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+  checkpoint_specs: '1:0 2:0'
+  evaluation_max_new_tokens: 2048
+  direct_only: true
+  parent_selection: epoch-4-checkpoint-128-gate-passed
+  sft: {initialization_model: checkpoint-128-model-weights-only, devices: 8, epochs: 2, per_device_batch_size: 1, gradient_accumulation_steps: 16, learning_rate: 5.0e-7, lr_scheduler: constant, warmup_ratio: 0.0, deepspeed: zero3, max_length: 16384}
+  evaluation: {route: native_dp8_direct_618_each_epoch_checkpoint, paired_bootstrap_samples: 10000, promotion_gate: m1_direct_v1}
+tags: [m1-direct, terminal-v5, tail-finetune, checkpoint-128, direct-only, e2, lr5e-7, constant-lr, zero3, eight-gpu]

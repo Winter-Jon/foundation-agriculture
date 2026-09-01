@@ -1,0 +1,32 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v12-direct-anchor-mix-base-lr2e6-multicheckpoint-full-eval-recovery-v1
+display_name: {en: HCV v12 LR 2e-6 full DP8 evaluation recovery, zh: HCV v12 LR 2e-6 全量 DP8 评测恢复}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Resume the completed 618-row evidence from the failed LR-2e-6 queue and
+  continue the remaining epoch checkpoints. Promotion denials are preserved as
+  experiment results and do not terminate the queue.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_standard_lr2e6, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_standard_lr2e6_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_standard_lr2e6
+  run_root: outputs/runs/vlm/vlm-hcv-v12-direct-anchor-mix-base-lr2e6-multicheckpoint-full-eval-recovery-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_standard_lr2e6/v0-20260826-013108
+  resume_queue_artifact_root: outputs/runs/vlm/vlm-hcv-v12-direct-anchor-mix-base-lr2e6-multicheckpoint-full-eval-v1/20260826T140851-2ef993b1-a01/artifacts
+  hcv_freeze_audit: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  checkpoint_specs: 'step:232 step:464 step:696'
+  full_eval_without_smoke: true
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29722}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_mode: disabled, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260826, protocol_error_scoring: 'included_as_incorrect', direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+  selection: {checkpoints: [232, 464, 696], epochs: [1, 2, 3], selection_reason: 'resume after promotion-gate control-flow repair'}
+tags: [hcv, v12, direct-anchor, qwen-base, lr2e-6, checkpoint232, checkpoint464, checkpoint696, full-eval, dp8, recovery]

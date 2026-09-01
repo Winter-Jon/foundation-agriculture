@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v11-terminal-closure-8gpu-v1
+display_name: {en: HCV v11 terminal-closure eight-GPU SFT, zh: HCV v11 终止闭合八卡 SFT}
+domain: vlm
+task: sft
+description: Train the immutable v11 native-JSON terminal-closure artifact with Direct retention preserved.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v11-terminal-closure-8gpu-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29693}
+  training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+tags: [hcv, v11, terminal-closure, protocol-safe, micu, eight-gpu, sft]

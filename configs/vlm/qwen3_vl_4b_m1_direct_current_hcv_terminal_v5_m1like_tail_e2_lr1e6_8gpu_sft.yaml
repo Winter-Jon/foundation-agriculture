@@ -1,0 +1,34 @@
+# Two-epoch controlled tail from the only raw-base-gate-passing M1-like checkpoint.
+# Load model weights only so the optimizer/scheduler restart at a stable 1e-6 LR.
+model: outputs/vlm_sft/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_8gpu/v0-20260831-013140/checkpoint-128
+model_type: qwen3_vl
+template: qwen3_vl
+torch_dtype: bfloat16
+attn_impl: sdpa
+use_liger_kernel: true
+tuner_type: full
+freeze_vit: false
+freeze_llm: false
+freeze_aligner: false
+gradient_checkpointing: true
+gradient_checkpointing_kwargs: {use_reentrant: false}
+vit_gradient_checkpointing: true
+dataset: [outputs/artifacts/datasets/m1-direct-current-hcv-v1/terminal-v5-m1-comparison-v1/data.jsonl]
+split_dataset_ratio: 0.0
+streaming: false
+max_length: 16384
+truncation_strategy: left
+num_train_epochs: 2
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 1.0e-6
+lr_scheduler_type: constant
+warmup_ratio: 0.0
+save_strategy: epoch
+save_total_limit: 2
+save_only_model: true
+logging_steps: 1
+output_dir: outputs/vlm_sft/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_tail_e2_lr1e6_8gpu
+dataloader_num_workers: 8
+dataset_num_proc: 8
+deepspeed: zero3

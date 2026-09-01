@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-manual-json-five-turn-terminal-rejection-v6-8gpu-v1
+display_name: {en: HCV five-turn terminal rejection v6, zh: HCV 五轮终止拒绝 v6}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Train the audit-authorized Micu five-real-turn HCV trajectories plus the
+  evaluator-aligned sixth rejected-call state, then run strict native DP8
+  Direct/RAG acceptance gates.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_five_turn_terminal_rejection_v6_8gpu_sft.yaml
+  immutable_source: outputs/artifacts/datasets/agrinet-hcv-manual-json-v6-five-turn-terminal-rejection/manifest.yaml
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_five_turn_terminal_rejection_v6_8gpu, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-five-turn-terminal-rejection-v6-8gpu-v1/}
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  hcv_freeze_audit: outputs/artifacts/datasets/agrinet-hcv-manual-json-v6-five-turn-terminal-rejection/validation.json
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29684}
+  checkpoint_specs: '2:28 4:56 6:84'
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260823, direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+tags: [hcv, five-turn, terminal-rejection-v6, manual-json, micu, 8gpu, dp8, strict-gated]

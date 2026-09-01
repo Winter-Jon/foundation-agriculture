@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-8gpu-e3-allocator-v1
+display_name: {en: HCV v12 Direct-anchor mix from Qwen base with expandable CUDA allocator, zh: HCV v12 Direct anchor 混合数据 Qwen base 训练（可扩展 CUDA 分配器）}
+domain: vlm
+task: sft
+description: >-
+  Clean restart of the standard 4B v12 SFT after a rank-5 allocator-fragmentation
+  OOM. The requested training hyperparameters and immutable dataset are unchanged.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-8gpu-e3-allocator-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator_sft.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29715, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  standard_4b_parameters: {initialization: models/Qwen3-VL-4B-Instruct, epochs: 3, per_device_train_batch_size: 2, gradient_accumulation_steps: 4, learning_rate: 5.0e-6}
+  recovery: {predecessor_experiment: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-8gpu-e3-v1, predecessor_failure: 'rank-5 CUDA OOM with 13.04 GiB reserved but unallocated', allocator_policy: 'expandable_segments:True'}
+tags: [hcv, v12, direct-anchor, standard-4b-parameters, qwen-base, e3, batch2, gradacc4, lr5e-6, micu, eight-gpu, sft, allocator-recovery]

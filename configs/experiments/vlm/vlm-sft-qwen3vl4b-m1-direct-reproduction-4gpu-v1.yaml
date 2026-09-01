@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-m1-direct-reproduction-4gpu-v1
+display_name: {en: Historical M1 Direct reproduction from Qwen base, zh: 从 Qwen base 复现历史 M1 Direct}
+domain: vlm
+task: sft
+description: >-
+  Independent reproduction of historical M1 using its original 2,114-record
+  bilingual Direct dataset and exact 4-GPU/global-batch-64 optimization form.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, data: outputs/vlm_sft/disease_pest_large/sft_messages_en_zh.jsonl, runtime: runtime/local-a800-4gpu-train}
+runtime_profile: runtime/local-a800-4gpu-train
+inputs:
+  config: configs/vlm/qwen3_vl_4b_m1_direct_reproduction_4gpu_sft.yaml
+  immutable_source: outputs/artifacts/datasets/m1-direct-reproduction-v1/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_m1_direct_reproduction_4gpu
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-reproduction-4gpu-v1/
+parameters:
+  training_authorized: outputs/artifacts/datasets/m1-direct-reproduction-v1/validation.json
+  freeze_sha256: from_training_authorized
+  allowed_sft_runs_for_freeze_hash: 1
+  local_launch: {cuda_visible_devices: '4,5,6,7', nproc_per_node: 4, master_port: 29772, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  sft: {initialization_model: models/Qwen3-VL-4B-Instruct, devices: 4, global_batch_size: 64, epochs: 5, per_device_batch_size: 1, gradient_accumulation_steps: 16, learning_rate: 1.0e-5, lr_scheduler: cosine, warmup_ratio: 0.05, deepspeed: zero3, max_length: 2048, truncation_strategy: delete}
+tags: [m1, direct-only, reproduction, qwen-base, four-gpu, global-batch-64, e5, lr1e-5, zero3]

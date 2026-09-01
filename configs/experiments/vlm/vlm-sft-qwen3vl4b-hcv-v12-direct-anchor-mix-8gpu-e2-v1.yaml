@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-8gpu-e2-v1
+display_name: {en: HCV v12 Direct-anchor mixed SFT, zh: HCV v12 Direct anchor 混合 SFT}
+domain: vlm
+task: sft
+description: >-
+  Train from M1 checkpoint-18 on v11 plus token-weighted Direct anchor replay.
+  No additional model-side loss or protocol method is used.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_8gpu_e2_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_8gpu_e2
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-8gpu-e2-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_8gpu_e2_sft.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29712}
+  training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  epochs: 2
+  learning_rate: 1.0e-6
+  direct_token_fraction: 0.5873850913130376
+  initialization: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+tags: [hcv, v12, direct-anchor, token-weighted-replay, manual-json, e2, lr1e-6, micu, eight-gpu, sft]

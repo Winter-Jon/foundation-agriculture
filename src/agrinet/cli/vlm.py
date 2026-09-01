@@ -16,6 +16,7 @@ from agrinet.vlm.adapters.vlmevalkit import VLMEvalKitAdapter
 from agrinet.vlm.inspect import inspect_model
 from agrinet.common.local import run_foreground, start_detached
 from agrinet.common.contracts import ArtifactRef
+from agrinet.common.artifacts import sha256_file
 from agrinet.vlm.evaluate import evaluate_predictions
 from agrinet.vlm.export import export_transformers_checkpoint
 
@@ -85,6 +86,11 @@ def local_training_env(config: dict) -> dict[str, str]:
         if not isinstance(master_port, int) or not 1024 <= master_port <= 65535:
             raise ConfigError("local_launch.master_port must be an integer in [1024, 65535]")
         env["MASTER_PORT"] = str(master_port)
+    cuda_alloc_conf = launch.get("pytorch_cuda_alloc_conf")
+    if cuda_alloc_conf is not None:
+        if not isinstance(cuda_alloc_conf, str) or not cuda_alloc_conf.strip():
+            raise ConfigError("local_launch.pytorch_cuda_alloc_conf must be a non-empty string when declared")
+        env["PYTORCH_CUDA_ALLOC_CONF"] = cuda_alloc_conf
     return env
 
 
@@ -97,6 +103,17 @@ def assert_single_use_freeze_available(config: dict) -> None:
         return
     if limit != 1 or not isinstance(freeze_hash, str) or not freeze_hash:
         raise ConfigError("single-use freeze requires allowed_sft_runs_for_freeze_hash=1 and freeze_sha256")
+    if freeze_hash == "from_training_authorized":
+        path_value = parameters.get("training_authorized")
+        if not isinstance(path_value, str) or not path_value:
+            raise ConfigError("derived freeze hash requires training_authorized")
+        path = Path(path_value)
+        path = path if path.is_absolute() else repository_root() / path
+        if not path.is_file():
+            raise ConfigError(f"derived freeze hash requires authorization artifact: {path}")
+        freeze_hash = sha256_file(path)
+    elif len(freeze_hash) != 64:
+        raise ConfigError("freeze_sha256 must be a 64-character digest or from_training_authorized")
     experiment_id = str(config.get("id") or "")
     statuses: list[str] = []
     for status_path in (runs_root() / "vlm" / experiment_id).glob("*/status.json"):
@@ -110,6 +127,42 @@ def assert_single_use_freeze_available(config: dict) -> None:
         raise ConfigError(
             f"immutable freeze {freeze_hash} already has {len(statuses)} launch record(s): {sorted(statuses)}; refusing replay"
         )
+
+
+def assert_training_authorized(config: dict) -> None:
+    """Require a declared immutable validation artifact before SFT launch."""
+    path_value = config.get("parameters", {}).get("training_authorized")
+    if path_value is None:
+        return
+    if not isinstance(path_value, str) or not path_value:
+        raise ConfigError("training_authorized must be a non-empty validation path")
+    path = Path(path_value)
+    path = path if path.is_absolute() else repository_root() / path
+    if not path.is_file():
+        raise ConfigError(f"training authorization is absent: {path}")
+    try:
+        report = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ConfigError(f"training authorization is invalid: {path}") from exc
+    if report.get("training_authorized") is not True:
+        raise ConfigError(f"training authorization does not permit SFT: {path}")
+    required_type = config.get("parameters", {}).get("required_authorization_type")
+    if required_type is not None:
+        if not isinstance(required_type, str) or not required_type:
+            raise ConfigError("required_authorization_type must be a non-empty string when declared")
+        if report.get("authorization_type") != required_type:
+            raise ConfigError(
+                f"training authorization type differs from required policy: {path}"
+            )
+    expected_hash = config.get("parameters", {}).get("freeze_sha256")
+    if expected_hash is not None:
+        actual_hash = sha256_file(path)
+        if expected_hash == "from_training_authorized":
+            return
+        if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+            raise ConfigError("freeze_sha256 must be the 64-character validation artifact SHA-256")
+        if actual_hash != expected_hash:
+            raise ConfigError(f"training authorization digest differs from immutable freeze: {path}")
 
 
 def rag_diagnostic_command(config: dict) -> list[str]:
@@ -172,7 +225,24 @@ def formal_direct_native_command(config: dict) -> list[str]:
         raise ConfigError("formal direct evaluation requires parameters.entrypoint")
     if not isinstance(candidate, str) or not candidate:
         raise ConfigError("formal direct evaluation requires inputs.candidate_checkpoint")
-    return ["env", f"CANDIDATE={candidate}", f"EXPERIMENT_ID={config['id']}", "bash", entrypoint]
+    command = ["env", f"CANDIDATE={candidate}", f"EXPERIMENT_ID={config['id']}"]
+    formal_root = parameters.get("formal_root")
+    if formal_root is not None:
+        if not isinstance(formal_root, str) or not formal_root:
+            raise ConfigError("formal_root must be a non-empty path when declared")
+        command.append(f"FORMAL_ROOT={formal_root}")
+    runtime = parameters.get("runtime", {})
+    if runtime is not None:
+        if not isinstance(runtime, dict):
+            raise ConfigError("formal direct runtime must be a mapping when declared")
+        for key, environment in (("tensor_parallel_size", "SGLANG_TP_SIZE"), ("data_parallel_size", "SGLANG_DP_SIZE")):
+            value = runtime.get(key)
+            if value is not None:
+                if not isinstance(value, int) or value < 1:
+                    raise ConfigError(f"formal direct runtime.{key} must be a positive integer")
+                command.append(f"{environment}={value}")
+    command.extend(["bash", entrypoint])
+    return command
 
 
 def formal_rag_native_command(config: dict) -> list[str]:
@@ -216,11 +286,74 @@ def manual_json_checkpoint_queue_command(config: dict) -> list[str]:
             if not isinstance(value, (str, int)) or not str(value):
                 raise ConfigError(f"{parameter} must be a non-empty string or integer when declared")
             command.append(f"{env_name}={value}")
+    if parameters.get("full_eval_without_smoke"):
+        command.append("FULL_EVAL_WITHOUT_SMOKE=1")
     hcv_audit = parameters.get("hcv_freeze_audit")
     if hcv_audit is not None:
         if not isinstance(hcv_audit, str) or not hcv_audit:
             raise ConfigError("hcv_freeze_audit must be a non-empty path when declared")
         command.append(f"HCV_FREEZE_AUDIT={hcv_audit}")
+    if parameters.get("wait_for_gpu_capacity"):
+        command.append("WAIT_FOR_GPU_CAPACITY=1")
+    rag_api = parameters.get("rag_api")
+    if rag_api is not None:
+        if not isinstance(rag_api, str) or not rag_api:
+            raise ConfigError("rag_api must be a non-empty string when declared")
+        command.append(f"RAG_API={rag_api}")
+    queue_artifact_root = parameters.get("resume_queue_artifact_root")
+    if queue_artifact_root is not None:
+        if not isinstance(queue_artifact_root, str) or not queue_artifact_root:
+            raise ConfigError("resume_queue_artifact_root must be a non-empty path when declared")
+        command.append(f"QUEUE_ARTIFACT_ROOT={queue_artifact_root}")
+    gpu_wait_interval = parameters.get("gpu_wait_interval_seconds")
+    if gpu_wait_interval is not None:
+        if not isinstance(gpu_wait_interval, (int, float)) or gpu_wait_interval <= 0:
+            raise ConfigError("gpu_wait_interval_seconds must be positive when declared")
+        command.append(f"GPU_WAIT_INTERVAL_SECONDS={gpu_wait_interval}")
+    command.extend(["bash", entrypoint])
+    return command
+
+
+def m1_direct_checkpoint_queue_command(config: dict) -> list[str]:
+    """Build the freeze-gated Direct-only train/evaluate sequence."""
+    parameters = config.get("parameters", {})
+    entrypoint = parameters.get("entrypoint")
+    training_config = config.get("inputs", {}).get("config")
+    model_root = config.get("outputs", {}).get("model")
+    freeze = parameters.get("m1_direct_freeze_audit")
+    if not all(isinstance(value, str) and value for value in (entrypoint, training_config, model_root, freeze)):
+        raise ConfigError("M1 Direct checkpoint queue requires entrypoint, config, model output, and freeze audit")
+    command = [
+        "env", f"TRAINING_CONFIG={training_config}", f"EXPERIMENT_ID={config['id']}",
+        f"MODEL_ROOT={model_root}", f"M1_DIRECT_FREEZE_AUDIT={freeze}",
+    ]
+    for parameter, environment in (("manifest", "MANIFEST"), ("checkpoint_specs", "CHECKPOINT_SPECS")):
+        value = parameters.get(parameter)
+        if value is not None:
+            if not isinstance(value, str) or not value:
+                raise ConfigError(f"{parameter} must be a non-empty string when declared")
+            command.append(f"{environment}={value}")
+    evaluation_devices = parameters.get("evaluation_cuda_visible_devices")
+    if evaluation_devices is not None:
+        if not isinstance(evaluation_devices, str) or not evaluation_devices.strip():
+            raise ConfigError("evaluation_cuda_visible_devices must be a non-empty string when declared")
+        command.append(f"EVAL_CUDA_VISIBLE_DEVICES={evaluation_devices}")
+    for parameter, environment in (("evaluation_tensor_parallel_size", "EVAL_SGLANG_TP_SIZE"), ("evaluation_data_parallel_size", "EVAL_SGLANG_DP_SIZE")):
+        value = parameters.get(parameter)
+        if value is not None:
+            if not isinstance(value, int) or value < 1:
+                raise ConfigError(f"{parameter} must be a positive integer when declared")
+            command.append(f"{environment}={value}")
+    max_new_tokens = parameters.get("evaluation_max_new_tokens")
+    if max_new_tokens is not None:
+        if not isinstance(max_new_tokens, int) or max_new_tokens <= 0:
+            raise ConfigError("evaluation_max_new_tokens must be a positive integer when declared")
+        command.append(f"MAX_NEW_TOKENS={max_new_tokens}")
+    resume_train_dir = parameters.get("resume_completed_sft_dir")
+    if resume_train_dir is not None:
+        if not isinstance(resume_train_dir, str) or not resume_train_dir:
+            raise ConfigError("resume_completed_sft_dir must be a non-empty path when declared")
+        command.append(f"RESUME_TRAIN_DIR={resume_train_dir}")
     command.extend(["bash", entrypoint])
     return command
 
@@ -283,6 +416,7 @@ def submit(
     root = repository_root()
     if operation == "train":
         try:
+            assert_training_authorized(config)
             assert_single_use_freeze_available(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True)
@@ -320,11 +454,26 @@ def submit(
             command = manual_json_checkpoint_queue_command(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "m1-direct-checkpoint-queue":
+        try:
+            assert_training_authorized(config)
+            if config.get("parameters", {}).get("resume_completed_sft_dir") is None:
+                assert_single_use_freeze_available(config)
+            command = m1_direct_checkpoint_queue_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
-    env = local_training_env(config) if operation in {"train", "manual-json-checkpoint-queue"} else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
+    env = local_training_env(config) if operation in {
+        "train", "manual-json-checkpoint-queue", "m1-direct-checkpoint-queue",
+        "formal-direct-native", "formal-rag-native",
+    } else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
     if dry_run:
-        launch = " ".join(f"{key}={value}" for key, value in env.items() if key in {"CUDA_VISIBLE_DEVICES", "NPROC_PER_NODE"})
+        launch = " ".join(
+            f"{key}={value}"
+            for key, value in env.items()
+            if key in {"CUDA_VISIBLE_DEVICES", "NPROC_PER_NODE", "MASTER_PORT", "PYTORCH_CUDA_ALLOC_CONF"}
+        )
         typer.echo(f"{launch} {' ' if launch else ''}{' '.join(command)}"); return
     if detach:
         run = start_detached("vlm", experiment_id, command, env, config)

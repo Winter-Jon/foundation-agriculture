@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v11-terminal-closure-8gpu-e6-lr5e6-v1
+display_name: {en: HCV v11 terminal-closure six-epoch SFT from checkpoint-18 at LR 5e-6, zh: HCV v11 终止闭合六轮 5e-6 学习率 SFT}
+domain: vlm
+task: sft
+description: >-
+  Retrain HCV v11 from the fixed M1 checkpoint-18 initialization for six
+  epochs, changing only the learning rate from the prior 1e-6 run to 5e-6.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft_e6_lr5e6.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_e6_lr5e6
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v11-terminal-closure-8gpu-e6-lr5e6-v1/
+parameters:
+  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft_e6_lr5e6.yaml
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29705}
+  training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
+  epochs: 6
+  learning_rate: 5.0e-6
+  initialization: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
+tags: [hcv, v11, terminal-closure, from-scratch, six-epoch, lr5e-6, micu, eight-gpu, sft]

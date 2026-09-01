@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v12-direct-anchor-mix-base-e3-checkpoint-eval-v1
+display_name: {en: HCV v12 base-standard three-checkpoint strict DP8 evaluation, zh: HCV v12 base 标准参数三检查点严格 DP8 评测}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  Wait for the standard-parameter v12 base-model SFT, then evaluate all three
+  epoch checkpoints sequentially with strict native SGLang DP8 smoke and gated
+  formal Direct/RAG evaluation.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_sft.yaml
+  immutable_source: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3
+  run_root: outputs/runs/vlm/vlm-hcv-v12-direct-anchor-mix-base-e3-checkpoint-eval-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  wait_for_run_dir: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-8gpu-e3-v1/20260825T142834-2ef993b1-a01
+  hcv_freeze_audit: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3/v0-20260825-142849
+  checkpoint_specs: 'step:232 step:464 step:696'
+  smoke_limit: 64
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29714}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_rows: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260825, direct_overall_bootstrap_lower_min_pp: -3.0, direct_major_subgroup_delta_min_pp: -8.0, rag_bootstrap_lower_must_exceed_pp: 0.0}
+tags: [hcv, v12, direct-anchor, qwen-base, standard-4b-parameters, checkpoint-eval, e1, e2, e3, micu, eight-gpu, dp8, strict-gated]

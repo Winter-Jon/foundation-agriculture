@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-five-turn-v6-epoch2-direct-formal-recovery-v1
+display_name: {en: HCV v6 epoch-2 Direct formal recovery, zh: HCV v6 epoch-2 Direct 正式评测恢复}
+domain: vlm
+task: formal_direct_native
+description: >-
+  Continue the interrupted Direct formal comparison from its validated epoch-2
+  candidate predictions. Only missing M1/raw-base routes and paired reviews run.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_five_turn_terminal_rejection_v6_8gpu/v0-20260823-205410/checkpoint-28, runtime: runtime/local-a800-8gpu-eval, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_five_turn_terminal_rejection_v6_8gpu/v0-20260823-205410/checkpoint-28
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  formal_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-five-turn-terminal-rejection-v6-8gpu-eval-v1/20260823T224528-2ef993b1-a01/artifacts/epoch-2-checkpoint-28/formal-direct
+parameters:
+  entrypoint: scripts/vlm/run_direct_formal618_native_dp8.sh
+  formal_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-five-turn-terminal-rejection-v6-8gpu-eval-v1/20260823T224528-2ef993b1-a01/artifacts/epoch-2-checkpoint-28/formal-direct
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29686}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260819}
+tags: [hcv, micu, direct, dp8, formal, recovery, epoch-2]
