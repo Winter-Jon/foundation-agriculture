@@ -66,6 +66,35 @@ def test_hcv_rebuild_retires_contacted_rows_and_refills_cell() -> None:
     assert report["invariants"]["unique_image_hashes"]
 
 
+def test_hcv_rebuild_preserves_explicit_five_turn_strategy_for_replacements() -> None:
+    old = _audit("old", "open", "en", "disease")
+    old_plan, old_private, _ = build(
+        [old], [_source("old")], per_cell_cap=1, strategy_id="hcv_contrast_verify_five_turn"
+    )
+    replacement = _audit("new", "open", "en", "disease")
+    plan, _, report = rebuild(
+        [replacement], [_source("new")], old_plan, old_private, {old_plan[0]["sample_id"]},
+        per_cell_cap=1, strategy_id="hcv_contrast_verify_five_turn",
+    )
+    assert plan[0]["strategy_id"] == "hcv_contrast_verify_five_turn"
+    assert plan[0]["preferred_sequence"] == ["visual", "visual", "semantic", "rrf", "name"]
+    assert report["invariants"]["all_hcv_strategy"]
+
+
+def test_hcv_rebuild_expanded_truth_hit_can_retain_a_first_turn_truth_hit() -> None:
+    old = _audit("old", "open", "en", "disease")
+    old_plan, old_private, _ = build([old], [_source("old")], per_cell_cap=1)
+    replacement = _audit("new", "open", "en", "disease")
+    replacement["audit"]["first_truth_hit"] = True
+    replacement["audit"]["actions"]["visual_expand"]["truth_hit"] = True
+    plan, _, report = rebuild(
+        [replacement], [_source("new")], old_plan, old_private, {old_plan[0]["sample_id"]},
+        per_cell_cap=1, selection_mode="expanded_truth_hit",
+    )
+    assert plan[0]["source_sample_id"] == "new"
+    assert report["selection_mode"] == "expanded_truth_hit"
+
+
 def test_hcv_teacher_plan_matches_prefixed_source_rows_by_source_sample_id() -> None:
     audit = _audit("hcv-preflight-1", "open", "en", "disease")
     audit["source_sample_id"] = "disease_N04022_N04022_P00012"

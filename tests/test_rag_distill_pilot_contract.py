@@ -44,6 +44,12 @@ def test_hcv_strategy_uses_distinct_top_k_per_turn() -> None:
     assert expanded["top_k"] == 10
 
 
+def test_hcv_five_turn_strategy_has_explicit_public_budget() -> None:
+    sample = {"strategy_id": "hcv_contrast_verify_five_turn"}
+    assert [run_pilot.strategy_top_k_for_turn(sample, 3, index) for index in range(5)] == [3, 10, 10, 10, 5]
+    assert run_pilot.sample_strategy(sample, 3)[1] == ("visual", "visual", "semantic", "rrf", "name")
+
+
 def test_hcv_first_valid_visual_call_expands_without_unknown_tool_branch(tmp_path, monkeypatch) -> None:
     import argparse
     import json
@@ -220,6 +226,30 @@ def test_hcv_machine_adjudication_parses_and_renders_public_decision() -> None:
     assert "<answer>Four</answer>" in rendered and "Host match: 2" in rendered
 
 
+def test_private_final_adjudication_can_only_select_an_existing_public_candidate(tmp_path) -> None:
+    image = tmp_path / "query.jpg"
+    image.write_bytes(b"mock")
+    sample = {"strategy_id": "hcv_visual_expand", "language": "en", "question_type": "open"}
+    messages = _hcv_public_messages()
+    selected, errors = run_pilot.private_final_public_candidate(
+        sample, messages, {"audit_truth_code": "N99999", "audit_truth_name": "Expanded Four"}
+    )
+    assert not errors and selected == "Expanded Four"
+    closed = run_pilot.closed_finalization_messages(sample, image, messages)
+    text = str(closed[0]["content"]) + str(closed[1]["content"][0]["text"])
+    assert "HCV_MACHINE_ADJUDICATION_V1" in text
+    assert "N99999" not in text
+
+
+def test_private_final_adjudication_rejects_truth_absent_from_public_evidence() -> None:
+    sample = {"strategy_id": "hcv_visual_expand", "question_type": "open"}
+    selected, errors = run_pilot.private_final_public_candidate(
+        sample, _hcv_public_messages(), {"audit_truth_code": "N99999", "audit_truth_name": "Private Truth"}
+    )
+    assert selected is None
+    assert errors == ["private_final_truth_not_in_public_evidence"]
+
+
 def test_hcv_final_decision_gate_rejects_rank_only_and_accepts_trait_comparison() -> None:
     sample = {"strategy_id": "hcv_visual_expand", "language": "en"}
     messages = _hcv_public_messages()
@@ -237,6 +267,34 @@ def test_hcv_final_decision_gate_rejects_rank_only_and_accepts_trait_comparison(
     assert run_pilot.hcv_final_decision_is_complete(sample, comparison, messages)
 
 
+def test_hcv_private_chinese_renderer_passes_candidate_gate() -> None:
+    import json
+    sample = {
+        "strategy_id": "hcv_contrast_verify_five_turn",
+        "language": "zh", "question_type": "open",
+    }
+    messages = [
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "Truth", "chinese_name": "真值"},
+            {"class_name": "Wrong One", "chinese_name": "错误一"},
+            {"class_name": "Wrong Two", "chinese_name": "错误二"},
+        ]}, ensure_ascii=False)},
+        {"role": "tool_response", "content": json.dumps({"results": [
+            {"class_name": "Truth", "chinese_name": "真值"},
+            {"class_name": "Wrong One", "chinese_name": "错误一"},
+            {"class_name": "Wrong Two", "chinese_name": "错误二"},
+            {"class_name": "Expanded", "chinese_name": "扩展"},
+        ]}, ensure_ascii=False)},
+    ]
+    rendered = (
+        "<think>预测类别名称：真值\n证据：候选：Truth；宿主匹配：2；器官匹配：2；症状匹配：2；矛盾特征：无。\n"
+        "候选：错误一；宿主匹配：1；器官匹配：1；症状匹配：0；矛盾特征：不一致。\n"
+        "候选：错误二；宿主匹配：1；器官匹配：1；症状匹配：0；矛盾特征：不一致。\n"
+        "排除的候选：错误一：特征不一致；错误二：特征不一致。\n不确定性：低。</think><answer>真值</answer>"
+    )
+    assert run_pilot.hcv_final_decision_is_complete(sample, rendered, messages)
+
+
 def test_hcv_contrast_semantic_query_uses_only_public_names() -> None:
     messages = _hcv_public_messages()
     sample = {"strategy_id": "hcv_contrast_verify", "top_k": 3}
@@ -247,6 +305,18 @@ def test_hcv_contrast_semantic_query_uses_only_public_names() -> None:
     assert args["top_k"] == 10
     assert "Top One" in args["query"] and "Expanded Four" in args["query"]
     assert "N99999" not in args["query"]
+
+
+def test_hcv_five_turn_followups_only_use_returned_public_names() -> None:
+    messages = _hcv_public_messages()
+    sample = {"strategy_id": "hcv_contrast_verify_five_turn", "top_k": 3, "final_label_name": "Private Truth"}
+    calls = run_pilot.hcv_five_turn_followup_args(messages, sample, 3)
+    assert calls is not None
+    rrf, name = calls
+    assert rrf["retrieval_type"] == "rrf" and rrf["image"] == "query_image"
+    assert name["retrieval_type"] == "name" and name["image"] == "none"
+    assert name["query"] in {"Top One", "Top Two", "Top Three", "Expanded Four"}
+    assert "Private Truth" not in rrf["query"] and name["query"] != "Private Truth"
 
 
 def test_hcv_semantic_query_excludes_similar_classes_and_uses_visual_top10() -> None:

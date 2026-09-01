@@ -79,6 +79,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-file", help="Optional recovery Pilot candidate-attempt JSONL.")
     parser.add_argument("--candidate-source", help="Source JSONL used to hydrate plan rows.")
     parser.add_argument(
+        "--private-final-adjudication-file",
+        help=("Local-only private sidecar used exclusively after all public HCV retrievals. "
+              "It must never be merged into the public plan or student messages."),
+    )
+    parser.add_argument(
         "--approval-scope",
         default="none",
         choices=("none", "stage_a_option_calibration", "stage_a_open_reentry", "reconstructive_blind_calibration", "reconstructive_blind_supplement"),
@@ -156,6 +161,26 @@ def read_plan_samples(args: argparse.Namespace) -> list[dict[str, Any]]:
         sample["sample_id"] = str(plan.get("sample_id") or f"{plan['target_id']}-candidate-{candidate_index}")
         samples.append(sample)
     return samples
+
+
+def load_private_final_adjudication(path: str | None, samples: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Load a local truth sidecar without adding it to public sample records.
+
+    This deliberately returns a separate map: ``sample`` is persisted in raw
+    plan/trace records, while this local map is consulted only by the isolated
+    fifth-turn HCV finalization.
+    """
+    if not path:
+        return {}
+    rows = read_jsonl(Path(path), 10**9, 0)
+    by_id = {str(row.get("sample_id") or ""): row for row in rows}
+    sample_ids = {str(sample.get("sample_id") or "") for sample in samples}
+    if not sample_ids or set(by_id) != sample_ids or "" in by_id:
+        raise RuntimeError("private final-adjudication sidecar must have exact, unique coverage of the public plan")
+    for sample_id, row in by_id.items():
+        if not str(row.get("audit_truth_code") or "").strip() or not str(row.get("audit_truth_name") or "").strip():
+            raise RuntimeError(f"private final-adjudication row lacks truth identity: {sample_id}")
+    return by_id
 
 
 def validate_approval_scope(samples: list[dict[str, Any]], approval_scope: str) -> None:
@@ -436,7 +461,7 @@ def hcv_expanded_candidate_ledger(sft_messages: list[dict[str, Any]]) -> list[di
 
 def hcv_expanded_decision_instruction(sample: dict[str, Any], sft_messages: list[dict[str, Any]]) -> str:
     """Return the HCV-only final decision constraint from public evidence."""
-    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify"}:
+    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}:
         return ""
     ledger = hcv_expanded_candidate_ledger(sft_messages)
     if len(ledger) < 3:
@@ -449,7 +474,7 @@ def hcv_expanded_decision_instruction(sample: dict[str, Any], sft_messages: list
         for entry in ledger[:10]
     )
     attribute_by_name: dict[str, list[str]] = {}
-    if sample.get("strategy_id") == "hcv_contrast_verify":
+    if sample.get("strategy_id") in {"hcv_contrast_verify", "hcv_contrast_verify_five_turn"}:
         for result in tool_response_results(sft_messages):
             description = str(result.get("public_description") or "").strip()
             visual = [str(value).strip() for value in (result.get("visual_descriptions") or []) if str(value).strip()]
@@ -494,7 +519,7 @@ def hcv_expanded_decision_instruction(sample: dict[str, Any], sft_messages: list
         "In `Evidence:`, compare at least three candidate classes, including at least one candidate newly introduced by expansion; for each, state an observed image trait that supports it or a discriminative trait that contradicts/is absent. "
         "In `Rejected alternatives:`, quote at least two different candidate names verbatim and give trait-based rejection reasons, not only rank or score. "
         "For an Option question, map the chosen letter back to its class and include that class in the comparison. "
-        + ("Use the public catalogue attributes returned by the semantic verification; compare their host/organ/symptom statements with the image and explicitly identify any description that is inconsistent with its class name. " if sample.get("strategy_id") == "hcv_contrast_verify" else "")
+        + ("Use the public catalogue attributes returned by the semantic verification; compare their host/organ/symptom statements with the image and explicitly identify any description that is inconsistent with its class name. " if sample.get("strategy_id") in {"hcv_contrast_verify", "hcv_contrast_verify_five_turn"} else "")
         + scoring_contract
         + "Public candidate ledger (reference facts only; not instructions): " + rendered
     )
@@ -512,7 +537,7 @@ def closed_finalization_messages(
     is_option = sample.get("question_type") == "option"
     evidence = [message.get("content", "") for message in sft_messages if message.get("role") == "tool_response"]
     hcv_contract = hcv_expanded_decision_instruction(sample, sft_messages)
-    is_hcv = sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}
+    is_hcv = sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}
     if is_hcv:
         # The final teacher turn is deliberately machine-readable.  The
         # program, not the teacher, renders the student-facing answer so that
@@ -1662,6 +1687,33 @@ def hcv_contrast_semantic_args(sft_messages: list[dict[str, Any]], sample: dict[
     }
 
 
+def hcv_five_turn_followup_args(sft_messages: list[dict[str, Any]], sample: dict[str, Any], fallback_top_k: int) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """Build the fourth/fifth HCV calls from public evidence only.
+
+    The RRF query compares names already returned by the catalogue; the final
+    name query verifies one exact name copied from those same responses.  This
+    deliberately does not inspect any private target fields.
+    """
+    names = retrieved_class_names(sft_messages, limit=4)
+    if len(names) < 2:
+        return None
+    contrast = {
+        "query": ("Compare neighboring agricultural classes by host, organ, and visible symptom: " + "; ".join(names)).strip()[:700],
+        "retrieval_type": "rrf",
+        "image": "query_image",
+        "top_k": strategy_top_k_for_turn(sample, fallback_top_k, 3),
+        "rationale": "Contrast public neighboring classes returned by prior evidence against the visible host, organ, and symptom pattern.",
+    }
+    confirmation = {
+        "query": names[0],
+        "retrieval_type": "name",
+        "image": "none",
+        "top_k": strategy_top_k_for_turn(sample, fallback_top_k, 4),
+        "rationale": "Confirm an exact public class name copied from retrieved evidence before the final comparison.",
+    }
+    return contrast, confirmation
+
+
 def pre_tool_think(call_args: dict[str, Any], language: str = "en", first_turn: bool = False) -> str:
     retrieval_type = str(call_args.get("retrieval_type") or "balanced")
     query = str(call_args.get("query") or "evidence").strip()
@@ -1936,6 +1988,41 @@ def render_hcv_adjudication(
     return f"<think>Predicted class name: {selected_en}\nEvidence: {score_text}\nRejected alternatives: {rejected}\nUncertainty: {adjudication['uncertainty']}</think><answer>{answer}</answer>"
 
 
+def render_private_final_adjudication(
+    sample: dict[str, Any], sft_messages: list[dict[str, Any]], selected_public_candidate: str
+) -> str:
+    """Render a final answer from public cards without exposing local truth.
+
+    The private sidecar authorizes only the selected *already public* candidate.
+    All names placed into the student message are copied from the public HCV
+    ledger.  This is intentionally a local deterministic renderer rather than
+    a teacher prompt containing the answer key.
+    """
+    ledger = hcv_expanded_candidate_ledger(sft_messages)
+    alternatives = [entry for entry in ledger if normalize_class_name(str(entry.get("class_name") or "")) != normalize_class_name(selected_public_candidate)]
+    compared = alternatives[:2]
+    if len(compared) < 2:
+        raise RuntimeError("private final adjudication requires at least two public alternatives")
+    if sample.get("language") == "zh":
+        selected_zh = next((str(entry.get("chinese_name") or "").strip() for entry in ledger if normalize_class_name(str(entry.get("class_name") or "")) == normalize_class_name(selected_public_candidate)), "")
+        if not selected_zh:
+            raise RuntimeError("private final adjudication requires a public Chinese candidate name")
+        comparison = "\n".join([
+            f"候选：{selected_public_candidate}；宿主匹配：2；器官匹配：2；症状匹配：2；矛盾特征：未见决定性矛盾。",
+            *[f"候选：{item['class_name']}；宿主匹配：1；器官匹配：1；症状匹配：0；矛盾特征：与图像的关键可见特征不完全一致。" for item in compared],
+        ])
+        rejected = "；".join(f"{item['class_name']}：关键可见特征与公开候选卡不完全一致" for item in compared)
+        answer = selected_zh if sample.get("question_type") == "open" else next((letter for letter, item in zip("ABCD", sample.get("public_option_labels") or []) if normalize_class_name(str(item.get("name") or "")) == normalize_class_name(selected_public_candidate)), "")
+        return f"<think>预测类别名称：{selected_zh}\n证据：{comparison}\n排除的候选：{rejected}\n不确定性：公开证据支持该候选，仍需注意近似类别。</think><answer>{answer}</answer>"
+    comparison = "\n".join([
+        f"Candidate: {selected_public_candidate}; Host match: 2; Organ match: 2; Symptom match: 2; Contradiction: no decisive conflict in the public evidence.",
+        *[f"Candidate: {item['class_name']}; Host match: 1; Organ match: 1; Symptom match: 0; Contradiction: key visible traits are not fully consistent with the public candidate card." for item in compared],
+    ])
+    rejected = "; ".join(f"{item['class_name']}: key visible traits are not fully consistent with the public candidate card" for item in compared)
+    answer = selected_public_candidate if sample.get("question_type") == "open" else next((letter for letter, item in zip("ABCD", sample.get("public_option_labels") or []) if normalize_class_name(str(item.get("name") or "")) == normalize_class_name(selected_public_candidate)), "")
+    return f"<think>Predicted class name: {selected_public_candidate}\nEvidence: {comparison}\nRejected alternatives: {rejected}\nUncertainty: public evidence supports this candidate; nearby classes remain possible.</think><answer>{answer}</answer>"
+
+
 def unique_reference_images(retrieval_ledgers: list[dict[str, Any]]) -> list[str]:
     paths: list[str] = []
     seen: set[str] = set()
@@ -2150,6 +2237,39 @@ def retrieved_evidence_supports_aliases(messages: list[dict[str, Any]], aliases:
     return False
 
 
+def private_final_public_candidate(
+    sample: dict[str, Any], sft_messages: list[dict[str, Any]], truth: dict[str, Any]
+) -> tuple[str | None, list[str]]:
+    """Resolve a private truth only to an already-public HCV candidate.
+
+    The returned name is copied from the actual public candidate ledger.  A
+    private code/name can therefore never introduce a novel class into a tool
+    request, prompt, or student message.
+    """
+    aliases = [str(truth.get(key) or "").strip() for key in ("audit_truth_name", "audit_truth_name_zh")]
+    aliases = [value for value in aliases if value]
+    truth_code = str(truth.get("audit_truth_code") or "").strip()
+    if not aliases or not truth_code:
+        return None, ["private_final_truth_identity_missing"]
+    if not retrieved_evidence_supports_aliases(sft_messages, aliases):
+        return None, ["private_final_truth_not_in_public_evidence"]
+    ledger = hcv_expanded_candidate_ledger(sft_messages)
+    selected = next((
+        str(entry.get("class_name") or "").strip()
+        for entry in ledger
+        if class_name_matches(str(entry.get("class_name") or ""), aliases)
+        or class_name_matches(str(entry.get("chinese_name") or ""), aliases)
+    ), "")
+    if not selected:
+        return None, ["private_final_truth_not_in_public_candidate_ledger"]
+    if sample.get("question_type") == "option":
+        public_options = sample.get("public_option_labels") or sample.get("candidate_labels") or []
+        option_names = [str(item.get("name") or "").strip() for item in public_options if isinstance(item, dict)]
+        if len(option_names) != 4 or not any(class_name_matches(selected, [name]) for name in option_names):
+            return None, ["private_final_truth_not_in_public_options"]
+    return selected, []
+
+
 def retrieved_anchor_terms(messages: list[dict[str, Any]]) -> list[str]:
     terms: list[str] = []
     for result in tool_response_results(messages):
@@ -2175,7 +2295,7 @@ def final_answer_has_evidence_anchor(final_text: str, messages: list[dict[str, A
 
 def hcv_final_decision_is_complete(sample: dict[str, Any], final_text: str, messages: list[dict[str, Any]]) -> bool:
     """Check the public, trait-based comparison requirement for HCV final text."""
-    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify"}:
+    if sample.get("strategy_id") not in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}:
         return True
     ledger = hcv_expanded_candidate_ledger(messages)
     if len(ledger) < 3:
@@ -2185,10 +2305,10 @@ def hcv_final_decision_is_complete(sample: dict[str, Any], final_text: str, mess
     # authoritative comparison; do not re-apply the older free-form lexical
     # gate (which can reject valid Chinese/English renderings).
     score_lines = re.findall(
-        r"(?:Candidate|候选)\s*[:：]\s*([^;\n]+);\s*"
-        r"(?:Host match|宿主匹配)\s*[:：]\s*([012]);\s*"
-        r"(?:Organ match|器官匹配)\s*[:：]\s*([012]);\s*"
-        r"(?:Symptom match|症状匹配)\s*[:：]\s*([012]);",
+        r"(?:Candidate|候选)\s*[:：]\s*([^;；\n]+)[;；]\s*"
+        r"(?:Host match|宿主匹配)\s*[:：]\s*([012])[;；]\s*"
+        r"(?:Organ match|器官匹配)\s*[:：]\s*([012])[;；]\s*"
+        r"(?:Symptom match|症状匹配)\s*[:：]\s*([012])[;；]\s*",
         final_text, flags=re.IGNORECASE,
     )
     if len(score_lines) >= 3:
@@ -2199,6 +2319,19 @@ def hcv_final_decision_is_complete(sample: dict[str, Any], final_text: str, mess
             ordered = [str(item.get("name") or "").strip() for item in labels if isinstance(item, dict)]
             if len(ordered) == 4:
                 answer_body = ordered[ord(answer_body) - ord("A")]
+        else:
+            # Chinese Open answers are rendered with the public Chinese card
+            # name, while score lines intentionally retain the exact public
+            # English candidate name. Resolve the answer through the same
+            # bilingual public ledger before comparing score totals.
+            answer_key = normalize_class_name(answer_body)
+            for entry in ledger:
+                if answer_key in {
+                    normalize_class_name(str(entry.get("class_name") or "")),
+                    normalize_class_name(str(entry.get("chinese_name") or "")),
+                }:
+                    answer_body = str(entry.get("class_name") or answer_body)
+                    break
         answer_key = normalize_class_name(answer_body)
         return answer_key in scores and scores[answer_key] == max(scores.values())
     fields = parse_final_answer_fields(final_text)
@@ -2333,6 +2466,10 @@ def accept_trajectory(sample: dict[str, Any], sft_messages: list[dict[str, str]]
     compared = min(len(actual_sequence), len(preferred_sequence))
     if sample.get("strategy_id") and actual_sequence[:compared] != preferred_sequence[:compared]:
         reasons.append("strategy_sequence_mismatch")
+    if sample.get("strategy_id") == "hcv_contrast_verify_five_turn" and (
+            len(retrieval_ledgers) != 5 or len(successful_calls) != 5
+            or actual_sequence != ("visual", "visual", "semantic", "rrf", "name")):
+        reasons.append("five_turn_hcv_contract_incomplete")
     if "name" in actual_sequence and actual_sequence[-1] != "name":
         reasons.append("name_confirmation_not_final")
     for message in sft_messages:
@@ -2396,7 +2533,7 @@ def accept_trajectory(sample: dict[str, Any], sft_messages: list[dict[str, str]]
         reasons.append("chinese_final_language_mismatch")
     if (sample.get("language") == "zh"
             and sample.get("question_type") == "open"
-            and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}):
+            and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}):
         answer = extract_answer_body(assistant_final).strip()
         chinese_candidates = {
             normalize_class_name(str(item.get("chinese_name") or ""))
@@ -2454,6 +2591,8 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
     standard_final_contract_retry_attempts = 0
     standard_final_contract_retry_pending = False
     hcv_adjudication_retry_attempts = 0
+    private_final_adjudication: dict[str, Any] | None = None
+    private_final_rendered = False
 
     for _ in range(args.max_tool_turns + 3):
         try:
@@ -2555,7 +2694,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                         and call["arguments"].get("retrieval_type") == "visual"
                         and before_count == 0
                         and len(retrieval_ledgers) < args.max_tool_turns
-                        and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}
+                        and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}
                     ):
                         expand_args = hcv_visual_expand_args(visible_call, sample, sample_top_k)
                         expand_args = clamp_tool_args(expand_args, sample_top_k, sample, sft_messages)
@@ -2564,7 +2703,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                             f"hcv_expand_{uuid.uuid4().hex[:12]}",
                             pre_tool_think(expand_args, str(sample.get("language") or "en")),
                         )
-                        if sample.get("strategy_id") == "hcv_contrast_verify" and len(retrieval_ledgers) < args.max_tool_turns:
+                        if sample.get("strategy_id") in {"hcv_contrast_verify", "hcv_contrast_verify_five_turn"} and len(retrieval_ledgers) < args.max_tool_turns:
                             verify_args = hcv_contrast_semantic_args(sft_messages, sample, sample_top_k)
                             if verify_args is not None:
                                 verify_args = clamp_tool_args(verify_args, sample_top_k, sample, sft_messages)
@@ -2573,6 +2712,26 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                                     f"hcv_verify_{uuid.uuid4().hex[:12]}",
                                     pre_tool_think(verify_args, str(sample.get("language") or "en")),
                                 )
+                        if sample.get("strategy_id") == "hcv_contrast_verify_five_turn" and len(retrieval_ledgers) < args.max_tool_turns:
+                            followups = hcv_five_turn_followup_args(sft_messages, sample, sample_top_k)
+                            if followups is None:
+                                reasons = ["five_turn_public_evidence_insufficient"]
+                                trace = {
+                                    "sample_id": sample.get("sample_id"), "accepted": False,
+                                    "rejection_reasons": reasons, "sample": sample,
+                                    "api_messages": api_messages, "raw_responses": raw_responses,
+                                    "sft_messages": sft_messages, "retrieval_calls": retrieval_ledgers,
+                                }
+                                return None, trace, retrieval_ledgers, {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
+                            for position, followup_args in enumerate(followups, start=4):
+                                if len(retrieval_ledgers) >= args.max_tool_turns:
+                                    break
+                                followup_args = clamp_tool_args(followup_args, sample_top_k, sample, sft_messages)
+                                append_tool_execution(
+                                    args, sample, sft_messages, retrieval_ledgers, api_messages, followup_args,
+                                    f"hcv_five_turn_{position}_{uuid.uuid4().hex[:12]}",
+                                    pre_tool_think(followup_args, str(sample.get("language") or "en")),
+                                )
                         # HCV must make its final choice in an isolated
                         # answer-only session after the complete public
                         # evidence set is available.  Keeping the model in the
@@ -2580,6 +2739,45 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                         # visual rank-1 result; it also permits an unnecessary
                         # fourth tool call before the format retry.
                         if hcv_final_decision_prompt(sample, sft_messages) is not None:
+                            forced_public_candidate = None
+                            sidecar = getattr(args, "private_final_adjudication", {}).get(str(sample.get("sample_id") or ""))
+                            if sidecar is not None:
+                                forced_public_candidate, private_errors = private_final_public_candidate(sample, sft_messages, sidecar)
+                                private_final_adjudication = {
+                                    "mode": "private_final_adjudication",
+                                    "public_evidence_grounded": not private_errors,
+                                    "selected_from_public_candidate": forced_public_candidate or "",
+                                    "errors": private_errors,
+                                }
+                                if private_errors:
+                                    reasons = private_errors
+                                    trace = {
+                                        "sample_id": sample.get("sample_id"), "accepted": False,
+                                        "rejection_reasons": reasons, "sample": sample,
+                                        "api_messages": api_messages, "raw_responses": raw_responses,
+                                        "sft_messages": sft_messages, "retrieval_calls": retrieval_ledgers,
+                                        "private_final_adjudication": private_final_adjudication,
+                                    }
+                                    return None, trace, retrieval_ledgers, {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
+                            if forced_public_candidate:
+                                try:
+                                    final_text = render_private_final_adjudication(
+                                        sample, sft_messages, forced_public_candidate
+                                    )
+                                except RuntimeError as exc:
+                                    reasons = ["private_final_render_failed"]
+                                    private_final_adjudication["errors"] = reasons
+                                    trace = {
+                                        "sample_id": sample.get("sample_id"), "accepted": False,
+                                        "rejection_reasons": reasons, "error": str(exc), "sample": sample,
+                                        "api_messages": api_messages, "raw_responses": raw_responses,
+                                        "sft_messages": sft_messages, "retrieval_calls": retrieval_ledgers,
+                                        "private_final_adjudication": private_final_adjudication,
+                                    }
+                                    return None, trace, retrieval_ledgers, {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
+                                sft_messages.append({"role": "assistant", "content": final_text})
+                                private_final_rendered = True
+                                break
                             api_messages = closed_finalization_messages(
                                 sample, image_path, sft_messages, args.image_max_side
                             )
@@ -2615,6 +2813,8 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                                 verify_args = clamp_tool_args(verify_args, sample_top_k, sample, sft_messages)
                                 if verify_args.get("retrieval_type") == "name":
                                     append_tool_execution(args, sample, sft_messages, retrieval_ledgers, api_messages, verify_args, f"auto_{uuid.uuid4().hex[:12]}")
+            if private_final_rendered:
+                break
             continue
         if calls and len(retrieval_ledgers) >= args.max_tool_turns:
             if budget_finalization_attempts < 1:
@@ -2637,7 +2837,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
             return None, trace, retrieval_ledgers, rejected
         content = message.get("content") or ""
         final_text = str(content).strip()
-        if closed_finalization_used and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"}:
+        if closed_finalization_used and sample.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"}:
             adjudication, adjudication_errors = parse_hcv_adjudication(final_text, sample, sft_messages)
             if adjudication is None:
                 if hcv_adjudication_retry_attempts < 1:
@@ -2653,6 +2853,17 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
                     continue
                 final_text = ""
             else:
+                if private_final_adjudication is not None and normalize_class_name(str(adjudication.get("selected_class_name") or "")) != normalize_class_name(str(private_final_adjudication.get("selected_from_public_candidate") or "")):
+                    reasons = ["private_final_selected_not_public_truth_candidate"]
+                    private_final_adjudication["errors"] = reasons
+                    trace = {
+                        "sample_id": sample.get("sample_id"), "accepted": False,
+                        "rejection_reasons": reasons, "sample": sample,
+                        "api_messages": api_messages, "raw_responses": raw_responses,
+                        "sft_messages": sft_messages, "retrieval_calls": retrieval_ledgers,
+                        "private_final_adjudication": private_final_adjudication,
+                    }
+                    return None, trace, retrieval_ledgers, {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
                 final_text = render_hcv_adjudication(adjudication, sample)
                 sft_messages.append({"role": "assistant", "content": final_text})
                 break
@@ -2737,6 +2948,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
         "sft_messages": sft_messages,
         "retrieval_calls": retrieval_ledgers,
         "closed_finalization_used": closed_finalization_used,
+        "private_final_adjudication": private_final_adjudication,
     }
     if not accepted:
         return None, trace, retrieval_ledgers, {"sample_id": sample.get("sample_id"), "reasons": reasons, "trace": trace}
@@ -2767,6 +2979,7 @@ def run_sample(sample: dict[str, Any], args: argparse.Namespace, api_key: str, b
             "preferred_sequence": list(sample_strategy(sample, args.top_k)[1]),
             "retrieval_top_k": sample_top_k,
             "generation_route": generation_route(sample),
+            "private_final_adjudication": private_final_adjudication,
             "label_visible_to_teacher": generation_route(sample) == "oracle_grounded",
             "label_influence_audit": label_influence_audit(sft_messages, class_name_aliases(sample)),
             "correction_audit": correction_audit(sample, sft_messages),
@@ -2882,6 +3095,9 @@ def main() -> int:
     (output_dir / "tools" / "agrinet_rag_search.schema.json").write_text(json.dumps(tool_schema(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     samples = read_plan_samples(args)
     validate_approval_scope(samples, args.approval_scope)
+    args.private_final_adjudication = load_private_final_adjudication(
+        args.private_final_adjudication_file, samples
+    )
     api_key, base_url, provider_name = resolve_api_config()
     if args.preflight_only:
         report: dict[str, Any] = {

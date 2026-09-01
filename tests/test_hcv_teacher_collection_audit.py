@@ -29,6 +29,17 @@ def test_hcv_collection_audit_rejects_incomplete_freeze() -> None:
     assert not report["invariants"]["exact_32_rows"]
 
 
+def test_hcv_collection_audit_reports_declared_larger_quota() -> None:
+    rows = [_row() for _ in range(16)]
+    for index, row in enumerate(rows):
+        row["sample_id"] = f"hcv-{index}"
+        row["metadata"]["image_sha256"] = f"image-{index}"
+    private = [{"sample_id": row["sample_id"], "audit_truth_name": "Truth"} for row in rows]
+    report = audit(rows, private, per_cell_target=2)
+    assert report["invariants"]["exact_expected_rows"]
+    assert not report["invariants"]["exact_32_rows"]
+
+
 def test_hcv_collection_audit_detects_nonexpanding_second_turn() -> None:
     row = _row()
     row["messages"][3]["content"] = row["messages"][1]["content"]
@@ -63,3 +74,30 @@ def test_hcv_collection_audit_matches_chinese_open_truth() -> None:
         pilot=True,
     )
     assert not any("open_answer_mismatch" in error for detail in report["errors"] for error in detail["errors"])
+
+
+def test_hcv_collection_audit_accepts_canonical_spelling_for_private_synonym() -> None:
+    row = _row()
+    row["messages"][-1]["content"] = (
+        "<think>Predicted class name: Agrotis ipsilon\nEvidence: Agrotis ipsilon public card supports the insect traits.\n"
+        "Rejected alternatives: Wrong lacks the same traits; Other is inconsistent.\nUncertainty: low.</think>"
+        "<answer>Agrotis ipsilon</answer>"
+    )
+    row["metadata"]["strategy_id"] = "hcv_contrast_verify"
+    row["messages"].insert(4, {"role": "tool_call", "content": "{\"arguments\":{\"retrieval_type\":\"semantic\",\"image\":\"none\",\"top_k\":10}}"})
+    row["messages"].insert(5, {"role": "tool_response", "content": "{\"status\":\"success\",\"results\":[{\"code\":\"N05004\",\"entry_id\":\"agri_disease_pest_wiki::N05004\",\"class_name\":\"Agrotis ipsilon\",\"public_description\":\"insect traits\"}]}"})
+    report = audit([row], [{"sample_id": "hcv-1", "audit_truth_code": "N05004", "audit_truth_name": "agrotis ypsilon"}], pilot=True)
+    assert not any("open_answer_mismatch" in error for detail in report["errors"] for error in detail["errors"])
+
+
+def test_hcv_five_turn_audit_rejects_name_not_seen_in_public_evidence() -> None:
+    row = _row()
+    row["metadata"]["strategy_id"] = "hcv_contrast_verify_five_turn"
+    row["messages"].insert(4, {"role": "tool_call", "content": "{\"arguments\":{\"retrieval_type\":\"semantic\",\"image\":\"none\",\"top_k\":10}}"})
+    row["messages"].insert(5, {"role": "tool_response", "content": "{\"status\":\"success\",\"results\":[{\"class_name\":\"Truth\",\"public_description\":\"leaf symptom description\"}]}"})
+    row["messages"].insert(6, {"role": "tool_call", "content": "{\"arguments\":{\"retrieval_type\":\"rrf\",\"image\":\"query_image\",\"top_k\":10}}"})
+    row["messages"].insert(7, {"role": "tool_response", "content": "{\"status\":\"success\",\"results\":[{\"class_name\":\"Neighbor\"}]}"})
+    row["messages"].insert(8, {"role": "tool_call", "content": "{\"arguments\":{\"retrieval_type\":\"name\",\"image\":\"none\",\"top_k\":5,\"query\":\"Never Seen\"}}"})
+    row["messages"].insert(9, {"role": "tool_response", "content": "{\"status\":\"success\",\"results\":[{\"class_name\":\"Truth\"}]}"})
+    report = audit([row], [{"sample_id": "hcv-1", "audit_truth_name": "Truth"}], pilot=True)
+    assert "name_confirmation_not_from_public_evidence" in report["errors"][0]["errors"]

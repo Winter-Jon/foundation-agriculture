@@ -16,6 +16,12 @@ STRATEGIES: dict[str, dict[str, Any]] = {
     # budget for the whole visual top-10 ledger; a 6-row cap silently dropped
     # expansion candidates before verification.
     "hcv_contrast_verify": {"sequence": ("visual", "visual", "semantic"), "top_k": 3, "turn_top_k": (3, 10, 10)},
+    # The five-turn variant is the only HCV collection policy aligned with the
+    # formal evaluator's ``max_tool_turns=5`` boundary.  Its final two calls
+    # are derived strictly from public evidence already returned by the first
+    # three calls: an adjacent-class RRF contrast and an exact public-name
+    # confirmation.  No target label is needed or permitted to form either.
+    "hcv_contrast_verify_five_turn": {"sequence": ("visual", "visual", "semantic", "rrf", "name"), "top_k": 3, "turn_top_k": (3, 10, 10, 10, 5)},
     "visual_then_balanced": {"sequence": ("visual", "balanced"), "top_k": 5},
     "balanced_then_name": {"sequence": ("balanced", "name"), "top_k": 5},
     "semantic_then_visual": {"sequence": ("semantic", "visual"), "top_k": 5},

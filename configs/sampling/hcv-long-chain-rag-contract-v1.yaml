@@ -1,0 +1,35 @@
+schema_version: agrinet.hcv-long-chain-sampling-contract/v1
+id: hcv-long-chain-rag-contract-v1
+description: >-
+  Full-class Blind HCV long-chain RAG contract, carrying M1-style visual
+  comparison and uncertainty supervision into public retrieval traces.
+classes:
+  canonical_target: 217
+  images_per_class: 2
+  roles: [anchor, discriminative]
+cells:
+  question_types: [open, option]
+  languages: [en, zh]
+  domains: [disease, pest]
+trajectory:
+  generation_route: blind_evidence
+  max_tool_turns: 5
+  visual_observations_min: 3
+  public_candidates_min: 4
+  public_candidates_max: 6
+  require_candidate_comparison: true
+  require_specificity_calibration: true
+  require_explicit_uncertainty: true
+patterns:
+  minimum_blind_accepts_per_pattern: 16
+  values: [one_call_compare_stop, visual_recall_expand, neutral_reformulate_requery, semantic_attribute_disambiguation, rrf_conflict_fusion, public_name_confirmation, hypothesis_correction, evidence_insufficient_abstention]
+  correction_floors: {class_changed: 5, narrowed: 5, evidence_confirmed: 6}
+abstention:
+  open_only: true
+  max_neutral_reformulations: 1
+  option_training_eligible: false
+isolation:
+  exclude_formal_618: true
+  exclude_matched_diagnostic: true
+  exclude_m1_and_m1like: true
+  exclude_contacted_rejected_unknown_retired: true

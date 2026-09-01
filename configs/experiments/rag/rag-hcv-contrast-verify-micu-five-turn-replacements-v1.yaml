@@ -1,0 +1,32 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-contrast-verify-micu-five-turn-replacements-v1
+display_name:
+  en: HCV Micu five-turn audited replacement collection v1
+  zh: HCV Micu 五轮审计替代轨迹采集 v1
+domain: rag
+task: distill
+description: >-
+  Six fresh, image-isolated Blind HCV replacements for teacher trajectories
+  retired after private final-answer audit. Each trajectory uses the same
+  five-real-retrieval public-evidence contract before final adjudication.
+lifecycle: active
+components:
+  retrieval: retrieval/siglip2-milvus-v1
+  runtime: runtime/local-rag
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan_file: outputs/experiments/hcv_multi_query_rag/teacher_plan/20260823Tfive-turn-budget-aligned-v4-replacements-only/teacher_plan.jsonl
+  rag_api: http://127.0.0.1:8078
+  output_dir: outputs/experiments/hcv_multi_query_rag/teacher_collection/20260823Tfive-turn-replacements-v1
+  model: gpt-5.6-terra
+  limit: 6
+  max_concurrent: 1
+  max_tool_turns: 5
+  top_k: 3
+  temperature: 0.0
+  max_tokens: 4096
+  teacher_timeout: 180
+  teacher_retries: 3
+  teacher_retry_sleep: 5.0
+tags: [hcv, contrast-verify, five-turn, replacement, image-isolated, blind-evidence, micu-slb]
