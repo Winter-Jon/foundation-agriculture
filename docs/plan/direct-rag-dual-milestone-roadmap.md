@@ -146,7 +146,7 @@ Then introduce behavior changes only after Phase 1 evidence exists:
 
 ## Evidence and current code
 
-- Milestones: `docs/results/MILESTONE_EXPERIMENTS.md`.
+- Current Formal-618 evaluation: `docs/results/CURRENT_FORMAL618_EVALUATION.md`. Historical milestones are archived under `docs/archive/results/`.
 - Current M2 formal outputs: `outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/`.
 - Native service manager: `vlm/eval/tools/sglang_service.py`.
 - Direct/RAG evaluators: `vlm/eval/tools/run_qwen3_vl_direct_sglang_eval.py`,

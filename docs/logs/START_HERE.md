@@ -1,18 +1,65 @@
 # Research Log Start Here
 
-Last updated: 2026-08-23 03:20:20 CST
+Last updated: 2026-09-01 20:57:07 CST
 
 ## Current focus
 
-The active HCV path uses `micu_slb` / `gpt-5.6-terra`, never the unreachable Yunwu route. The 32-row Micu collection was protocol-clean but failed its private answer-quality freeze gate (13/32 correct). A subsequent eight-cell, fresh-image Micu diagnostic pilot validates the new public top-10 candidate-comparison contract but still reaches only 5/8 correct; it is explicitly non-freezable. The latest one-row fresh Micu candidate-boundary pilot is protocol-clean and truth-correct, but remains diagnostic-only.
+当前唯一的 Formal-618 评测入口是 `docs/results/CURRENT_FORMAL618_EVALUATION.md`。它锁定 `final-answer-strict-v2` 评分、修正后的 historical M1 checkpoint-165、恢复训练 system prompt 的 v4 checkpoint-320，以及 HCV v12 RAG checkpoint-232。旧的当前比较报告已归档，不能再作为当前结论引用。
 
-Evaluation execution default: unless the user explicitly specifies otherwise, all new evaluations expose GPUs 0--7 to one native SGLang service with `TP=1, DP=8`; the service schedules requests across replicas. Every completed evaluation still validates exact manifest coverage and unique IDs. Strict manual shards are reserved for recovery or service-DP fallback.
+当前对比为 RAG 58.41%、修正 M1 52.43%、v4（恢复训练时 system prompt）54.21%。RAG 相对修正 M1 为 +5.99pp（95% CI [+1.62,+10.36]）；RAG 相对 v4 为 +4.21pp（95% CI [-0.49,+8.90]）。
 
-The current formal entrypoint is `scripts/vlm/run_formal618_native_dp8.sh`, declared by `configs/experiments/vlm/vlm-formal618-native-sglang-dp8-v1.yaml`. It uses one native `sglang.launch_server` per sequential route, Direct/RAG sample-level async concurrency (64/24), fingerprinted durable snapshots, and a fail-closed scoring gate; it creates an independent run root and never incorporates historical `formal618*` results.
+M1-style Direct rebuild remains the active route. The terminal-v5 artifact is authorized for the user-requested SFT despite incomplete quota: 4,076 rows / 1,019 complete audited image groups / 216 represented classes. It is short 66 images across 37 classes, and N04080 has no accepted image. The original collection/rejection evidence remains immutable; current long-chain data is a traced, contract-preserving derived rendering.
 
-Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](../results/MILESTONE_EXPERIMENTS.md): M1 is the historical strong Direct-only `checkpoint-165` result, and M2 is the native-DP8 Hermes RAG 1:1 result. They are protocol-specific references and must be compared separately. The current action plan is [Direct/RAG dual-milestone roadmap](../plan/direct-rag-dual-milestone-roadmap.md): bridge M1 into the current Direct protocol, repair and run bounded mixture pilots, then expand collection only after dual-gate success.
+The immediate next experiment is a controlled v1 versus v3 Direct-only SFT comparison: all images, sample IDs, labels, comparison chains, training budget and Direct-618 evaluation remain fixed; only the location of public task-type closure guidance changes from absent (v1) to user prompt (v3).
+
+Volatile: strict-M1 v3 Direct-only SFT is running under four GPUs with global batch 64, 2,048/delete, 5 epochs and LR `1e-5` cosine. Run: `outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-current-hcv-terminal-v5-user-guidance-v3-m1exact-4gpu-v1/20260831T171144-2ef993b1-a01/`.
+
+Volatile: an independent historical-M1 reproduction is concurrently training on GPUs 4--7 from the original 2,114-row M1 JSONL with the same 4-GPU/global-batch-64 strategy. Run: `outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-reproduction-4gpu-v1/20260831T172254-2ef993b1-a01/`.
+
+The M1 reproduction SFT is complete. Its fresh same-manifest native DP8/2048 Direct-618 result is 60.84% (376/618), +20.55 pp versus same-run raw base (95% CI [+16.50,+24.60]) but -6.31 pp versus same-run historical M1 (95% CI [-9.87,-2.59]). Treat it as a reproducibility reference, not as a replacement M1 milestone.
+
+v3 SFT and its endpoint DP4 evaluation are complete: 49.19%, +8.74 pp versus raw but -18.28 pp versus same-run M1. Its Option is below raw base (73.14% vs 77.02%), while Open is above raw (25.24% vs 3.88%). A five-checkpoint DP4 queue is running; the evidence rules out 2,048/delete answer truncation because v3 assistant targets max at 809 tokens.
+
+The authorized interim Direct-only SFT, initialized from `models/Qwen3-VL-4B-Instruct` (8 GPUs, 3 epochs, batch 2, gradient accumulation 4, LR `2e-6`, ZeRO-3, max length 16384), completed successfully. Native DP8 Direct-618 evaluation completed for checkpoints 51, 102, and 153, each with 618 unique predictions and 10,000 paired-bootstrap comparisons to raw base and M1. All three promotion gates rejected: the least-negative epoch-3 model remains -3.56 pp versus raw base (95% CI [-6.47, -0.65]) and -29.61 pp versus M1. It must not be promoted or mixed with RAG.
+
+The next route is same-class capacity recovery. New teacher/auditor requests remain blocked until fresh, isolated candidates can cover the planner's current shortages; no rejected candidate or unknown delivery may be replayed.
+
+The completed data-chain audit identifies a material reconstruction mismatch: audited teacher records contain structured evidence and four-candidate comparisons, but the current converter writes only the short `student_reasoning` into the student `<think>` target. Its median is 154 characters versus M1's 1,579; M1's 2,114 targets all contain explicit visual/candidate-analysis sections, while the interim dataset has 1,632 one-letter Option targets. This is a verified candidate explanation for the failed Open reconstruction, not yet an isolated causal result because M1 also used a larger image/class coverage and stronger 5-epoch / `1e-5` optimization budget.
+
+That conversion is now repaired in a new derived artifact: the compact original remains immutable, while `interim-sft-m1-comparison-v1` reconstructs the existing audited visual evidence, four-candidate comparisons, public-knowledge verification and uncertainty into each `<think>`. It has the same 3,264 sample IDs and 816 image hashes, no private-token or Option-letter-mapping findings, and a 1,565-character median assistant target. This is an interim SFT ablation artifact only (`quota_complete=false`), not a regular full freeze.
+
+The terminal-v5 M1-like run converged normally but did not recreate M1. The most defensible current candidate is a `5e-7` tail from epoch-4: 51.62% on the same protocol-clean Direct-618, versus M1 67.64% and raw base 40.61%. Its Open is 28.80% (M1 44.98%, raw 3.88%); Option is 74.43% (M1 90.29%, raw 77.35%). The evidence rules out a compact-to-long-chain conversion corruption, but not data-distribution and answer-closure effects.
+
+The correct immutable task-guidance derived view is `terminal-v5-m1-comparison-user-guidance-v3`: Open/Option task and closure instructions are in the student user prompt, not assistant `<think>`. It retains 4,076 rows / 1,019 images and passed sample-set, prompt-position and leakage checks. The earlier v2 artifact is preserved only as a non-selected comparison record.
+
+所有旧的 Formal-618 对比报告均已迁入 `docs/archive/results/`；原始预测与运行产物仍保留作可追溯证据。
+
+## M1 Direct current state
+
+- Final-answer-v2 derived formal evidence (immutable source predictions, no inference rerun): outputs/runs/vlm/m1-latest-ms-swift-queue-v1/evaluations-final-answer-v2-20260901-r2/ (historical and v3) and outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-latest-ms-swift-v4-m1-system-format-8gpu-v1/evaluations-final-answer-v2-20260901-r2/ (v4).
+- Scorer and safe migration tool: vlm/eval/tools/normalize_answers.py and scripts/vlm/rescore_direct_formal618_final_answer_v2.py. All future formal Direct/RAG wrappers pass --scoring-policy final-answer-strict-v2.
+- V4 system-restoration control: outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-latest-ms-swift-v4-m1-system-format-8gpu-v1/evaluations-system-v4-restored-e5-20260901/summary.json (candidate-only; do not compare its inference condition to no-system M1/raw routes without labeling the prompt difference).
+
+- Interim authorization: `outputs/artifacts/datasets/m1-direct-current-hcv-v1/interim-sft/validation.json` (`quota_complete=false`, 3,264 rows / 816 images, SHA-256 `a38adc4bcf123ca9bbbc3e5eb3804c798ab4a793141257aec1c26a6b76900832`).
+- Reconverted comparison-chain derivative: `outputs/artifacts/datasets/m1-direct-current-hcv-v1/interim-sft-m1-comparison-v1/validation.json` (same 3,264 rows / 816 images; all chains use `agrinet.m1-direct-student-reasoning/m1-comparison-v1`; old artifact unchanged).
+- M1-like comparison-chain SFT and evaluation: `outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-current-hcv-interim-comparison-m1like-8gpu-v1/20260830T040540-2ef993b1-a01/` (complete, exit 0; epoch-5/checkpoint-130 selected for the interim ablation).
+- SFT/evaluation run: `outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-direct-current-hcv-interim-8gpu-v1/20260829T224835-2ef993b1-a01/` (status `complete`, exit 0).
+- Exact promotion evidence: its three `artifacts/epoch-*/promotion_gate.json` files and each `formal-direct/artifacts/summary.json`.
+- Deferred capacity audit: `N04036` Citrus Anthracnose (4), `N04074` Pepper Bacterial Wilt (3), `N04097` Strawberry Fruit Cracking (3 in the preflight report; current interim aggregate reports 4), and `N05053` Saccharicoccus sacchari (2) require fresh same-class candidate review before a new collection plan can be created.
+
+The completed formal artifact root is `outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-manual-json-five-turn-terminal-rejection-v6-8gpu-eval-v1/20260823T224528-2ef993b1-a01/artifacts/`. It used one native SGLang service per sequential route, `TP=1, DP=8`, Direct/RAG async concurrency `64/24`, `max_tool_turns=5`, strict malformed-call handling, and exact 618-ID coverage. Epoch-6 smoke was clean, but epoch-6 Direct was -15.05 pp against M1 (95% CI lower -19.26 pp) and epoch-6 RAG had 1 explicit error, 11 invalid calls, 12 malformed attempts, and 1 terminal-closure failure. It is not promotable.
+
+The next authorized work is to finish v9, verify checkpoint and loss, and accept formal evaluation only after a zero-defect 64-row strict smoke. Promotion still requires Direct retention against M1 and a positive paired RAG lower bound; a completed queue alone is not a pass.
+
+The new 14-row diagnostic pilot has completed public retrieval preflight and registration validation, but it has not contacted Micu: both local credential profiles (`micu_slb` and `micu_main`) currently fail the existing GPG-backed credential preflight. Its outputs are therefore still safe to use once credentials are restored; do not regenerate or substitute these image IDs.
 
 ## Verified state
+
+- v4 SFT completed successfully in `outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_terminal_rejection_v4_8gpu/v0-20260823-165939/`: checkpoint-84 has `global_step=84`, `num_train_epochs=6`, final loss 0.6641 and aggregate train loss 1.125. The original managed queue then failed during the post-SFT handoff (exit 127: unexpected `cation` command); no smoke or formal evidence was created. The repair now records durable failure state and resumes the existing checkpoint directory only, with predeclared epoch 2/4/6 checkpoints 28/56/84.
+
+- Terminal-rejection v4 data has 1,744 rows (1,152 immutable source rows plus 592 public `tool_budget_exhausted` terminal-rejection examples), SHA256 `d5a742114e6459656ed031d33c06be57dcd831e854f297772f305c833a609669`, and `training_authorized: true`. The evaluator and data generator share `tools/rag_distill/terminal_contract.py`, eliminating terminal-prompt drift.
+
+- Formal launchers now fail closed on exact manifest coverage as well as scoring/protocol quality. Both Direct and RAG require equal row count, unique IDs and an exact ID-set match; RAG additionally requires zero unparseable, invalid/malformed-tool, terminal-closure, final-tool-XML, and explicit-error outcomes.
 
 - Native-JSON v4 protocol-repair SFT reconstructed the immutable 1,120-row freeze into a new 2,240-row 3:1 view (hash `044bd07e...`), replacing only the RAG system instruction with the bare JSON tool-call form used by v3 evaluation. Training completed 70/70 steps from B2 checkpoint-18 at `outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v4/v0-20260819-233753/checkpoint-70`. Its formal DP8 v3-native-JSON strict RAG run with `max_tool_turns=5` is `outputs/runs/vlm/vlm-rag-b2-m2-native-json-current-contract-direct3-rag1-v4-formal618-dp8-v1/formal618-native-dp8-20260820-001038/artifacts/`: candidate 58.25%, raw base 55.83%, paired +2.43pp (95% CI [-1.13,+6.15]; 10,000 resamples). Both routes are protocol-clean (618 IDs, zero errors, zero terminal failures, zero final tool XML), but the positive-bootstrap effect gate fails. Candidate still has 316 malformed bare-JSON attempts/terminal closures, so the next repair needs explicit valid JSON serialization and tool-to-final-answer supervision.
 
@@ -25,8 +72,8 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 - The 1e-6 six-epoch manual-JSON SFT completed all 108 steps with final aggregate train loss 1.619 and produced checkpoints including 36/72/108, but its queue failed before smoke evaluation because `run_smoke` used an uninitialized `api_base` under `set -u`. No smoke or formal outputs were produced; the two dependent 5e-6 queues correctly failed closed without training. The shell launcher is repaired by declaring `manager` and `api_base` separately before assignment.
 - The LR5e-6 rerun completed all six epochs / 108 steps and saved checkpoints 36/72/108 at `outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450/`. Recovery v2 fixed a smoke-only manifest-scope bug (64 limited predictions had incorrectly been scored against 618 IDs) by scoring against a deterministic 64-row prefix manifest. Its active managed DP8 evaluation is `outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/`: checkpoint-36 smoke passed all strict execution gates and its 618-row formal evaluation is running.
 - The LR5e-6 rerun completed all six epochs / 108 steps and saved checkpoints 36/72/108 at `outputs/vlm_sft/qwen3_vl_4b_b2_m2_native_json_current_contract_direct3_rag1_v5_manual_json_8gpu_b2_e6_lr5e6_rerun/v0-20260820-113450/`. Recovery v2 fixed a smoke-only manifest-scope bug (64 limited predictions had incorrectly been scored against 618 IDs) by scoring against a deterministic 64-row prefix manifest. The three-checkpoint strict DP8 queue completed successfully at `outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/`. Select `checkpoint-72`: 60.52% versus raw-base 54.85%, paired +5.66pp (95% CI [+3.07,+8.25], 10,000 resamples), with exact 618 coverage and zero invalid/malformed calls. Checkpoint-108 is 60.84% but has 4 malformed attempts, so it remains a control rather than the protocol-first selection.
-- `checkpoint-72` is formally designated M3 in `docs/results/MILESTONE_EXPERIMENTS.md`: the current manual-JSON strict-RAG reference. M1 remains the Direct milestone and M2 the historical Hermes-RAG milestone; the three are protocol-specific references, not a common causal leaderboard.
-- The epoch-6 control has a structured same-manifest comparison against M1 Direct, M2 Hermes RAG, and each route's matched raw base in `docs/results/EPOCH6_RAG_MILESTONE_COMPARISON.md`. Its tables keep known/unknown, Open/Option, and disease/pest as independent dimensions and explicitly label the Direct-versus-RAG protocol boundary.
+- The former M1/M2/M3 milestone narrative is archived at `docs/archive/results/MILESTONE_EXPERIMENTS.md`; its historical protocol-specific evidence does not override the current Formal-618 entrypoint.
+- The epoch-6 comparison is archived at `docs/archive/results/EPOCH6_RAG_MILESTONE_COMPARISON.md`; it is retained only as historical evidence.
 - The planned next route is `docs/plan/multi-query-rag-retrieval-roadmap.md`: selective, public-evidence-driven multi-query RAG using visual refinement, balanced/semantic text search, and confirmation of previously returned similar class names. It is explicitly gated on an `image=none` text/name API-contract repair and image-disjoint data preflight; no new SFT or formal run is authorized by the plan alone.
 - Paper-facing motivation is now consolidated in [docs/motivation.md](../motivation.md). It frames the proposed route as Hypothesize--Contrast--Verify (HCV): comparison-centred open-vocabulary agricultural diagnosis, with Direct visual evidence as an anchor and retrieval as similar-class differential verification. It distinguishes this proposed framework from the already verified M1/M3 results and treats distillation as an implementation mechanism rather than the headline contribution.
 - The existing wiki similar-class lists are now part of public RAG evidence. The live 8077 retrieval service returns up to five bilingual neighbours for each hit, and the evaluator preserves them in the model-visible native tool turn. Current protocol fingerprint is v4, so no old snapshot is reused with the expanded evidence contract.
@@ -42,7 +89,7 @@ Two standing milestones are indexed in [docs/results/MILESTONE_EXPERIMENTS.md](.
 - Its Direct formal DP8 run (`outputs/runs/vlm/vlm-direct-b2-m2-current-contract-direct3-rag1-v2-formal618-dp8-v1/formal618-native-dp8-20260819-182118/artifacts/`) is complete and valid: 53.07% versus M1 67.31%, -14.24pp (95% CI [-17.64,-10.84]); it fails Direct retention.
 - Its prior RAG DP8 output (`outputs/runs/vlm/vlm-rag-b2-m2-current-contract-direct3-rag1-v2-formal618-dp8-v1/formal618-native-dp8-20260819-182635/artifacts/`) has complete coverage but is invalid for formal comparison. With `max_tool_turns=3`, the candidate often emitted another valid tool call after the third retrieval; the evaluator wrapped that call in `<answer>`. This contaminated 246/309 Option outputs, and the old scorer accidentally marked 89 of them correct by scanning JSON text. After the parser safeguard its descriptive score is 42.23%, not 42.56%; neither number is reportable.
 - The corrected RAG native-DP8 formal run is `outputs/runs/vlm/vlm-rag-b2-m2-current-contract-direct3-rag1-v2-formal618-dp8-v1/formal618-native-dp8-20260819-210852/artifacts/`: candidate 56.96%, raw base 48.71%, paired +8.25pp (95% CI [+4.85,+11.65]pp; 10,000 resamples, seed 20260819). Both routes have 618 unique IDs, zero error rows, zero final `<tool_call>` rows, and `unparseable_rate=0`. This is the only reportable RAG comparison for this checkpoint.
-- Cross-protocol comparison on exactly the same 618 IDs confirms current RAG remains below M1 Direct: 56.96% versus 67.31%, -10.36pp (paired 95% CI [-14.72,-5.99]). Disease is -7.98pp (65.02% versus 73.00%); pest is -15.62pp (39.06% versus 54.69%). The report at `docs/results/CURRENT_RAG_VS_M1_DIRECT_618_REPORT.md` identifies pest Option, especially Chinese (-39.22pp), as the stable shortfall.
+- The prior RAG-versus-M1 comparison is archived at `docs/archive/results/CURRENT_RAG_VS_M1_DIRECT_618_REPORT.md`. The current strict-score comparison is `docs/results/CURRENT_FORMAL618_EVALUATION.md`.
 - Trajectory audit confirms that pest Option is primarily a retrieval-recall failure: only 37/96 rows ever return the true class, and only 4/35 M1-only pest Option failures do. It also finds a separate training/serving mismatch: frozen SFT uses native `tool` role plus `name/name_zh/similarity`, while the evaluator uses user-wrapped `<tool_response>` plus `class_name/chinese_name/score`; candidate has invalid tool-call attempts on 469/618 rows. The Option mapping is not missing: all 280 training RAG Option rows retain visible A--D choices and letter-only final targets.
 - Evaluator v3 now repairs that concrete serialization mismatch: successful retrieval continuations use native `tool` role and the frozen public schema (`name`, `name_zh`, `similarity`); it retains XML call parsing and v2's fail-closed terminal guard. A real 8-row DP8 smoke confirms the service accepts the aligned sequence, but it is not promotable: 2/8 samples still repeated calls after the three-turn budget and 3/7 completed samples had invalid attempts. These are model policy failures, not a reason to cite a new formal metric.
 - The terminal closure is now also aligned to the frozen final assistant form (`<think>…</think><answer>…</answer>`), rather than asking for answer tags alone. A final 4-row native-DP8 smoke completed 4/4 with zero error rows; its one post-budget call closed into a final answer. Two rows still had invalid calls, so protocol stability remains below promotion threshold; no v3 smoke result is formal evidence.
@@ -127,13 +174,79 @@ The two errors are qualitatively different from retrieval failure: (1) `Tomato B
 
 ## Next safe action
 
-Do not start another unchanged 3:1 SFT or an additional HCV collection. The Micu credential and strict two-turn collection path are verified. Before another provider request, improve the public evidence representation / discriminative decision method and validate it on a newly image-isolated, private-audited pilot. Only a passing quality audit may be merged with a token-balanced Direct/one-call anchor, frozen, trained, and evaluated using the existing five-turn strict DP8 protocol.
+Current M1 Direct action (supersedes the older historical notes below): do not
+promote any interim checkpoint or start an additional SFT. The three Direct-618
+promotion gates are terminal rejects. Before a regular freeze can resume, find
+fresh, source-verified and isolation-clean same-class images for the failed v2
+capacity preflight: N04036 Citrus Anthracnose (4), N04074 Pepper Bacterial Wilt
+(3), and N04097 Strawberry Fruit Cracking (3); N05053 has two accepted
+preflight candidates but no v2 collection is permitted until all class blockers
+are resolved. Preserve the no-replay policy, use the existing five-round cap,
+then regenerate the plan and collect with its configured eight workers.
 
-The registered HCV DP8 queue is intentionally fail-closed: it checks
-`outputs/artifacts/datasets/agrinet-hcv-manual-json-v1/validation.json` for
-`training_authorized: true` before it allocates queue artifacts or starts SFT.
-It is a prepared execution entrypoint, not evidence that collection, freeze,
-training, or evaluation has run.
+The following material is historical route context; the M1 Direct current state
+at the top of this file and the 2026-W35 experiment record are authoritative.
+
+M1-style Direct 的 v8 screen 已完成并终态失败：256/256 唯一预登记行，254 known、2 `unknown_delivery`；gate 的 `zero_tolerance=false`，故不可晋级，全部图像保持 contacted/retired。证据：`outputs/artifacts/datasets/m1-direct-current-hcv-v1/private/stratified_screen_v8_ledger.jsonl` 和 `reports/stratified_screen_v8_gate.json`。
+
+已在 v8 失败 gate 后创建 v9 fresh screen，并逐项审计为 256 unique image/sample ID、八格各 32、public/private ID 对齐、public 无真值/正确字母/本地路径，且相对所有 contacted 与 v8 plan 为零 hash overlap。唯一受管 collector 正在运行：`outputs/runs/data/data-m1-direct-current-hcv-v1/20260828T045808-2ef993b1-a01/`（PID 2228208）；ledger 为 `private/stratified_screen_v9_ledger.jsonl`。只可监控至 256 个终态 checkpoint 后运行 v9 gate。
+
+后续 M1 Direct route 的 cohort 政策已固定为“逐样本拒绝 + 固定分母严格超过 90%”：未知交付、泄漏、协议/格式错误和不可见事实只拒绝对应行，私有审计记录保留、该行永不进入 SFT；cohort 仍必须满足严格 `> 90%` 的整体接受率及既有格子/正确性门槛。formal pilot 的 64 行固定分母故至少需 58 accepted；未来 256 行 screen 至少需 231 accepted。实现与版本化 policy 在 `configs/sampling/m1-direct-acceptance-gates-v2.yaml`、`configs/sampling/m1-direct-stratified-distinguishability-screen-gates-v3.yaml`、`src/agrinet/data/m1_direct_gates.py`。v9 仍使用启动时不可变的旧 v2 screen gate，不可追溯替换。
+
+v9 screen 现已终态通过：256/256 known、115 passed，八格各 32 且各格分别有 13/14/15/17/11/14/12/19 个可提升图像；无 unknown、泄漏、协议、格式或不可见事实错误。报告为 `outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_screen_v9_gate.json`。已只从其 private `passed_rows` 生成并审计 v10 formal pilot（64 unique image/sample IDs、八格各 8、public/private 对齐及 public 无真值字段），唯一 detached collector 为 `outputs/runs/data/data-m1-direct-current-hcv-v1/20260828T060237-2ef993b1-a01/`（PID 2237639）。只可等待该 run 终态后执行 v10 gate。
+
+For the M1-style Direct rebuild, the v8 formal pilot is terminal and failed its
+predefined gate: 64/64 known deliveries but 56/64 accepted (87.5%), with
+Open/zh/pest and Option/en/pest at 6/8. Full planning, 4,340-row collection,
+freeze, SFT, and formal evaluation are blocked. Its 64 images are retired and
+must not be replayed. Evidence: `outputs/artifacts/datasets/m1-direct-current-hcv-v1/reports/stratified_pilot_v8_gate.json`.
+
+The catalog-contract issue is now resolved without changing class truth: eight
+top-12 joint neighbours were replaced by the next same-domain neighbour with a
+unique Chinese display name, and the planner rejects any residual duplicate
+Chinese candidate set. The rebuilt capacity preflight remains complete at 217
+classes, 193,180 isolated available images, and 4,340 plan rows.
+
+The new repair-v9 Level-1 preflight is terminal and failed 7/8: all deliveries
+were known and all teacher answers/reasoning checks passed, but the Chinese
+Option/pest independent auditor selected a visually similar moth class. All v9
+images are retired. The next safe action is a fresh label-blind 32-image
+candidate-distinguishability screen only for `option/zh/pest`, followed by a
+replacement only from screen-passed images. Do not initiate an eight-cell pilot,
+full collection, freeze, SFT, or evaluation.
+
+The candidate-specific, label-blind Open/pest distinguishability screen is now
+the mandatory first step of that targeted preflight. v1 and v2 each contacted
+32 wholly fresh, pre-registered images and reached deterministic completion
+without unknown delivery, leakage, protocol, or format hard errors. Both failed
+the unchanged screen gate on visual discrimination: v1 passed 7/16 in each
+language cell; v2 passed 8/16 English but 5/16 Chinese. All 64 images are
+retired. The failures are `screen_choice_mismatch` and/or
+`not_visually_distinguishable`, so no image has been promoted to teacher/auditor
+v7. A v3 screen may use only still-uncontacted isolated images under the same
+frozen criteria; all downstream Direct collection, freeze, SFT, and evaluation
+remain blocked.
+
+The first screened v7 teacher/auditor preflight did not create a quality result:
+its first auditor POST ended with `RemoteDisconnected`, an unknown delivery. The
+partial ledger records one `unknown_delivery` and fifteen `not_attempted` rows;
+the pre-registered v7 set is retired and cannot be replayed. It does not weaken
+the screen v3 pass. A recovery preflight must use a separate screen of wholly
+new images under the unchanged gates.
+
+The targeted Open/pest preflight v1 now has a separately versioned, immutable
+8+8 strict gate and a fresh 16-image plan, but its remote session was interrupted
+before a complete ledger. One request is conservatively `unknown_delivery`; all 16
+planned hashes were pre-registered in `isolation/pilot_contacted.jsonl` and must
+not be reused. The gate is failed/diagnostic only, not evidence of data quality.
+Create a v2 plan exclusively from remaining isolated images; only a complete v2
+pass permits a fresh screened eight-cell Level-2 pilot.
+
+Do not start a duplicate SFT or collection. Wait for the already running v7 Micu
+collection to reach a durable terminal state, then run its private audit with the
+declared 8-per-cell quota. Only a zero-defect audit may enter the v7 immutable freeze;
+that freeze must demonstrate bounded HCV token share and strengthened Direct retention
+before any new 8-GPU SFT or DP8 formal evaluation.
 
 The stale Yunwu route is superseded for this line by `micu_slb`
 (`https://api-slb.micuapi.ai/v1`, `gpt-5.6-terra`). Its one-image HCV preflight
