@@ -33,15 +33,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-concurrent", type=int, default=DEFAULT_MAX_CONCURRENT)
     parser.add_argument("--request-retries", type=int, default=2)
     parser.add_argument("--snapshot-every", type=int, default=1, help="Progress reporting cadence; every completion is durable.")
+    parser.add_argument("--system-prompt", default="", help="Optional system instruction applied to every request.")
+    parser.add_argument("--system-prompt-file", help="UTF-8 file containing the optional system instruction.")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--limit", type=int, default=0)
     return parser.parse_args()
 
 
-def _request(api_base: str, model: str, row: dict[str, Any], image: Path, max_new_tokens: int, timeout: int) -> str:
+def request_messages(row: dict[str, Any], image: Path, system_prompt: str = "") -> list[dict[str, Any]]:
+    messages: list[dict[str, Any]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": [{"type": "text", "text": str(row["question"])}, image_url_content(image)]})
+    return messages
+
+
+def _request(api_base: str, model: str, row: dict[str, Any], image: Path, max_new_tokens: int, timeout: int, system_prompt: str = "") -> str:
     response = requests.post(
         f"{api_base.rstrip('/')}/chat/completions",
-        json={"model": model, "messages": [{"role": "user", "content": [{"type": "text", "text": str(row["question"])}, image_url_content(image)]}], "max_tokens": max_new_tokens, "temperature": 0},
+        json={"model": model, "messages": request_messages(row, image, system_prompt), "max_tokens": max_new_tokens, "temperature": 0},
         timeout=timeout,
     )
     response.raise_for_status()
@@ -51,13 +61,16 @@ def _request(api_base: str, model: str, row: dict[str, Any], image: Path, max_ne
 async def run(args: argparse.Namespace) -> None:
     if args.max_concurrent < 1 or args.request_retries < 0 or args.snapshot_every < 1:
         raise ValueError("--max-concurrent and --snapshot-every must be positive; --request-retries must be non-negative")
+    if args.system_prompt and args.system_prompt_file:
+        raise ValueError("use only one of --system-prompt and --system-prompt-file")
+    system_prompt = Path(args.system_prompt_file).read_text(encoding="utf-8").strip() if args.system_prompt_file else args.system_prompt.strip()
     manifest = Path(args.manifest)
     rows = load_jsonl(manifest)
     if args.limit > 0:
         rows = rows[:args.limit]
     ids = validate_manifest(rows)
     fingerprint = request_fingerprint(manifest=manifest, protocol=PROTOCOL_VERSION, model=args.model, parameters={
-        "max_new_tokens": args.max_new_tokens, "temperature": 0, "limit": args.limit,
+        "max_new_tokens": args.max_new_tokens, "temperature": 0, "limit": args.limit, "system_prompt": system_prompt,
     })
     store = SnapshotStore(Path(args.output), fingerprint, resume=args.resume)
     completed = store.completed(set(ids))
@@ -81,7 +94,7 @@ async def run(args: argparse.Namespace) -> None:
                 last_error: Exception | None = None
                 for attempt in range(args.request_retries + 1):
                     try:
-                        result["prediction"] = await asyncio.to_thread(_request, args.api_base, args.model, row, image, args.max_new_tokens, args.request_timeout)
+                        result["prediction"] = await asyncio.to_thread(_request, args.api_base, args.model, row, image, args.max_new_tokens, args.request_timeout, system_prompt)
                         result["request_attempts"] = attempt + 1
                         break
                     except Exception as exc:

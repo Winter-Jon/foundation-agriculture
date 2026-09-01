@@ -17,7 +17,7 @@ mkdir -p "$ROOT/logs" "$EVAL_ROOT"
 validate_route() {
   local route=$1 output="$EVAL_ROOT/$route"
   [[ -f "$output/predictions.jsonl" && -f "$output/metrics.json" ]] || return 1
-  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv" >/dev/null
+  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --scoring-policy final-answer-strict-v2 --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv" >/dev/null
 }
 
 run_route() {
@@ -44,7 +44,7 @@ run_route() {
   [[ -f "$output/predictions.jsonl.run.json" ]] && args+=(--resume)
   set +e; "$PYTHON_BIN" "$evaluator" "${args[@]}"; local rc=$?; kill -TERM "-$manager" 2>/dev/null || true; wait "$manager" 2>/dev/null; set -e
   (( rc == 0 )) || return "$rc"
-  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv"
+  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --scoring-policy final-answer-strict-v2 --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv"
 }
 
 run_route candidate_direct direct "$CANDIDATE" 64

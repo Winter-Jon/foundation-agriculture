@@ -17,9 +17,16 @@ import pandas as pd
 
 CODE_RE = re.compile(r"\bN\d{5}\b", re.IGNORECASE)
 LETTER_RE = re.compile(r"(?<![A-Za-z])([ABCD])(?![A-Za-z])", re.IGNORECASE)
+STRICT_SCORING_POLICY = "final-answer-strict-v2"
+LEGACY_SCORING_POLICY = "legacy-contained-v1"
+SCORING_POLICIES = (LEGACY_SCORING_POLICY, STRICT_SCORING_POLICY)
 ANSWER_PREFIX_RE = re.compile(
     r"(?i)^(the\s+)?(answer|prediction|predicted label|final answer|result|i choose|choice|option)\s*"
     r"(is|为|是)?\s*[:：]?\s*"
+)
+FINAL_MARKER_RE = re.compile(
+    r"(?im)^\s*(?:the\s+)?(?:final\s+answer|final\s+prediction|answer|prediction|predicted\s+label|"
+    r"最终答案|最终诊断|答案|预测结果|诊断结果|结果)\s*(?:is|为|是)?\s*[:：]\s*(.+?)\s*$"
 )
 
 
@@ -53,6 +60,31 @@ def strip_answer_tags(text: str) -> str:
     if match:
         return match.group(1).strip()
     return text.strip()
+
+
+def extract_final_answer(prediction: Any) -> tuple[str, str]:
+    """Return the answer-bearing span without inspecting explanatory prose.
+
+    Formal decision accuracy must be based on the declared answer, rather than a
+    label mentioned while comparing alternatives.  Old M1-style generations
+    usually put the answer on their first line, while newer targets can emit an
+    explicit ``<answer>`` block.
+    """
+    text = unicodedata.normalize("NFKC", str(prediction or ""))
+    text = re.sub(r"<think>.*?</think>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+    answer_tags = list(re.finditer(r"<answer>\s*(.*?)\s*</answer>", text, flags=re.IGNORECASE | re.DOTALL))
+    if answer_tags:
+        return answer_tags[-1].group(1).strip(), "answer_tag"
+
+    marker_matches = list(FINAL_MARKER_RE.finditer(text))
+    if marker_matches:
+        return marker_matches[-1].group(1).strip(), "explicit_final_marker"
+
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            return line, "first_nonempty_line"
+    return "", "missing"
 
 
 def normalize_text(text: Any) -> str:
@@ -151,42 +183,63 @@ def extract_option_letter(prediction: str, row: dict[str, Any]) -> str:
     return ""
 
 
-def score_row(row: dict[str, Any]) -> dict[str, Any]:
+def score_row(row: dict[str, Any], scoring_policy: str = LEGACY_SCORING_POLICY) -> dict[str, Any]:
+    if scoring_policy not in SCORING_POLICIES:
+        raise ValueError(f"unsupported scoring policy: {scoring_policy}")
     prediction = str(row.get("prediction") or "")
     normalized_prediction = normalize_text(prediction)
+    final_answer_text, answer_extraction_source = extract_final_answer(prediction)
+    normalized_final_answer = normalize_text(final_answer_text)
     labels = label_set(row)
     pred_codes = code_set([prediction, normalized_prediction])
+    final_answer_codes = code_set([final_answer_text, normalized_final_answer])
     label_code = str(row.get("label_code") or "").upper()
     question_type = str(row.get("question_type") or "open")
-    unparseable = not normalized_prediction and not pred_codes
+    unparseable = not normalized_final_answer and not final_answer_codes
 
-    exact_match = normalized_prediction in labels
-    contained_match = any(label and label in normalized_prediction for label in labels)
-    code_match = bool(label_code and label_code in pred_codes)
+    if scoring_policy == STRICT_SCORING_POLICY:
+        exact_match = normalized_final_answer in labels
+        contained_match = False
+        code_match = bool(label_code and label_code in final_answer_codes)
+    else:
+        exact_match = normalized_prediction in labels
+        contained_match = any(label and label in normalized_prediction for label in labels)
+        code_match = bool(label_code and label_code in pred_codes)
     parsed_option = ""
-    correct = exact_match or contained_match or code_match
+    protocol_error = bool(row.get("error")) or "<tool_call>" in prediction.lower()
+    # Diagnostic scoring may include protocol-error rows, but they are always
+    # counted as wrong. This prevents an error wrapper or leaked tool text from
+    # accidentally matching a label. Strict callers still reject these rows.
+    correct = (exact_match or contained_match or code_match) and not protocol_error
 
     if question_type == "option":
-        parsed_option = extract_option_letter(prediction, row)
+        option_answer_text = final_answer_text if scoring_policy == STRICT_SCORING_POLICY else prediction
+        parsed_option = extract_option_letter(option_answer_text, row)
         correct_letter = str(row.get("option_answer") or row.get("answer") or "").strip().upper()
         letter_to_code, letter_to_name = option_maps(row)
-        option_name_match = any(
-            normalize_text(name) and normalize_text(name) in normalized_prediction
-            for letter, name in letter_to_name.items()
-            if letter_to_code.get(letter, "").upper() == label_code
-        )
+        option_name_match = False
+        if scoring_policy == LEGACY_SCORING_POLICY:
+            option_name_match = any(
+                normalize_text(name) and normalize_text(name) in normalized_prediction
+                for letter, name in letter_to_name.items()
+                if letter_to_code.get(letter, "").upper() == label_code
+            )
         correct = bool(
             (correct_letter and parsed_option == correct_letter)
             or code_match
             or option_name_match
             or exact_match
             or contained_match
-        )
-        unparseable = not parsed_option and not normalized_prediction and not pred_codes
+        ) and not protocol_error
+        unparseable = not parsed_option and not normalized_final_answer and not final_answer_codes
 
     return {
         **row,
+        "scoring_policy": scoring_policy,
         "normalized_prediction": normalized_prediction,
+        "final_answer_text": final_answer_text,
+        "normalized_final_answer": normalized_final_answer,
+        "answer_extraction_source": answer_extraction_source,
         "normalized_labels": sorted(labels),
         "parsed_option": parsed_option,
         "exact_match": exact_match,
@@ -194,6 +247,7 @@ def score_row(row: dict[str, Any]) -> dict[str, Any]:
         "code_match": code_match,
         "correct": correct,
         "unparseable": unparseable,
+        "protocol_error": protocol_error,
     }
 
 
@@ -209,7 +263,7 @@ def _group_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def summarize(rows: list[dict[str, Any]], scoring_policy: str = LEGACY_SCORING_POLICY) -> dict[str, Any]:
     groups: dict[str, list[dict[str, Any]]] = {"overall": rows}
     for row in rows:
         lang = str(row.get("language") or "unknown")
@@ -221,11 +275,21 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         groups.setdefault(f"language={lang},task_domain={domain},question_type={qtype}", []).append(row)
 
     metrics = {name: _group_metrics(items) for name, items in groups.items()}
+    metrics["scoring_policy"] = scoring_policy
+    metrics["answer_extraction"] = {
+        source: sum(row.get("answer_extraction_source") == source for row in rows)
+        for source in ("answer_tag", "explicit_final_marker", "first_nonempty_line", "missing")
+    }
     for qtype in ("open", "option"):
         key = f"question_type={qtype}"
         metrics[f"{qtype}_overall_accuracy"] = metrics.get(key, {"accuracy": 0.0})["accuracy"]
     metrics["overall_unparseable_rate"] = metrics["overall"]["unparseable_rate"]
     metrics["overall_count"] = metrics["overall"]["count"]
+    protocol_error_count = sum(bool(row.get("protocol_error")) for row in rows)
+    metrics["protocol_errors"] = {
+        "count": protocol_error_count,
+        "rate": protocol_error_count / (len(rows) or 1),
+    }
     protocol_rows = [row.get("protocol") for row in rows if isinstance(row.get("protocol"), dict)]
     if protocol_rows:
         count = len(protocol_rows)
@@ -260,6 +324,8 @@ def main() -> None:
     parser.add_argument("--output-metrics", required=True, help="Metrics JSON output.")
     parser.add_argument("--output-csv", help="Optional compact per-row CSV output.")
     parser.add_argument("--manifest", help="Require predictions to contain exactly the manifest's unique IDs in manifest order.")
+    parser.add_argument("--scoring-policy", choices=SCORING_POLICIES, default=LEGACY_SCORING_POLICY,
+                        help="Answer scoring rule. Formal results use final-answer-strict-v2.")
     args = parser.parse_args()
 
     raw_rows = load_rows(Path(args.predictions))
@@ -277,12 +343,12 @@ def main() -> None:
         for row in raw_rows
         if row.get("error") or "<tool_call>" in str(row.get("prediction") or "").lower()
     ]
-    if errors:
-        raise ValueError(f"refusing to score {len(errors)} explicit evaluation/protocol errors (first: {errors[0]!r})")
-    rows = [score_row(row) for row in raw_rows]
+    # Protocol errors are scored in the same full-coverage metric and forced
+    # incorrect by score_row. Their count/rate remains separately reported.
+    rows = [score_row(row, args.scoring_policy) for row in raw_rows]
     write_jsonl(rows, Path(args.output_jsonl))
 
-    metrics = summarize(rows)
+    metrics = summarize(rows, args.scoring_policy)
     output_metrics = Path(args.output_metrics)
     output_metrics.parent.mkdir(parents=True, exist_ok=True)
     output_metrics.write_text(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -292,7 +358,8 @@ def main() -> None:
         output_csv.parent.mkdir(parents=True, exist_ok=True)
         fields = [
             "index", "id", "language", "task_domain", "question_type", "label_code", "label_name",
-            "answer", "prediction", "normalized_prediction", "parsed_option", "correct", "unparseable",
+            "answer", "prediction", "final_answer_text", "answer_extraction_source",
+            "normalized_prediction", "normalized_final_answer", "parsed_option", "correct", "unparseable",
         ]
         with output_csv.open("w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields)

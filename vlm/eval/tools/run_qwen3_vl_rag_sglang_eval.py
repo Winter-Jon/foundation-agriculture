@@ -24,6 +24,7 @@ from tools.rag_distill.run_pilot import (
     sft_user_message,
 )
 from tools.rag_distill.schema import TOOL_NAME, tool_schema, validate_tool_arguments
+from tools.rag_distill.terminal_contract import final_answer_only_correction
 from agrinet.rag.hermes_protocol import is_pre_tool_think, parse_hermes_tool_calls
 from eval_runner_common import SnapshotStore, load_jsonl as durable_load_jsonl, request_fingerprint, validate_manifest
 
@@ -31,7 +32,7 @@ from eval_runner_common import SnapshotStore, load_jsonl as durable_load_jsonl, 
 DEFAULT_MAX_CONCURRENT = 24
 # v4 adds public curated similar-class evidence to each model-visible hit.
 # Bump the fingerprint so a resumed run cannot mix old and new evidence turns.
-PROTOCOL_VERSION = "agrinet.hermes-rag-sglang-async/v4-native-json-strict-similar-classes"
+PROTOCOL_VERSION = "agrinet.hermes-rag-sglang-async/v5-native-json-multi-query-recovery-strict-similar-classes"
 
 
 def parse_args() -> argparse.Namespace:
@@ -182,6 +183,24 @@ def _tool_response_message(sample: dict[str, Any], tool_response: dict[str, Any]
     """
     del sample, reference_images
     return {"role": "tool", "content": json.dumps(_training_tool_response(tool_response), ensure_ascii=False, separators=(",", ":"))}
+
+
+def _terminal_tool_response_message(
+    sample: dict[str, Any],
+    tool_response: dict[str, Any],
+    correction: str,
+) -> dict[str, Any]:
+    """Render the terminal closure in the SFT-observed tool state.
+
+    Swift manual-JSON trajectories cannot represent ``tool -> user ->
+    assistant``.  The closure dataset consequently appends the public
+    label-blind instruction to the final tool observation.  Use the exact same
+    state at evaluation time; an unmatched standalone user correction is a
+    different transition and was shown to trigger further tool calls.
+    """
+    message = _tool_response_message(sample, tool_response, [])
+    message["content"] = f"{message['content']}\n{correction}"
+    return message
 
 
 
@@ -389,11 +408,14 @@ def _parse_eval_tool_calls(content: str) -> tuple[list[dict[str, Any]], bool, st
                 and isinstance(candidate.get("arguments"), dict)
                 and not validate_tool_arguments(candidate["arguments"])):
             recovered_bare.append(candidate)
-    if len(recovered_bare) == 1:
-        call = recovered_bare[0]
-        return [{"name": TOOL_NAME, "arguments": call["arguments"]}], True, None
-    if len(recovered_bare) > 1:
-        return [], False, "multiple_bare_json_objects"
+    if recovered_bare:
+        # Several schema-valid calls in one generation are a noncanonical but
+        # recoverable multi-query trajectory. Invalid or mixed-schema objects
+        # are still rejected below; only validated calls are exposed.
+        return [
+            {"name": TOOL_NAME, "arguments": call["arguments"]}
+            for call in recovered_bare
+        ], True, None
     strict = parse_hermes_tool_calls(content, tool_name=TOOL_NAME, validate_arguments=validate_tool_arguments)
     if strict:
         if len(strict) == 1:
@@ -461,19 +483,8 @@ def _fallback_visual_call(top_k: int) -> dict[str, Any]:
 
 
 def _final_answer_only_correction(sample: dict[str, Any]) -> str:
-    """Force a terminal answer after the evaluator has spent its tool budget."""
-    if sample.get("question_type") == "option":
-        return (
-            "Tool budget exhausted: do not call any more tools. Give the final answer now. "
-            "Use the trained final form <think>brief evidence</think><answer>A</answer>: the <answer> must contain exactly one option letter A, B, C, or D. Do not output tool_call."
-            if sample.get("language") != "zh" else
-            "工具调用次数已用尽：不要再调用工具。现在使用训练时的最终格式 <think>简短证据</think><answer>A</answer>；<answer> 中只能输出唯一选项字母 A、B、C 或 D，不要输出 tool_call。"
-        )
-    return (
-        "Tool budget exhausted: do not call any more tools. Use the trained final form <think>brief evidence</think><answer>class name</answer>, copying only a class name or alias from retrieved evidence; no tool_call."
-        if sample.get("language") != "zh" else
-        "工具调用次数已用尽：不要再调用工具。现在使用训练时的最终格式 <think>简短证据</think><answer>类别名</answer>，<answer> 只能使用检索证据中的类别名或别名；不要输出 tool_call。"
-    )
+    """Compatibility wrapper for the shared SFT/evaluation terminal contract."""
+    return final_answer_only_correction(sample)
 
 
 def _invalid_tool_final_answer_correction(sample: dict[str, Any], attempt: int) -> str:
@@ -488,6 +499,28 @@ def _invalid_tool_final_answer_correction(sample: dict[str, Any], attempt: int) 
     return (
         f"The previous request cannot be processed (attempt {attempt}). Do not repeat it and do not retrieve anything. "
         f"Use the trained final form <think>brief evidence</think><answer>...</answer> and state the final classification using {answer_format}."
+    )
+
+
+def _terminal_mode_system_instruction(sample: dict[str, Any]) -> str:
+    """Install an authoritative no-tool decoding state for terminal closure.
+
+    The original v7 closure put the correction only in the public ``tool``
+    observation.  The deployed model still saw the global system instruction
+    describing how to call retrieval and could emit a burst of calls after the
+    budget.  This state is label-blind and only changes the protocol mode; it
+    does not provide an answer or hidden target.
+    """
+    if sample.get("question_type") == "option":
+        answer_shape = "<think>brief evidence</think><answer>A</answer> with exactly one option letter"
+    else:
+        answer_shape = "<think>brief evidence</think><answer>class name</answer> copied from public evidence"
+    if sample.get("language") == "zh":
+        answer_shape = "<think>简短证据</think><answer>类别名</answer>，只使用公开证据"
+    return (
+        "TERMINAL MODE (highest priority): retrieval is permanently disabled for this sample. "
+        f"Generate only the final trained answer form {answer_shape}. "
+        "Never emit JSON, tool_call, XML, markdown fences, or a second request."
     )
 
 
@@ -594,32 +627,60 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
             post_budget_tool_attempts = 0
             terminal_closure_used = 0
             terminal_closure_failed = 0
+            queued_tool_calls: list[dict[str, Any]] = []
+            terminal_mode_installed = False
+
+            def install_terminal_mode() -> None:
+                nonlocal terminal_mode_installed
+                if terminal_mode_installed:
+                    return
+                api_messages[0]["content"] += "\n" + _terminal_mode_system_instruction(sample)
+                terminal_mode_installed = True
 
             while True:
-                try:
-                    response = _chat_completion(
-                        args.api_base,
-                        args.api_key,
-                        args.model,
-                        api_messages,
-                        max_new_tokens=args.max_new_tokens,
-                        temperature=args.temperature,
-                        timeout=args.request_timeout,
-                        # Frozen RAG rows contain one pure assistant planning
-                        # turn before their first tool call. Keep thinking
-                        # enabled for that trained transition; disable it only
-                        # when a terminal-only correction must close the run.
-                        chat_template_kwargs={"enable_thinking": False} if terminal_answer_pending else None,
-                    )
-                except Exception as exc:
-                    error_text = f"sglang request failed: {exc}"
-                    final_text = f"<answer>{error_text}</answer>"
-                    break
+                if queued_tool_calls:
+                    calls = [queued_tool_calls.pop(0)]
+                    noncanonical_call = True
+                    malformed_reason = None
+                    content = json.dumps(calls[0], ensure_ascii=False, separators=(",", ":"))
+                else:
+                    try:
+                        response = _chat_completion(
+                            args.api_base,
+                            args.api_key,
+                            args.model,
+                            api_messages,
+                            # Terminal closure only needs a short think/answer
+                            # pair.  The full formal budget lets a model that
+                            # has entered a tool-call loop generate hundreds
+                            # of additional tokens before the evaluator can
+                            # reject the attempt.  Cap only this correction
+                            # request; normal reasoning and retrieval turns
+                            # retain the configured generation budget.
+                            max_new_tokens=(
+                                min(args.max_new_tokens, 128)
+                                if terminal_answer_pending else args.max_new_tokens
+                            ),
+                            temperature=args.temperature,
+                            timeout=args.request_timeout,
+                            # Frozen RAG rows contain one pure assistant planning
+                            # turn before their first tool call. Keep thinking
+                            # enabled for that trained transition; disable it only
+                            # when a terminal-only correction must close the run.
+                            chat_template_kwargs={"enable_thinking": False} if terminal_answer_pending else None,
+                        )
+                    except Exception as exc:
+                        error_text = f"sglang request failed: {exc}"
+                        final_text = f"<answer>{error_text}</answer>"
+                        break
 
-                raw_messages.append(response)
-                message = extract_message(response)
-                content = str(message.get("content") or "")
-                calls, noncanonical_call, malformed_reason = _parse_eval_tool_calls(content)
+                    raw_messages.append(response)
+                    message = extract_message(response)
+                    content = str(message.get("content") or "")
+                    calls, noncanonical_call, malformed_reason = _parse_eval_tool_calls(content)
+                    if len(calls) > 1 and noncanonical_call:
+                        queued_tool_calls.extend(calls[1:])
+                        calls = calls[:1]
                 if getattr(args, "capture_protocol_trace", False):
                     protocol_trace.append({
                         "tool_turns_before": tool_turns,
@@ -711,21 +772,40 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
                     if invalid_tool_reprompts < 1:
                         invalid_tool_reprompts += 1
                         terminal_answer_pending = True
+                        install_terminal_mode()
                         terminal_closure_used += 1
-                        # No schema-valid call exists in this branch, so keep
-                        # the raw malformed attempt visible before returning a
-                        # native tool error.
-                        api_messages.append({"role": "assistant", "content": content})
-                        api_messages.append(_tool_response_message(
+                        # Do not replay malformed assistant content into the
+                        # model context: it is deliberately absent from SFT
+                        # targets and reintroduces the forbidden XML/bare-JSON
+                        # continuation prior.  Instead install the same
+                        # native trainable terminal state as the budget path:
+                        # a canonical assistant tool-call placeholder followed
+                        # by a public non-executing tool observation containing
+                        # the terminal answer contract. The raw attempt remains
+                        # in protocol_trace for strict auditing.
+                        terminal_call = {
+                            "name": TOOL_NAME,
+                            "arguments": {
+                                "query": "invalid request not executed",
+                                "retrieval_type": "visual",
+                                "image": "query_image",
+                                "top_k": args.top_k,
+                                "rationale": "Public protocol rejection; no retrieval was executed.",
+                            },
+                        }
+                        api_messages.append({
+                            "role": "assistant",
+                            "content": json.dumps(terminal_call, ensure_ascii=False, separators=(",", ":")),
+                        })
+                        api_messages.append(_terminal_tool_response_message(
                             sample,
                             {
                                 "status": "error",
                                 "error": "invalid_tool_call",
                                 "message": "The tool call was invalid and was not executed. Use evidence already returned.",
                             },
-                            [],
+                            _invalid_tool_final_answer_correction(sample, invalid_tool_reprompts),
                         ))
-                        api_messages.append({"role": "user", "content": _invalid_tool_final_answer_correction(sample, invalid_tool_reprompts)})
                         continue
                     error_text = "model repeated an invalid tool call despite final-answer correction"
                     final_text = f"<answer>{error_text}</answer>"
@@ -783,12 +863,21 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
                     protocol_errors.append("max_tool_turns_exceeded")
                     if terminal_answer_reprompts < 1:
                         terminal_answer_reprompts += 1
+                        # A single generation may contain several recovered
+                        # JSON calls.  Only the first one is observable in the
+                        # current assistant turn; discard the remaining
+                        # parser queue when entering terminal mode.  Leaving
+                        # it populated bypasses the terminal system state and
+                        # deterministically turns a valid final answer into a
+                        # false post-budget failure.
+                        queued_tool_calls.clear()
                         # Close the manual tool turn with a public rejection
                         # response.  Leaving the emitted call unmatched makes
                         # the chat state incomplete and Qwen tends to emit a
                         # further call; this response neither executes a
                         # fourth retrieval nor exposes hidden information.
                         terminal_answer_pending = True
+                        install_terminal_mode()
                         terminal_closure_used += 1
                         # A schema-valid over-budget call can be replayed in
                         # the same assistant JSON form used by successful SFT
@@ -797,16 +886,15 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
                         terminal_content = (json.dumps(terminal_call, ensure_ascii=False, separators=(",", ":"))
                                             if terminal_call is not None else content)
                         api_messages.append({"role": "assistant", "content": terminal_content})
-                        api_messages.append(_tool_response_message(
+                        api_messages.append(_terminal_tool_response_message(
                             sample,
                             {
                                 "status": "error",
                                 "error": "tool_budget_exhausted",
                                 "message": "No additional retrieval is available. Use the evidence already returned.",
                             },
-                            [],
+                            _final_answer_only_correction(sample),
                         ))
-                        api_messages.append({"role": "user", "content": _final_answer_only_correction(sample)})
                         continue
                     error_text = (
                         f"model emitted a tool call after max_tool_turns={args.max_tool_turns} "
@@ -913,7 +1001,18 @@ async def run(args: argparse.Namespace) -> None:
                     try:
                         result = await asyncio.to_thread(_evaluate_sample, args, row, root)
                         if result.get("error"):
-                            raise RuntimeError(str(result["error"]))
+                            # A completed strict state-machine failure is
+                            # model/protocol evidence, not a transient request
+                            # failure.  Persist it exactly once (including the
+                            # optional bounded protocol trace) rather than
+                            # replaying the same sample and replacing that
+                            # evidence with an opaque outer retry error.
+                            # Only retry failures where no model response was
+                            # obtained from SGLang.
+                            if str(result["error"]).startswith("sglang request failed:"):
+                                raise RuntimeError(str(result["error"]))
+                            result["request_attempts"] = attempt + 1
+                            break
                         result["request_attempts"] = attempt + 1
                         break
                     except Exception as exc:

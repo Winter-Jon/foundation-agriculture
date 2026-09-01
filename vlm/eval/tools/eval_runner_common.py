@@ -90,9 +90,22 @@ class SnapshotStore:
             item_id = str(row.get("id") or "")
             if item_id not in allowed_ids:
                 raise ValueError(f"snapshot contains unknown ID {item_id!r}")
+            # A terminal request failure is durable diagnostic state, not a
+            # completed sample.  On resume it must be eligible for a fresh
+            # request.  Append-only snapshots therefore may contain a later
+            # replacement for an earlier failed row, but never silently
+            # replace a successful row.
+            failed = bool(row.get("error"))
             if item_id in result:
-                raise ValueError(f"snapshot contains duplicate ID {item_id!r}")
-            result[item_id] = row
+                previous = result[item_id]
+                if not previous.get("error"):
+                    raise ValueError(f"snapshot contains duplicate completed ID {item_id!r}")
+                if failed:
+                    continue
+                result[item_id] = row
+                continue
+            if not failed:
+                result[item_id] = row
         return result
 
     def append(self, row: dict[str, Any]) -> None:

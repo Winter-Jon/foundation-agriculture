@@ -12,42 +12,37 @@ ROOT="${FORMAL_ROOT:-outputs/runs/vlm/$EXPERIMENT_ID/$RUN_ID}"
 EVAL_ROOT="$ROOT/artifacts"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}"
 TP_SIZE="${SGLANG_TP_SIZE:-1}"; DP_SIZE="${SGLANG_DP_SIZE:-8}"
-RAG_API="${RAG_API:-http://127.0.0.1:8077}"
+RAG_API="${RAG_API:-http://127.0.0.1:8078}"
 # The frozen trajectories have one retrieval, while the served model may make
 # useful public follow-ups. Use a five-turn formal budget; evaluator v3
-# records all protocol events. Formal evaluation uses strict
-# malformed-call handling: never synthesize an extra retrieval.
+# records all protocol events. Invalid calls receive the existing strict
+# runtime handling, while every returned row is included in scoring.
 MAX_TOOL_TURNS="${MAX_TOOL_TURNS:-5}"
 INVALID_TOOL_CALL_POLICY="${INVALID_TOOL_CALL_POLICY:-strict}"
 [[ "$INVALID_TOOL_CALL_POLICY" == "strict" ]] || { echo "formal evaluation requires INVALID_TOOL_CALL_POLICY=strict" >&2; exit 2; }
 [[ -f "$MANIFEST" && -d "$CANDIDATE" ]] || { echo "missing manifest or checkpoint" >&2; exit 2; }
 mkdir -p "$ROOT/logs" "$EVAL_ROOT"
 
-validate_route() {
+score_route() {
   local output="$EVAL_ROOT/$1"
-  [[ -f "$output/predictions.jsonl" && -f "$output/metrics.json" ]] || return 1
-  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv" >/dev/null
-  "$PYTHON_BIN" - "$output/predictions.jsonl" "$output/metrics.json" <<'PY'
-import json, sys
-from pathlib import Path
-rows = [json.loads(line) for line in Path(sys.argv[1]).read_text(encoding='utf-8').splitlines() if line.strip()]
-metrics = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
-protocol = metrics.get('hermes_protocol', {})
-gates = {
-    'error_rows': sum(bool(row.get('error')) for row in rows),
-    'final_tool_call_rows': sum('<tool_call>' in str(row.get('prediction', '')).lower() for row in rows),
-    'unparseable_rate': metrics.get('overall_unparseable_rate', 1.0),
-    'terminal_closure_failed': int(protocol.get('terminal_closure_failed', 0)),
-}
-failed = {key: value for key, value in gates.items() if value != 0}
-if failed:
-    raise SystemExit(f'formal protocol gate failed: {failed}')
-PY
+  # Scoring is performed by this validator.  A completed fresh evaluator has
+  # predictions before metrics, so metrics must not be a precondition.
+  [[ -f "$output/predictions.jsonl" ]] || return 1
+  # One full-coverage metric: protocol-error rows are forced incorrect while
+  # counts and rates are retained in metrics.json.
+  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --scoring-policy final-answer-strict-v2 --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv" >/dev/null
 }
 
 run_route() {
   local route=$1 model=$2 output="$EVAL_ROOT/$1" service="$ROOT/services/$1"
-  if validate_route "$route"; then echo "resume: validated $route"; return; fi
+  # A finalized predictions file is immutable evidence.  Validate it, even if
+  # the validation rejects a protocol error; never relaunch it and silently
+  # retry a failed sample on a formal resume.
+  if [[ -f "$output/predictions.jsonl" ]]; then
+    score_route "$route"
+    echo "resume: diagnostic metrics refreshed $route"
+    return
+  fi
   mkdir -p "$output" "$service"
   rm -f "$service/service_status.json" "$service/service_exit.json" "$service/service.pid"
   setsid "$PYTHON_BIN" vlm/eval/tools/sglang_service.py --model-path "$model" --served-model-name "agrinet-$route" --run-dir "$service" --tp-size "$TP_SIZE" --dp-size "$DP_SIZE" --max-running-requests 24 >"$service/launcher.log" 2>&1 &
@@ -63,7 +58,7 @@ run_route() {
   [[ -f "$output/predictions.jsonl.run.json" ]] && args+=(--resume)
   set +e; "$PYTHON_BIN" vlm/eval/tools/run_qwen3_vl_rag_sglang_eval.py "${args[@]}"; local rc=$?; kill -TERM -- "-$manager" 2>/dev/null || true; wait "$manager" 2>/dev/null; set -e
   (( rc == 0 )) || return "$rc"
-  "$PYTHON_BIN" vlm/eval/tools/normalize_answers.py --manifest "$MANIFEST" --predictions "$output/predictions.jsonl" --output-jsonl "$output/scored.jsonl" --output-metrics "$output/metrics.json" --output-csv "$output/scored.csv"
+  score_route "$route"
 }
 
 run_route candidate_rag "$CANDIDATE"
@@ -96,7 +91,7 @@ for name in ('candidate_rag', 'raw_base_rag'):
             'final_tool_call_rows': sum('<tool_call>' in str(row.get('prediction', '')) for row in predictions),
         },
     }
-summary = {'schema_version': 'agrinet.rag-formal-evaluation-native-sglang-dp8/v3', 'manifest': str(manifest), 'manifest_sha256': digest(manifest), 'rows': 618, 'candidate_checkpoint': sys.argv[3], 'parallelism': {'backend': 'sglang.launch_server', 'tensor_parallel_size': int(sys.argv[4]), 'data_parallel_size': int(sys.argv[5])}, 'concurrency': {'rag': 24}, 'rag_api': sys.argv[6], 'max_tool_turns': int(sys.argv[7]), 'invalid_tool_call_policy': sys.argv[8], 'terminal_policy': 'one-terminal-closure-v1', 'request_retries': 2, 'bootstrap': {'samples': 10000, 'seed': 20260819}, 'routes': routes, 'candidate_vs_raw_base': json.loads((root / 'candidate_vs_raw_base_rag_paired_review.json').read_text())}
+summary = {'schema_version': 'agrinet.rag-formal-evaluation-native-sglang-dp8/v4', 'manifest': str(manifest), 'manifest_sha256': digest(manifest), 'rows': 618, 'candidate_checkpoint': sys.argv[3], 'parallelism': {'backend': 'sglang.launch_server', 'tensor_parallel_size': int(sys.argv[4]), 'data_parallel_size': int(sys.argv[5])}, 'concurrency': {'rag': 24}, 'rag_api': sys.argv[6], 'max_tool_turns': int(sys.argv[7]), 'invalid_tool_call_policy': sys.argv[8], 'terminal_policy': 'one-terminal-closure-v1', 'scoring_protocol': {'version': 'full-coverage-with-protocol-errors/v1', 'rule': 'all manifest-aligned rows are scored; protocol-error rows are counted incorrect and reported separately', 'protocol_errors_block_metrics_or_bootstrap': False}, 'request_retries': 2, 'bootstrap': {'samples': 10000, 'seed': 20260819}, 'routes': routes, 'candidate_vs_raw_base': json.loads((root / 'candidate_vs_raw_base_rag_paired_review.json').read_text())}
 (root / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
 print(json.dumps({'rows': 618, 'rag_delta_pp': summary['candidate_vs_raw_base']['paired_delta_pp']}))
 PY

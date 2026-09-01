@@ -1,5 +1,6 @@
 import importlib.util
 import argparse
+import asyncio
 import json
 from pathlib import Path
 
@@ -116,12 +117,13 @@ def test_tool_call_after_budget_requires_terminal_answer(monkeypatch, tmp_path: 
     # terminal-only request disables thinking.
     terminal_messages, terminal_kwargs = requests[2]
     assert terminal_kwargs == {"enable_thinking": False}
-    assert terminal_messages[-1]["role"] == "user"
+    assert terminal_messages[-1]["role"] == "tool"
+    assert "tool_budget_exhausted" in terminal_messages[-1]["content"]
     assert "Tool budget exhausted" in terminal_messages[-1]["content"]
-    assert terminal_messages[-2]["role"] == "tool"
-    assert "tool_budget_exhausted" in terminal_messages[-2]["content"]
-    assert terminal_messages[-3]["role"] == "assistant"
-    assert json.loads(terminal_messages[-3]["content"])["name"] == "agrinet_rag_search"
+    assert terminal_messages[-2]["role"] == "assistant"
+    assert json.loads(terminal_messages[-2]["content"])["name"] == "agrinet_rag_search"
+    assert "TERMINAL MODE (highest priority)" in terminal_messages[0]["content"]
+    assert "Never emit JSON, tool_call" in terminal_messages[0]["content"]
 
 
 def test_repeated_tool_call_after_budget_is_explicit_error(monkeypatch, tmp_path: Path) -> None:
@@ -145,6 +147,74 @@ def test_repeated_tool_call_after_budget_is_explicit_error(monkeypatch, tmp_path
     assert result["protocol"]["max_tool_turns_exceeded"] == 1
 
 
+def test_terminal_closure_discards_queued_calls_from_mixed_generation(monkeypatch, tmp_path: Path) -> None:
+    runner = _module()
+    image = tmp_path / "image.jpg"
+    image.write_bytes(b"image")
+    first = _tool_call()
+    burst = (
+        '{"name":"agrinet_rag_search","arguments":{"query":"one","retrieval_type":"visual","image":"query_image","top_k":3,"rationale":"one"}}'
+        '<think>next</think>'
+        '{"name":"agrinet_rag_search","arguments":{"query":"two","retrieval_type":"visual","image":"query_image","top_k":3,"rationale":"two"}}'
+    )
+    responses = iter([first, burst, "<answer>Apple Black Rot</answer>"])
+    requests = []
+    def chat(*args, **kwargs):
+        requests.append(args[3])
+        return {"choices": [{"message": {"content": next(responses)}}]}
+    monkeypatch.setattr(runner, "_chat_completion", chat)
+    monkeypatch.setattr(
+        runner, "_execute_rag_call",
+        lambda *args, **kwargs: ({"status": "success", "results": [{"class_name": "Apple Black Rot"}]}, {"ok": True, "visible_reference_images": []}),
+    )
+    row = {"id": "sample", "image_path": str(image), "question_type": "open", "language": "en", "question": "Identify."}
+    result = runner._evaluate_sample(_eval_args(), row, tmp_path)
+    assert result["prediction"] == "<answer>Apple Black Rot</answer>"
+    assert not result.get("error")
+    assert result["tool_turns"] == 1
+    assert result["protocol"]["terminal_closure_failed"] == 0
+    assert "TERMINAL MODE (highest priority)" in requests[-1][0]["content"]
+
+
+def test_async_runner_does_not_retry_completed_strict_protocol_failure(monkeypatch, tmp_path: Path) -> None:
+    runner = _module()
+    image = tmp_path / "image.jpg"
+    image.write_bytes(b"image")
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({"id": "sample", "image_path": str(image)}) + "\n")
+    output = tmp_path / "predictions.jsonl"
+    calls = []
+
+    def strict_failure(*_args, **_kwargs):
+        calls.append(1)
+        return {
+            "id": "sample", "prediction": "",
+            "error": "model emitted a tool call despite terminal-answer correction",
+            "protocol": {"terminal_closure_failed": 1},
+            "protocol_trace": [{"form": "bare_json", "content_preview": "{}"}],
+        }
+
+    monkeypatch.setattr(runner, "_evaluate_sample", strict_failure)
+    args = _eval_args()
+    args.manifest = str(manifest)
+    args.output = str(output)
+    args.offset = 0
+    args.limit = 0
+    args.max_concurrent = 1
+    args.request_retries = 2
+    args.snapshot_every = 1
+    args.resume = False
+    args.capture_protocol_trace = True
+
+    asyncio.run(runner.run(args))
+
+    assert len(calls) == 1
+    row = json.loads(output.read_text().strip())
+    assert row["request_attempts"] == 1
+    assert row["error"] == "model emitted a tool call despite terminal-answer correction"
+    assert row["protocol_trace"][0]["form"] == "bare_json"
+
+
 def test_option_parser_never_reads_letter_from_tool_call() -> None:
     from vlm.eval.tools.normalize_answers import extract_option_letter
 
@@ -158,7 +228,11 @@ def test_invalid_followup_tool_call_requires_final_answer(monkeypatch, tmp_path:
     image.write_bytes(b"image")
     invalid_call = '<tool_call>{"name":"agrinet_rag_search","arguments":{}}</tool_call>'
     responses = iter([_tool_call(), invalid_call, "<answer>A</answer>"])
-    monkeypatch.setattr(runner, "_chat_completion", lambda *args, **kwargs: {"choices": [{"message": {"content": next(responses)}}]})
+    requests = []
+    def chat(*args, **kwargs):
+        requests.append((args[3], kwargs.get("chat_template_kwargs")))
+        return {"choices": [{"message": {"content": next(responses)}}]}
+    monkeypatch.setattr(runner, "_chat_completion", chat)
     monkeypatch.setattr(
         runner, "_execute_rag_call",
         lambda *args, **kwargs: ({"status": "success", "results": []}, {"ok": True, "visible_reference_images": []}),
@@ -171,6 +245,17 @@ def test_invalid_followup_tool_call_requires_final_answer(monkeypatch, tmp_path:
     assert result["protocol"]["invalid_tool_reprompts"] == 1
     assert "invalid_hermes_tool_call" in result["protocol"]["protocol_errors"]
     assert runner._invalid_tool_final_answer_correction({"language": "en", "question_type": "open"}, 2).startswith("The previous request cannot be processed")
+    # Invalid first calls are retained in the audit trace but must not become
+    # the next model context. The terminal continuation is the legal native
+    # SFT form assistant(JSON) -> tool(error + terminal instruction).
+    terminal_messages, terminal_kwargs = requests[2]
+    assert terminal_kwargs == {"enable_thinking": False}
+    assert terminal_messages[-2]["role"] == "assistant"
+    assert json.loads(terminal_messages[-2]["content"])["name"] == "agrinet_rag_search"
+    assert terminal_messages[-1]["role"] == "tool"
+    assert "invalid_tool_call" in terminal_messages[-1]["content"]
+    assert "The previous request cannot be processed" in terminal_messages[-1]["content"]
+    assert invalid_call not in terminal_messages[-2]["content"]
 
 
 def test_eval_recovers_one_schema_valid_mixed_tool_call() -> None:
@@ -229,6 +314,16 @@ def test_eval_recovers_one_schema_valid_bare_call_mixed_with_thinking_and_answer
     )
     calls, noncanonical, reason = runner._parse_eval_tool_calls(content)
     assert len(calls) == 1
+    assert noncanonical is True
+    assert reason is None
+
+
+def test_eval_recovers_multiple_schema_valid_bare_calls_in_order() -> None:
+    runner = _module()
+    first = '{"name":"agrinet_rag_search","arguments":{"query":"leaf spots","retrieval_type":"visual","image":"query_image","top_k":3,"rationale":"inspect"}}'
+    second = '{"name":"agrinet_rag_search","arguments":{"query":"similar leaf disease","retrieval_type":"visual","image":"query_image","top_k":3,"rationale":"compare"}}'
+    calls, noncanonical, reason = runner._parse_eval_tool_calls(first + '<think>intermediate</think>' + second)
+    assert [call["arguments"]["query"] for call in calls] == ["leaf spots", "similar leaf disease"]
     assert noncanonical is True
     assert reason is None
 
