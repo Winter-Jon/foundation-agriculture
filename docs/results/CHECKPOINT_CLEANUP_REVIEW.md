@@ -62,3 +62,30 @@ current `docs/`, `configs/`, `scripts/`, `src/`, and `tools/` trees, then
 remove only those exact checkpoint directories. Keep associated result
 summaries and scored predictions under `outputs/runs/` unless separately
 reviewed.
+
+## Post-Batch-A review of B and C
+
+Rechecked after Batch A on 2026-09-01:
+
+- All B/C checkpoint directories still exist.
+- Neither batch has an active exact-path reference in `docs/`, `configs/`,
+  `scripts/`, `src/`, or `tools/`.
+- Every B/C training branch has persisted Formal-618 summary evidence under
+  `outputs/runs/`, including every evaluated epoch for the comparison-chain,
+  terminal-v5, tail, open-only, latest reproduction, and latest v3 branches.
+  Deleting the model directories would not delete those summaries, scored
+  predictions, or training logs.
+
+### Revised recommendation
+
+| Approval unit | Checkpoints | Capacity | Recommendation |
+|---|---:|---:|---|
+| Batch B | 12 | 99.3GB | **Safe to approve for deletion.** All are completed ablations with persisted evaluation evidence and no active path dependency. |
+| Batch C1 — open-only alternative | 5 | 41.4GB | **Safe to approve for deletion.** All epochs are formally evaluated and no model is selected by the current evaluation. |
+| Batch C2 — latest reproduction intermediates | 4 | 33.1GB | **Safe to approve for deletion:** 33, 66, 99, 132. Keep 165 if rerunning/replaying that latest reproduction may matter. |
+| Batch C3 — latest v3 intermediates | 4 | 33.1GB | **Safe to approve for deletion:** 64, 128, 192, 256. Keep 320 because it is the endpoint of the recent v3 control, even though it is not the current benchmark. |
+| Batch C4 — optional branch endpoints | 2 | 16.6GB | **Retain pending explicit choice:** latest reproduction 165 and latest v3 320. Their formal evidence is preserved, but models are useful for future response replays. |
+
+Thus the conservative immediate deletion proposal is **Batch B + C1 + C2
+intermediates + C3 intermediates = 25 checkpoints / 206.9GB**. Retaining the
+two C endpoints leaves only 20.8GB of Batch C model data.
