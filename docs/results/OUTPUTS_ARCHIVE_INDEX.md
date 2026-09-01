@@ -37,16 +37,17 @@ current RAG, or v4 endpoints.
 ## Historical archive
 
 - `outputs/archive/historical-vision/`: 93GB of superseded ViT/Swin/Transformer
-  training outputs. Compatibility symlinks remain at the former top-level
-  `outputs/{vit*,swin*,dynamic_transformer_tiny_224,hybrid_transformer_base}`
-  paths, so legacy scripts continue to resolve them.
+  training outputs. This is the sole location for these historical families;
+  no top-level compatibility symlinks are retained. Historical launchers that
+  remain useful must reference this archive path directly.
 
 ## Retention policy
 
 1. Retain current Formal-618 manifests, scored predictions, summaries, and the
    selected M1/RAG/v4 checkpoints.
-2. Prefer moving superseded large artifact families beneath `outputs/archive/`
-   with a compatibility symlink, rather than changing every legacy reference.
+2. Move superseded large artifact families beneath `outputs/archive/` and
+   update retained launchers and discovery documents to the archive path. Do
+   not leave compatibility symlinks at former locations.
 3. Remove local model payloads only after an explicit checkpoint/data review;
    retain compact summaries and scored predictions.
 4. Do not treat an ignored `outputs/` path as disposable merely because it is
