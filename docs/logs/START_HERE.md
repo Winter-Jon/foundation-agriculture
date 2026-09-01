@@ -8,6 +8,8 @@ Last updated: 2026-09-01 20:57:07 CST
 
 当前对比为 RAG 58.41%、修正 M1 52.43%、v4（恢复训练时 system prompt）54.21%。RAG 相对修正 M1 为 +5.99pp（95% CI [+1.62,+10.36]）；RAG 相对 v4 为 +4.21pp（95% CI [-0.49,+8.90]）。
 
+本地整理审计已完成：失败的临时环境和可再生缓存已清理；`outputs/vlm_sft/` 的 60 个 checkpoint 中，当前评测必保留 3 个（24.8GB）、配置或历史引用保留 7 个（57.9GB），其余 50 个是待审核删除候选（413.8GB）。未删除任何 checkpoint。
+
 M1-style Direct rebuild remains the active route. The terminal-v5 artifact is authorized for the user-requested SFT despite incomplete quota: 4,076 rows / 1,019 complete audited image groups / 216 represented classes. It is short 66 images across 37 classes, and N04080 has no accepted image. The original collection/rejection evidence remains immutable; current long-chain data is a traced, contract-preserving derived rendering.
 
 The immediate next experiment is a controlled v1 versus v3 Direct-only SFT comparison: all images, sample IDs, labels, comparison chains, training budget and Direct-618 evaluation remain fixed; only the location of public task-type closure guidance changes from absent (v1) to user prompt (v3).
