@@ -41,7 +41,7 @@ TASK_MILVUS_HOME="$TASK_TMP_ROOT/milvus_home"
 COLLECTION="${COLLECTION:-agrinet_wiki_siglip2}"
 MODEL_NAME="${MODEL_NAME:-models/siglip2-so400m-patch16-naflex}"
 SAMPLE_FILE="${SAMPLE_FILE:-outputs/vlm_data/disease_pest_train_visible_random5/contrast_samples_vit_base.jsonl}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-outputs/rag_distill/agrinet_rag_toolcall_v6_train_visible_random5}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-outputs/experiments/rag-distill/agrinet_rag_toolcall_v6_train_visible_random5}"
 SHARD_SIZE="${SHARD_SIZE:-5}"
 OFFSET="$((SLURM_ARRAY_TASK_ID * SHARD_SIZE))"
 OUTPUT_DIR="${OUTPUT_ROOT}/shard_${SLURM_ARRAY_TASK_ID}"
@@ -91,7 +91,7 @@ cp "$MILVUS_LITE_DB" "$TASK_MILVUS_LITE_DB"
 export MILVUS_LITE_CACHE="$TASK_MILVUS_HOME"
 export MILVUS_LITE_DATA_PATH="$TASK_MILVUS_HOME"
 export XDG_CACHE_HOME="$TASK_TMP_ROOT/xdg_cache"
-"$PYTHON_BIN" tools/milvus/search_api.py \
+"$PYTHON_BIN" src/agrinet/rag/milvus_tools/search_api.py \
   --host "$RAG_HOST" \
   --port "$RAG_PORT" \
   --device cpu \
@@ -118,7 +118,7 @@ for attempt in $(seq 1 60); do
 done
 
 echo "=== Start train-visible random5 distillation shard ==="
-"$PYTHON_BIN" -m tools.rag_distill.run_pilot \
+"$PYTHON_BIN" -m agrinet.rag.distill.run_pilot \
   --sample-file "$SAMPLE_FILE" \
   --offset "$OFFSET" \
   --limit "$SHARD_SIZE" \
@@ -131,7 +131,7 @@ echo "=== Start train-visible random5 distillation shard ==="
   --reasoning-effort "$REASONING_EFFORT"
 
 echo "=== Validate artifact ==="
-"$PYTHON_BIN" -m tools.rag_distill.validate_artifact \
+"$PYTHON_BIN" -m agrinet.rag.distill.validate_artifact \
   --artifact-dir "$OUTPUT_DIR"
 
 echo "=== RAG train-visible random5 shard complete ==="

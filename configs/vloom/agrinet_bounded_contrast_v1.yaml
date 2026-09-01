@@ -5,7 +5,7 @@ max_concurrent: 2
 log_level: INFO
 log_interval: 1
 dry_run: false
-imports: [tools.vloom_agrinet]
+imports: [agrinet.data.vloom_tools]
 model:
   model_name: gemini-3.1-pro-preview
   base_url: https://yunwu.ai/v1

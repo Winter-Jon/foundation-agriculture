@@ -12,7 +12,7 @@ fi
 INPUT_JSON="${INPUT_JSON:-outputs/vloom/contrast_cot/agrinet_disease_pest_contrast_cot_real/agrinet_disease_pest/agrinet_contrast_cot_results.json}"
 OUTPUT_JSONL="${OUTPUT_JSONL:-outputs/vlm_data/disease_pest/sft_messages.jsonl}"
 
-exec "$PYTHON_BIN" tools/vloom_agrinet/convert_to_sft_messages.py \
+exec "$PYTHON_BIN" src/agrinet/data/vloom_tools/convert_to_sft_messages.py \
   --input "$INPUT_JSON" \
   --output "$OUTPUT_JSONL" \
   "$@"

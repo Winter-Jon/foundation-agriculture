@@ -26,7 +26,7 @@ Continue distillation for the 42 classes that still had no newly accepted sample
 
 ## Code And Scripts
 
-- Runner: `tools/rag_distill/run_pilot.py`
+- Runner: `src/agrinet/rag/distill/run_pilot.py`
 - New runner option: `--candidate-followup-mode sample_candidates`
 - New Slurm script: `scripts/rag_distill/rag_toolcall_candidate_followup_v6_unaccepted42_candidate_single_gpu.slurm`
 - Output directory for this run: `outputs/rag_distill/agrinet_rag_toolcall_v6_unaccepted42_candidate_single_gpu`
@@ -68,7 +68,7 @@ eval "$($HOME/.apikeys/bin/apikey env yunwu)"
 sbatch --export=ALL --parsable scripts/rag_distill/rag_toolcall_candidate_followup_v6_unaccepted42_candidate_single_gpu.slurm
 ```
 
-If avoiding duplicate API calls is important before rerunning, first update `tools/rag_distill/run_pilot.py` to checkpoint accepted/rejected/raw/retrieval rows incrementally or per sample. Then resume from the next unprocessed sample id instead of using the current monolithic writer.
+If avoiding duplicate API calls is important before rerunning, first update `src/agrinet/rag/distill/run_pilot.py` to checkpoint accepted/rejected/raw/retrieval rows incrementally or per sample. Then resume from the next unprocessed sample id instead of using the current monolithic writer.
 
 ## Expected Verification After Rerun
 
@@ -78,7 +78,7 @@ After the rerun completes, check:
 sacct -X -j <job_id> --format=JobID,JobName,Partition,State,ExitCode,Elapsed,NodeList
 tail -n 200 slurm/rag-v6-unacc42-cand_<job_id>.out
 tail -n 200 slurm/rag-v6-unacc42-cand_<job_id>.err
-python -m tools.rag_distill.validate_artifact --artifact-dir outputs/rag_distill/agrinet_rag_toolcall_v6_unaccepted42_candidate_single_gpu
+python -m agrinet.rag.distill.validate_artifact --artifact-dir outputs/rag_distill/agrinet_rag_toolcall_v6_unaccepted42_candidate_single_gpu
 ```
 
 Then count accepted classes from:

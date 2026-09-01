@@ -16,7 +16,7 @@ outputs:
   model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator
   run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-8gpu-e3-allocator-v1/
 parameters:
-  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator_sft.yaml
+  entrypoint: .venv_test/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_8gpu_e3_allocator_sft.yaml
   local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29715, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
   training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v12-direct-anchor-mix/validation.json
   standard_4b_parameters: {initialization: models/Qwen3-VL-4B-Instruct, epochs: 3, per_device_train_batch_size: 2, gradient_accumulation_steps: 4, learning_rate: 5.0e-6}

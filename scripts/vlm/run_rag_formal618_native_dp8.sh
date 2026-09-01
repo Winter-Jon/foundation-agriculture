@@ -63,7 +63,7 @@ run_route() {
 
 run_route candidate_rag "$CANDIDATE"
 run_route raw_base_rag models/Qwen3-VL-4B-Instruct
-"$PYTHON_BIN" tools/rag_distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_rag/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_rag/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_raw_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_rag/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_rag/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_raw_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
 "$PYTHON_BIN" - "$EVAL_ROOT" "$MANIFEST" "$CANDIDATE" "$TP_SIZE" "$DP_SIZE" "$RAG_API" "$MAX_TOOL_TURNS" "$INVALID_TOOL_CALL_POLICY" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

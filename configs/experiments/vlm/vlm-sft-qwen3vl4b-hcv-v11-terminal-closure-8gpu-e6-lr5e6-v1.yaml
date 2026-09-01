@@ -16,7 +16,7 @@ outputs:
   model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_e6_lr5e6
   run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v11-terminal-closure-8gpu-e6-lr5e6-v1/
 parameters:
-  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft_e6_lr5e6.yaml
+  entrypoint: .venv_test/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_v11_terminal_closure_8gpu_sft_e6_lr5e6.yaml
   local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29705}
   training_authorized: outputs/artifacts/agrinet-hcv-manual-json-v11-terminal-closure/validation.json
   epochs: 6

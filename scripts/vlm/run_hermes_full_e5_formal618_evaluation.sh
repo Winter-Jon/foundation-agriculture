@@ -53,5 +53,5 @@ run_direct raw_base models/Qwen3-VL-4B-Instruct "$OUT_ROOT/base_direct" 0,1
 run_rag candidate "$CANDIDATE" "$OUT_ROOT/candidate_rag" 0,1
 run_rag raw_base models/Qwen3-VL-4B-Instruct "$OUT_ROOT/base_rag" 0,1
 
-.venv/bin/python tools/rag_distill/review_matched_diagnostic.py --candidate "$OUT_ROOT/candidate_direct/scored.jsonl" --baseline "$OUT_ROOT/base_direct/scored.jsonl" --out "$OUT_ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260817
-.venv/bin/python tools/rag_distill/review_matched_diagnostic.py --candidate "$OUT_ROOT/candidate_rag/scored.jsonl" --baseline "$OUT_ROOT/base_rag/scored.jsonl" --out "$OUT_ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260817
+.venv/bin/python src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$OUT_ROOT/candidate_direct/scored.jsonl" --baseline "$OUT_ROOT/base_direct/scored.jsonl" --out "$OUT_ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260817
+.venv/bin/python src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$OUT_ROOT/candidate_rag/scored.jsonl" --baseline "$OUT_ROOT/base_rag/scored.jsonl" --out "$OUT_ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260817

@@ -16,7 +16,7 @@ run_task() {
   local file=$1 label=$2
   local out="$COLLECTION/large-${RUN_ID}-${label}"
   [[ ! -e "$out/accepted.jsonl" && ! -e "$out/rejected.jsonl" ]] || { print -u2 "existing output: $out"; return 1; }
-  .venv/bin/python -m tools.rag_distill.collect_hermes_1to1_v2 --targets "$file" --route rag --rag-api http://127.0.0.1:8077 --output-dir "$out" --model gpt-5.6-terra --limit 9999 --offset 0 --request-timeout 120 >"$LOG_DIR/${label}.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || return $rc; }
+  .venv/bin/python -m agrinet.rag.distill.collect_hermes_1to1_v2 --targets "$file" --route rag --rag-api http://127.0.0.1:8077 --output-dir "$out" --model gpt-5.6-terra --limit 9999 --offset 0 --request-timeout 120 >"$LOG_DIR/${label}.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || return $rc; }
 }
 for cell in rag-open-en-disease rag-open-en-pest; do
   run_task "$BASE/resume-$cell/resend_targets.jsonl" "${cell}-resend"

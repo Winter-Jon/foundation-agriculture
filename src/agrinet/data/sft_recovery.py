@@ -14,9 +14,49 @@ import yaml
 from agrinet.data.io import DataError
 
 
-PILOT_SEED = 20260805
 ANSWER_RE = re.compile(r"<answer>\s*(.*?)\s*</answer>", re.DOTALL | re.IGNORECASE)
 ZH_RE = re.compile(r"[\u4e00-\u9fff]")
+RECOVERY_PILOT_ARTIFACT_ID_RE = re.compile(r"agrinet-rag-recovery-pilot-v\d+")
+
+
+def recovery_pilot_artifact_id(pilot_dir: Path) -> str:
+    """Return the stable artifact ID encoded by a recovery-pilot output directory."""
+    artifact_id = pilot_dir.name
+    if not RECOVERY_PILOT_ARTIFACT_ID_RE.fullmatch(artifact_id):
+        raise DataError(
+            "recovery Pilot output directory must be named "
+            f"agrinet-rag-recovery-pilot-v<integer>, got: {pilot_dir}"
+        )
+    return artifact_id
+
+
+def recovery_pilot_experiment_id(artifact_id: str) -> str:
+    """Map a versioned recovery-pilot artifact ID to its registered experiment ID."""
+    if not RECOVERY_PILOT_ARTIFACT_ID_RE.fullmatch(artifact_id):
+        raise DataError(f"invalid recovery Pilot artifact ID: {artifact_id!r}")
+    return f"data-sft-{artifact_id.removeprefix('agrinet-')}"
+
+
+def validate_recovery_pilot_destination(
+    artifacts_root: Path, pilot_dir: Path, artifact_id: str
+) -> None:
+    """Fail closed when a versioned recovery-pilot artifact could be misidentified or overwritten."""
+    expected_artifact_id = recovery_pilot_artifact_id(pilot_dir)
+    if artifact_id != expected_artifact_id:
+        raise DataError(
+            "recovery Pilot artifact ID does not match its output directory: "
+            f"{artifact_id!r} != {expected_artifact_id!r}"
+        )
+    if pilot_dir.parent.resolve() != artifacts_root.resolve():
+        raise DataError(
+            "recovery Pilot output directory must be a direct child of artifacts_root: "
+            f"{pilot_dir}"
+        )
+    if pilot_dir.exists():
+        raise DataError(
+            "recovery Pilot output directory already exists; preserve this immutable "
+            f"artifact instead of overwriting it: {pilot_dir}"
+        )
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -140,7 +180,7 @@ def _eval_exclusions(manifest: Path, root: Path) -> tuple[set[str], set[str]]:
 
 
 def build_pilot_plan(
-    candidates_path: Path, split_path: Path, eval_manifest: Path, output_dir: Path, root: Path
+    candidates_path: Path, split_path: Path, eval_manifest: Path, output_dir: Path, root: Path, seed: int,
 ) -> dict[str, Any]:
     candidates = read_jsonl(candidates_path)
     split = json.loads(split_path.read_text(encoding="utf-8"))
@@ -165,7 +205,7 @@ def build_pilot_plan(
         else:
             eligible.append(item)
 
-    rng = random.Random(PILOT_SEED)
+    rng = random.Random(seed)
     used: set[str] = set()
     targets: list[dict[str, Any]] = []
     specifications = [
@@ -225,7 +265,7 @@ def build_pilot_plan(
     write_jsonl(output_dir / "plan" / "rag_candidate_attempts.jsonl", attempts)
     write_jsonl(output_dir / "audit_unknown" / "probes.jsonl", audit)
     stats = {
-        "seed": PILOT_SEED, "rag_targets": len(targets),
+        "seed": seed, "rag_targets": len(targets),
         "rag_candidate_attempts": len(attempts), "unknown_audit": len(audit),
         "excluded": dict(excluded),
     }
@@ -315,7 +355,7 @@ def _option_row(
 
 def build_direct_pilot(
     direct_path: Path, candidates_path: Path, eval_manifest: Path, output_dir: Path, root: Path,
-    excluded_rag_images: set[str] | None = None,
+    seed: int, excluded_rag_images: set[str] | None = None,
 ) -> dict[str, Any]:
     direct_rows = read_jsonl(direct_path)
     candidates = read_jsonl(candidates_path)
@@ -332,7 +372,7 @@ def build_direct_pilot(
         if str(resolved) not in excluded_paths and digest not in excluded_hashes and image not in (excluded_rag_images or set()):
             pool.append((index, row, sample))
 
-    rng = random.Random(PILOT_SEED + 1)
+    rng = random.Random(seed + 1)
     selected: list[tuple[int, dict[str, Any], dict[str, Any], str]] = []
     for question_type in ("open", "option"):
         for language in ("en", "zh"):
@@ -410,8 +450,9 @@ def validate_pilot(output_dir: Path) -> dict[str, Any]:
 
 def prepare_recovery_pilot(
     direct_source: Path, rag_source: Path, candidates: Path, split: Path, eval_manifest: Path,
-    artifacts_root: Path, pilot_dir: Path, repository: Path,
+    artifacts_root: Path, pilot_dir: Path, repository: Path, artifact_id: str, seed: int,
 ) -> dict[str, Any]:
+    validate_recovery_pilot_destination(artifacts_root, pilot_dir, artifact_id)
     direct_stats = publish_frozen_dataset(
         direct_source, artifacts_root / "agrinet-disease-pest-direct-sft-v1",
         "agrinet-disease-pest-direct-sft-v1", "Existing bilingual non-RAG disease and pest SFT corpus.",
@@ -428,10 +469,10 @@ def prepare_recovery_pilot(
             "Populated by plan-driven RAG rejection sampling after runtime smoke validation.\n",
             encoding="utf-8",
         )
-    plan_stats = build_pilot_plan(candidates, split, eval_manifest, pilot_dir, repository)
+    plan_stats = build_pilot_plan(candidates, split, eval_manifest, pilot_dir, repository, seed)
     planned = read_jsonl(pilot_dir / "plan" / "rag_targets.jsonl")
     direct_pilot_stats = build_direct_pilot(
-        direct_source, candidates, eval_manifest, pilot_dir, repository,
+        direct_source, candidates, eval_manifest, pilot_dir, repository, seed,
         excluded_rag_images={str(row["query_image"]) for row in planned},
     )
     validation = validate_pilot(pilot_dir)
@@ -460,7 +501,7 @@ def prepare_recovery_pilot(
     )
     manifest = {
         "schema_version": "agrinet.sft.recovery-pilot/v1",
-        "artifact_id": "agrinet-rag-recovery-pilot-v1", "seed": PILOT_SEED,
+        "artifact_id": artifact_id, "seed": seed,
         "status": "planned", "review_required": True, "statistics": validation,
     }
     (pilot_dir / "artifact.yaml").write_text(

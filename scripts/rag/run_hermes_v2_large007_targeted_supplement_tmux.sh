@@ -21,7 +21,7 @@ run() {
   local route=$1 label=$2
   local targets="$PLAN/${route}-${label}.jsonl" out="$COLLECTION/${RUN_ID}-supplement-${route}-${label}"
   [[ ! -e "$out/accepted.jsonl" && ! -e "$out/rejected.jsonl" ]] || { print -u2 "existing output: $out"; return 1; }
-  local argv=(.venv/bin/python -m tools.rag_distill.collect_hermes_1to1_v2 --targets "$targets" --route "$route" --output-dir "$out" --model gpt-5.6-terra --limit 9999 --request-timeout 120)
+  local argv=(.venv/bin/python -m agrinet.rag.distill.collect_hermes_1to1_v2 --targets "$targets" --route "$route" --output-dir "$out" --model gpt-5.6-terra --limit 9999 --request-timeout 120)
   [[ "$route" == rag ]] && argv+=(--rag-api http://127.0.0.1:8077)
   "${argv[@]}" >"$LOG_DIR/${route}-${label}.log" 2>&1 || { local rc=$?; [[ $rc == 2 ]] || return $rc; }
 }

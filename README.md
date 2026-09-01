@@ -2,6 +2,15 @@
 
 Unified local workflows for AgriNet data preparation, retrieval-augmented generation, and vision-language model training/evaluation. The only root command is `agrinet`; this workstation is not a Slurm cluster.
 
+## Project map
+
+- [Documentation map](docs/README.md): review order, current-state authority, and the role of each documentation area.
+- [Current research state](docs/logs/START_HERE.md): the only dynamic source for the active route, verified state, and next safe action.
+- [Current formal result](docs/results/CURRENT_FORMAL618_EVALUATION.md): the paper-facing Formal-618 conclusion and locked protocol.
+- [Results and evidence](docs/results/README.md): the chain from a conclusion to local run and artifact evidence.
+- [Output lifecycle](docs/outputs/README.md): required layout and retention policy for ignored local artifacts.
+- Local tests/tools contract: tests/ and tools/ are ignored local areas; the audit documents their current layout when present.
+
 ## Quick start
 
 ```bash
@@ -34,4 +43,4 @@ Current verified baselines:
 - RAG: Milvus Lite with 320 classes and 578 images; real SigLIP2 A800 image query verified.
 - VLM: `qwen3vl4b-rag-sft-full-v1`, checkpoint step 224, copied with identical checksums and load-tested from its artifact path.
 
-See [Data](docs/data/README.md), [RAG](docs/rag/README.md), [VLM](docs/vlm/README.md), and the [migration map](docs/migrations/refactor-20260803.md). Existing `.slurm` files and `slurm/` logs are retained for validation on a separate cluster machine; they are not executed or removed on this workstation.
+See [Data](docs/data/README.md), [RAG](docs/rag/README.md), [VLM](docs/vlm/README.md), and the [migration map](docs/migrations/refactor-20260803.md). Existing `.slurm` files and `slurm/` logs are retained for validation on a separate cluster machine; they are not executed or removed on this workstation. Both `tools/` and `tests/` are ignored local areas; their presence is not guaranteed in a clean clone.

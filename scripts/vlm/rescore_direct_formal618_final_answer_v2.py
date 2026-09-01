@@ -68,7 +68,7 @@ def rescore_checkpoint(manifest: Path, source: Path, output: Path, samples: int,
     artifacts = output / "artifacts"
     for baseline, name in (("m1_direct", "candidate_vs_m1_direct_paired_review.json"), ("raw_base_direct", "candidate_vs_raw_base_direct_paired_review.json")):
         run([
-            sys.executable, "tools/rag_distill/review_matched_diagnostic.py",
+            sys.executable, "src/agrinet/rag/distill/review_matched_diagnostic.py",
             "--candidate", str(artifacts / "candidate_direct/scored.jsonl"),
             "--baseline", str(artifacts / baseline / "scored.jsonl"),
             "--out", str(artifacts / name),

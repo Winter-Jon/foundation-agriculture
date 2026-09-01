@@ -33,7 +33,7 @@ export https_proxy="http://10.10.10.10:3128"
 # Stage 1: Prepare data (2 samples per class, 32 random classes)
 # ------------------------------------------------------------------
 echo "=== Stage 1: Prepare test batch data ==="
-"$PYTHON_BIN" tools/vloom_agrinet/prepare_disease_pest_data.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/prepare_disease_pest_data.py \
   --data-root datasets/AgriNet-1K \
   --feature-root outputs/vit-base-cluster/vit-base-1 \
   --output-dir outputs/vlm_data/disease_pest_test \
@@ -49,7 +49,7 @@ echo "Prepared $SAMPLES contrast samples"
 # ------------------------------------------------------------------
 echo "=== Stage 2: English teacher collection ==="
 MAX_CONCURRENT="${MAX_CONCURRENT:-16}"
-"$PYTHON_BIN" -m tools.vloom_agrinet.run_contrast_cot \
+"$PYTHON_BIN" -m agrinet.data.vloom_tools.run_contrast_cot \
   --config_path configs/vloom/agrinet_disease_pest_test_batch.yaml \
   --max-concurrent "$MAX_CONCURRENT"
 
@@ -63,7 +63,7 @@ fi
 # Stage 3: Chinese teacher collection
 # ------------------------------------------------------------------
 echo "=== Stage 3: Chinese teacher collection ==="
-"$PYTHON_BIN" -m tools.vloom_agrinet.run_contrast_cot \
+"$PYTHON_BIN" -m agrinet.data.vloom_tools.run_contrast_cot \
   --config_path configs/vloom/agrinet_disease_pest_test_batch_zh.yaml \
   --max-concurrent "$MAX_CONCURRENT"
 
@@ -77,7 +77,7 @@ fi
 # Stage 4: Convert English results to English SFT
 # ------------------------------------------------------------------
 echo "=== Stage 4: Convert English teacher results ==="
-"$PYTHON_BIN" tools/vloom_agrinet/convert_to_sft_messages.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/convert_to_sft_messages.py \
   --input "$RESULT_JSON_EN" \
   --output-sft-en outputs/vlm_data/disease_pest_test/sft_messages_en.jsonl \
   --output-sft-zh outputs/vlm_data/disease_pest_test/sft_messages_zh_from_en_temp.jsonl \
@@ -90,7 +90,7 @@ rm -f outputs/vlm_data/disease_pest_test/sft_messages_zh_from_en_temp.jsonl
 # Stage 5: Convert Chinese results to Chinese SFT
 # ------------------------------------------------------------------
 echo "=== Stage 5: Convert Chinese teacher results ==="
-"$PYTHON_BIN" tools/vloom_agrinet/convert_to_sft_messages.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/convert_to_sft_messages.py \
   --input "$RESULT_JSON_ZH" \
   --output-sft-en outputs/vlm_data/disease_pest_test/sft_messages_en_from_zh_temp.jsonl \
   --output-sft-zh outputs/vlm_data/disease_pest_test/sft_messages_zh.jsonl \

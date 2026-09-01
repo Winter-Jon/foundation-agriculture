@@ -15,7 +15,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from tools.rag_distill.run_pilot import (
+from agrinet.rag.distill.run_pilot import (
     STUDENT_USER_QUERY,
     clamp_tool_args,
     compact_hit,
@@ -23,8 +23,8 @@ from tools.rag_distill.run_pilot import (
     image_url_content,
     sft_user_message,
 )
-from tools.rag_distill.schema import TOOL_NAME, tool_schema, validate_tool_arguments
-from tools.rag_distill.terminal_contract import final_answer_only_correction
+from agrinet.rag.distill.schema import TOOL_NAME, tool_schema, validate_tool_arguments
+from agrinet.rag.distill.terminal_contract import final_answer_only_correction
 from agrinet.rag.hermes_protocol import is_pre_tool_think, parse_hermes_tool_calls
 from eval_runner_common import SnapshotStore, load_jsonl as durable_load_jsonl, request_fingerprint, validate_manifest
 

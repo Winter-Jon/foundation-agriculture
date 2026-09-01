@@ -99,7 +99,7 @@ wait_ok() {
 }
 
 echo "Starting CPU Milvus RAG service on $RAG_PORT"
-setsid "$PYTHON_BIN" tools/milvus/search_api.py --host 127.0.0.1 --port "$RAG_PORT" \
+setsid "$PYTHON_BIN" src/agrinet/rag/milvus_tools/search_api.py --host 127.0.0.1 --port "$RAG_PORT" \
   --device cpu --mode lite --lite-db "$JOB_DB" --model-name "$RAG_MODEL" \
   >"$RAG_STDOUT" 2>"$RAG_STDERR" &
 RAG_PID=$!

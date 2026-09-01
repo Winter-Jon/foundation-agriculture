@@ -40,7 +40,7 @@ echo "SPLIT_INFO=$SPLIT_INFO"
 mkdir -p "$OUTPUT_DIR"
 cp "$CLASS_LIST" "$OUTPUT_DIR/hard_classes.txt"
 
-"$PYTHON_BIN" tools/vloom_agrinet/prepare_disease_pest_data.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/prepare_disease_pest_data.py \
   --data-root datasets/AgriNet-1K \
   --feature-root outputs/vit-base-cluster/vit-base-1 \
   --output-dir "$OUTPUT_DIR" \
@@ -51,7 +51,7 @@ cp "$CLASS_LIST" "$OUTPUT_DIR/hard_classes.txt"
   --class-list "$CLASS_LIST" \
   --random-seed "$RANDOM_SEED"
 
-"$PYTHON_BIN" tools/vloom_agrinet/validate_disease_pest_data.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/validate_disease_pest_data.py \
   --data-dir "$OUTPUT_DIR" \
   --expected-disease 29 \
   --expected-pest 16 \

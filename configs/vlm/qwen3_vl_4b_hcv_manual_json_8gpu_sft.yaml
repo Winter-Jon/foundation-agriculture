@@ -1,4 +1,4 @@
-# Data is created only after tools/rag_distill/freeze_hcv_sft.py validates its immutable artifact.
+# Data is created only after src/agrinet/rag/distill/freeze_hcv_sft.py validates its immutable artifact.
 model: outputs/vlm_sft/qwen3_vl_4b_m1_current_contract_direct_b2/v0-20260819-155739/checkpoint-18
 model_type: qwen3_vl
 template: qwen3_vl

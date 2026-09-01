@@ -24,7 +24,7 @@ eval "$(/data/home/jiangwentao/.apikeys/bin/apikey env micu_slb)"
 worker() {
   local out="$COLLECTION/large-${RUN_ID}-${route}-${cell}"
   if [[ -e "$out/accepted.jsonl" || -e "$out/rejected.jsonl" ]]; then print -u2 "refusing existing output: $out"; return 1; fi
-  local args=(.venv/bin/python -m tools.rag_distill.collect_hermes_1to1_v2 --targets "$file" --route "$route" --output-dir "$out" --model gpt-5.6-terra --limit 140 --offset 0)
+  local args=(.venv/bin/python -m agrinet.rag.distill.collect_hermes_1to1_v2 --targets "$file" --route "$route" --output-dir "$out" --model gpt-5.6-terra --limit 140 --offset 0)
   [[ "$route" == rag ]] && args+=(--rag-api http://127.0.0.1:8077)
   "${args[@]}" >"$LOG_DIR/${route}-${cell}.log" 2>&1 || { local rc=$?; [[ $rc == 2 ]] || return $rc; }
 }
@@ -57,8 +57,8 @@ write_jsonl(destination, rows)
 print(json.dumps({"rejected":len(rows),"destination":str(destination)}))
 PY
 ORACLE_PLAN="outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/large-${RUN_ID}/oracle"
-if .venv/bin/python -m tools.rag_distill.build_hermes_1to1_oracle_recovery --rejected "$RUN_DIR/large_blind_rejected.jsonl" --collection-root "$COLLECTION" --destination "$ORACLE_PLAN" --cap-to-remaining >"$LOG_DIR/oracle-plan.log" 2>&1; then
-  .venv/bin/python -m tools.rag_distill.collect_hermes_1to1_v2 --targets "$ORACLE_PLAN/rag_targets.jsonl" --route rag --oracle --rag-api http://127.0.0.1:8077 --output-dir "$COLLECTION/large-${RUN_ID}-oracle" --model gpt-5.6-terra --limit 9999 --offset 0 >"$LOG_DIR/oracle.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || exit $rc; }
+if .venv/bin/python -m agrinet.rag.distill.build_hermes_1to1_oracle_recovery --rejected "$RUN_DIR/large_blind_rejected.jsonl" --collection-root "$COLLECTION" --destination "$ORACLE_PLAN" --cap-to-remaining >"$LOG_DIR/oracle-plan.log" 2>&1; then
+  .venv/bin/python -m agrinet.rag.distill.collect_hermes_1to1_v2 --targets "$ORACLE_PLAN/rag_targets.jsonl" --route rag --oracle --rag-api http://127.0.0.1:8077 --output-dir "$COLLECTION/large-${RUN_ID}-oracle" --model gpt-5.6-terra --limit 9999 --offset 0 >"$LOG_DIR/oracle.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || exit $rc; }
 fi
-.venv/bin/python -m tools.rag_distill.select_hermes_1to1_large_freeze --collection-root "$COLLECTION" --forbidden-hashes outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/isolation/forbidden_image_sha256.json --destination "outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/large-${RUN_ID}/freeze-preflight" >"$LOG_DIR/freeze-preflight.log" 2>&1 || true
+.venv/bin/python -m agrinet.rag.distill.select_hermes_1to1_large_freeze --collection-root "$COLLECTION" --forbidden-hashes outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/isolation/forbidden_image_sha256.json --destination "outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/large-${RUN_ID}/freeze-preflight" >"$LOG_DIR/freeze-preflight.log" 2>&1 || true
 print "completed run_id=$RUN_ID logs=$LOG_DIR"

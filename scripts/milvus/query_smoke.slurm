@@ -51,7 +51,7 @@ echo "IMAGE_DIR=$IMAGE_DIR"
 nvidia-smi -L || true
 
 if [ "$MILVUS_MODE" = "standalone" ]; then
-    "$REPO_ROOT/.venv/bin/python" tools/milvus/check_milvus_ready.py \
+    "$REPO_ROOT/.venv/bin/python" src/agrinet/rag/milvus_tools/check_milvus_ready.py \
         --uri "$MILVUS_URI" \
         --timeout 300 \
         --interval 10
@@ -73,4 +73,4 @@ if [ -n "$IMAGE_COLLECTION" ]; then
     ARGS+=(--image-collection "$IMAGE_COLLECTION")
 fi
 
-"$REPO_ROOT/.venv/bin/python" tools/milvus/query_smoke.py "${ARGS[@]}"
+"$REPO_ROOT/.venv/bin/python" src/agrinet/rag/milvus_tools/query_smoke.py "${ARGS[@]}"

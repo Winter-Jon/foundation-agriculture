@@ -43,7 +43,7 @@ nvidia-smi -L || true
 
 mkdir -p outputs/milvus slurm
 
-"$REPO_ROOT/.venv/bin/python" tools/milvus/recompute_wiki_similar_classes.py \
+"$REPO_ROOT/.venv/bin/python" src/agrinet/rag/milvus_tools/recompute_wiki_similar_classes.py \
     --knowledge-base "$KNOWLEDGE_BASE" \
     --image-dir "$IMAGE_DIR" \
     --model-name "$MODEL_NAME" \

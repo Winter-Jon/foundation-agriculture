@@ -36,7 +36,7 @@ class VloomTeacherDataProvider:
         command = [
             sys.executable,
             "-m",
-            "tools.vloom_agrinet.run_contrast_cot",
+            "agrinet.data.vloom_tools.run_contrast_cot",
             "--config_path",
             str(config_path),
         ]

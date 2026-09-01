@@ -19,15 +19,15 @@ if not env.get('YUNWU_API_KEY'): env.update(yunwu_environment())
 if not any(env.get(k) for k in ('ALL_PROXY','HTTPS_PROXY','HTTP_PROXY')): env.update(local_proxy_environment())
 p=os.environ['PILOT_DIR']; plan=os.environ['PLAN_FILE']; output=os.environ['OUTPUT_DIR']
 limit=os.environ['LIMIT']
-cmd=['.venv/bin/python','-m','tools.rag_distill.run_pilot','--plan-file',plan,
+cmd=['.venv/bin/python','-m','agrinet.rag.distill.run_pilot','--plan-file',plan,
      '--candidate-source','outputs/vlm_data/disease_pest_large/contrast_samples_vit_base.jsonl',
      '--limit',limit,'--rag-api','http://127.0.0.1:8077','--output-dir',output,
      '--model','gpt-5.6-luna','--max-tool-turns','3','--max-concurrent','4',
      '--teacher-timeout','180','--teacher-retries','3']
 subprocess.run(cmd,env=env,check=True)
-subprocess.run(['.venv/bin/python','-m','tools.rag_distill.validate_artifact','--artifact-dir',output,
+subprocess.run(['.venv/bin/python','-m','agrinet.rag.distill.validate_artifact','--artifact-dir',output,
                 '--min-retrieval-success-rate','1.0'],check=True)
-subprocess.run(['.venv/bin/python','-m','tools.rag_distill.validate_semantic_quality',
+subprocess.run(['.venv/bin/python','-m','agrinet.rag.distill.validate_semantic_quality',
                 '--train-file',f'{output}/train/agent_sft.accepted.jsonl',
                 '--report',f'{output}/reports/semantic_validation.json'],check=True)
 PY

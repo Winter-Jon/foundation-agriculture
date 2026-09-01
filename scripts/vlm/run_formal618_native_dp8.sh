@@ -51,8 +51,8 @@ run_route candidate_direct direct "$CANDIDATE" 64
 run_route raw_base_direct direct models/Qwen3-VL-4B-Instruct 64
 run_route candidate_rag rag "$CANDIDATE" 24
 run_route raw_base_rag rag models/Qwen3-VL-4B-Instruct 24
-"$PYTHON_BIN" tools/rag_distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
-"$PYTHON_BIN" tools/rag_distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_rag/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_rag/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_rag/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_rag/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
 "$PYTHON_BIN" - "$EVAL_ROOT" "$MANIFEST" "$CANDIDATE" "$TP_SIZE" "$DP_SIZE" <<'PY'
 import hashlib,json,sys
 from pathlib import Path

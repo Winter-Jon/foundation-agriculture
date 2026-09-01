@@ -4,6 +4,11 @@ This index is the discovery entrypoint for large local artifacts. Raw outputs
 remain ignored by Git; this versioned document records their intended role and
 path shape.
 
+For the required output layout, metadata, retention workflow, and legacy-run
+boundary, see [Output Lifecycle](../outputs/README.md). This index records
+actual current evidence and retention decisions; it does not itself authorize
+deletion or path changes.
+
 ## Current Formal-618 evidence
 
 Keep these roots available for the current evaluation:
@@ -26,8 +31,10 @@ current RAG, or v4 endpoints.
 ## Reproducibility artifacts
 
 - `outputs/artifacts/datasets/`: immutable data freezes and evaluated data
-  views. Treat as archival evidence; review superseded recovery-pilot versions
-  one at a time before deletion.
+  views. The registered `agrinet-rag-recovery-pilot-v1` through `v5` artifacts
+  are retained in place: their directory, config, artifact ID, and seed are
+  reconciled by the 2026-09-02 lineage audit. Treat each as immutable evidence;
+  do not overwrite or move a version without a separately approved manifest.
 - `outputs/artifacts/authorizations/` and `outputs/artifacts/environments/`:
   compact authorization and environment evidence; retain.
 - `outputs/experiments/hcv_multi_query_rag/` and
@@ -45,6 +52,23 @@ current RAG, or v4 endpoints.
   `smoke-and-preflight/`, and `stage-validation/`. These directories have
   no active exact-path references and were moved here without compatibility
   symlinks. Current Formal-618 evidence remains under `outputs/runs/vlm/`.
+- `outputs/archive/rag-runs/`: 40 completed, unreferenced legacy RAG run roots
+  migrated on 2026-09-02. `round-pilots-and-preflights/` contains 37
+  historical Option/shard/Luna/Terra run roots; `hermes-collection-preflight/`
+  contains three completed Hermes collection/preflight roots. Exact old-to-new
+  mapping is retained locally at
+  `outputs/migration/repository-organization/20260902T013000-archive-legacy-rag-runs-v1.tsv`.
+  No compatibility symlinks remain at the former run paths.
+- `outputs/archive/rag-distill/`: retired `outputs/rag_distill/` teacher-pilot
+  payloads. New collection defaults to `outputs/experiments/rag-distill/`; the
+  old-to-new mapping is retained in the repository-organization migration
+  directory.
+- `outputs/archive/vlm-evaluations/`: retired top-level VLM evaluation
+  payloads. Current CLI evaluation writes to
+  `outputs/experiments/vlm-evaluations/<experiment-id>/`.
+- `outputs/archive/historical-vision/focusnet_tiny_224/`: the unreferenced
+  historical FocusNet argument capture, retained as provenance rather than a
+  current output root.
 
 ## Retention policy
 

@@ -86,7 +86,7 @@ def serve(host: str = "127.0.0.1", port: int = 8077, device: str = "auto") -> No
 @app.command("validate")
 def validate(path: Path) -> None:
     """Validate a RAG distillation artifact at its public boundary."""
-    result = subprocess.run([sys.executable, "-m", "tools.rag_distill.validate_artifact", "--artifact-dir", str(path)])
+    result = subprocess.run([sys.executable, "-m", "agrinet.rag.distill.validate_artifact", "--artifact-dir", str(path)])
     if result.returncode:
         raise typer.Exit(result.returncode)
 
@@ -95,7 +95,7 @@ def validate(path: Path) -> None:
 def distill(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) -> None:
     """Run a registered distillation experiment through its explicit config."""
     config = resolve_config(load_experiment(experiment_id))
-    command = [sys.executable, "-m", "tools.rag_distill.run_pilot"]
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_pilot"]
     for key, flag in (("sample_file", "--sample-file"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model")):
         if key in config.get("parameters", {}): command.extend([flag, str(config["parameters"][key])])
     if dry_run:
@@ -119,7 +119,7 @@ def submit(
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     if operation in {"distill", "hermes-collect"}:
-        command = [sys.executable, "-m", "tools.rag_distill.run_pilot"] if operation == "distill" else [sys.executable, "-m", "tools.rag_distill.collect_hermes_1to1_v2"]
+        command = [sys.executable, "-m", "agrinet.rag.distill.run_pilot"] if operation == "distill" else [sys.executable, "-m", "agrinet.rag.distill.collect_hermes_1to1_v2"]
         parameters = config.get("parameters", {})
         bindings = (("sample_file", "--sample-file"), ("plan_file", "--plan-file"), ("candidate_source", "--candidate-source"), ("approval_scope", "--approval-scope"), ("private_final_adjudication_file", "--private-final-adjudication-file"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("offset", "--offset"), ("stop_after_accepted", "--stop-after-accepted"), ("max_concurrent", "--max-concurrent"), ("max_tool_turns", "--max-tool-turns"), ("top_k", "--top-k"), ("temperature", "--temperature"), ("max_tokens", "--max-tokens"), ("teacher_timeout", "--teacher-timeout"), ("teacher_retries", "--teacher-retries"), ("teacher_retry_sleep", "--teacher-retry-sleep"), ("preflight_report", "--preflight-report")) if operation == "distill" else (("targets", "--targets"), ("route", "--route"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("offset", "--offset"), ("target_id", "--target-id"))
         for key, flag in bindings:

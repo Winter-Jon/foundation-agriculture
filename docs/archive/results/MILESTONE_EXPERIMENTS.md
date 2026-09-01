@@ -18,7 +18,7 @@ claiming an improvement.
 - Result versus raw Qwen3-VL-4B: overall `63.11%` versus `44.82%`
   (`+18.28pp`); Open `34.30%` versus `3.24%` (`+31.07pp`); Option
   `91.91%` versus `86.41%` (`+5.50pp`).
-- Canonical evidence: [2026-W23 experiment record](../logs/experiments/2026-W23-0601-0607.md),
+- Canonical evidence: [2026-W23 experiment record](../../logs/experiments/2026-W23-0601-0607.md),
   `outputs/vlm_eval/qwen3_vl_4b_disease_pest/full_all_e5_len2048_liger_lr1e5_final_best_test/metrics.json`.
 
 **Use for comparison:** a future Direct model must be evaluated under this
@@ -43,9 +43,9 @@ strict Hermes tool protocol.
   result is `40.29%` versus `40.45%`, paired `-0.16pp`, 95% CI
   `[-3.24, +2.91]pp`; it is retained as a non-improvement guardrail, not as
   the Direct milestone.
-- Canonical evidence: [formal summary](../../outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/summary.json),
-  [RAG paired review](../../outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/candidate_vs_base_rag_paired_review.json),
-  and [2026-W34 experiment record](../logs/experiments/2026-W34-0817-0823.md).
+- Canonical evidence: [formal summary](../../../outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/summary.json),
+  [RAG paired review](../../../outputs/runs/vlm/vlm-sft-qwen3vl4b-hermes-long-direct-blind-rag-1to1-e5-v2/formal618-native-async-20260819-130300/artifacts/candidate_vs_base_rag_paired_review.json),
+  and [2026-W34 experiment record](../../logs/experiments/2026-W34-0817-0823.md).
 
 **Use for comparison:** every future Hermes/RAG candidate must use the same
 618 manifest, public retrieval boundary, protocol, scorer, and paired
@@ -70,9 +70,9 @@ tool-call supervision with serving and strict evaluation.
   and base each have 618 unique manifest-ordered IDs, zero explicit error
   rows, zero unparseable answers, zero terminal-closure failures, and zero
   malformed/invalid candidate tool attempts.
-- Canonical evidence: [formal summary](../../outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/artifacts/epoch-4-checkpoint-72/formal/artifacts/summary.json),
-  [paired review](../../outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/artifacts/epoch-4-checkpoint-72/formal/artifacts/candidate_vs_raw_base_rag_paired_review.json),
-  and [2026-W34 experiment record](../logs/experiments/2026-W34-0817-0823.md).
+- Canonical evidence: [formal summary](../../../outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/artifacts/epoch-4-checkpoint-72/formal/artifacts/summary.json),
+  [paired review](../../../outputs/runs/vlm/vlm-rag-qwen3vl4b-manual-json-lr5e6-recovery-checkpoints-dp8-v2/20260820T163014-e259e1da-a01/artifacts/epoch-4-checkpoint-72/formal/artifacts/candidate_vs_raw_base_rag_paired_review.json),
+  and [2026-W34 experiment record](../../logs/experiments/2026-W34-0817-0823.md).
 
 **Use for comparison:** M3 is the current strict-RAG reference. Future
 multi-query or retrieval-index changes must retain the 618 manifest, public

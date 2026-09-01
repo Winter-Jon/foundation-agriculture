@@ -42,8 +42,8 @@ if ! validate; then
   validate
 fi
 
-"$PYTHON_BIN" tools/rag_distill/review_matched_diagnostic.py --candidate "$OUT/scored.jsonl" --baseline "$M2_ROOT/raw_base_direct/scored.jsonl" --out "$ROOT/artifacts/m1_vs_raw_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
-"$PYTHON_BIN" tools/rag_distill/review_matched_diagnostic.py --candidate "$OUT/scored.jsonl" --baseline "$M2_ROOT/candidate_direct/scored.jsonl" --out "$ROOT/artifacts/m1_vs_m2_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$OUT/scored.jsonl" --baseline "$M2_ROOT/raw_base_direct/scored.jsonl" --out "$ROOT/artifacts/m1_vs_raw_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$OUT/scored.jsonl" --baseline "$M2_ROOT/candidate_direct/scored.jsonl" --out "$ROOT/artifacts/m1_vs_m2_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
 "$PYTHON_BIN" - "$ROOT" "$MANIFEST" "$M1_CHECKPOINT" "$M2_ROOT" <<'PY'
 import hashlib,json,sys
 from pathlib import Path

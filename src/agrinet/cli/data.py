@@ -25,7 +25,9 @@ from agrinet.data.prepare import prepare_records
 from agrinet.data.agrinet import prepare_bounded_contrast, validate_bounded_contrast
 from agrinet.data.providers.vloom import VloomTeacherDataProvider
 from agrinet.data.validate import SchemaKind, validate_records
-from agrinet.data.sft_recovery import prepare_recovery_pilot
+from agrinet.data.sft_recovery import (
+    prepare_recovery_pilot, recovery_pilot_artifact_id, recovery_pilot_experiment_id,
+)
 from agrinet.data.m1_direct_collection import (
     audit_and_convert, build_open_pest_preflight_plan, build_plan, build_replenishment_plan, build_sample_preflight_plan,
     build_single_cell_screen_plan, build_stratified_pilot_plan, freeze, promote_open_pest_screened_plan, promote_single_cell_screened_plan, promote_stratified_screened_plan,
@@ -293,6 +295,17 @@ def prepare_sft_recovery_command(
     try:
         config = _resolved(experiment_id, config_override)
         root = repository_root()
+        pilot_dir = _path(config, "outputs", "pilot_dir")
+        artifact_id = recovery_pilot_artifact_id(pilot_dir)
+        seed = int(config.get("parameters", {}).get("seed", 0))
+        if seed <= 0:
+            raise DataError("recovery Pilot config requires a positive parameters.seed")
+        expected_experiment_id = recovery_pilot_experiment_id(artifact_id)
+        if str(config.get("id") or "") != expected_experiment_id:
+            raise DataError(
+                "recovery Pilot config ID must match its output artifact: "
+                f"expected {expected_experiment_id!r}, got {config.get('id')!r}"
+            )
         summary = prepare_recovery_pilot(
             direct_source=_path(config, "inputs", "direct_sft"),
             rag_source=_path(config, "inputs", "rag_sft"),
@@ -300,8 +313,10 @@ def prepare_sft_recovery_command(
             split=_path(config, "inputs", "strict_split"),
             eval_manifest=_path(config, "inputs", "eval_manifest"),
             artifacts_root=_path(config, "outputs", "artifacts_root"),
-            pilot_dir=_path(config, "outputs", "pilot_dir"),
+            pilot_dir=pilot_dir,
             repository=root,
+            artifact_id=artifact_id,
+            seed=seed,
         )
         typer.echo(json.dumps(summary["validation"], ensure_ascii=False, sort_keys=True))
     except (DataError, OSError, ValueError) as exc:
@@ -313,7 +328,7 @@ def prepare_sft_recovery_command(
 def m1_direct_preflight_command(experiment_id: str) -> None:
     """Build real-data inputs and run the fail-closed capacity audit."""
     config = _resolved(experiment_id, None)
-    from tools.rag_distill.build_m1_direct_preflight import build
+    from agrinet.rag.distill.build_m1_direct_preflight import build
     report = build(_path(config, "outputs", "preflight_root"))
     typer.echo(json.dumps(report, ensure_ascii=False, sort_keys=True))
     if not report["plan_ready"]:
@@ -397,7 +412,7 @@ def m1_direct_repair_preflight_v9_collect_command(experiment_id: str) -> None:
     """Collect the fresh repair preflight with resumable teacher/auditor calls."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "repair_preflight_v9_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "repair_preflight_v9_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -453,7 +468,7 @@ def m1_direct_option_zh_pest_screen_v1_plan_command(experiment_id: str) -> None:
 @app.command("m1-direct-option-zh-pest-screen-v1-collect")
 def m1_direct_option_zh_pest_screen_v1_collect_command(experiment_id: str) -> None:
     config = _resolved(experiment_id, None); root = repository_root()
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "option_zh_pest_screen_v1_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "option_zh_pest_screen_v1_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "option_zh_pest_screen_gates")), "--gate-name", "single_cell_distinguishability_screen",
@@ -498,7 +513,7 @@ def m1_direct_option_zh_pest_preflight_v10_plan_command(experiment_id: str) -> N
 @app.command("m1-direct-option-zh-pest-preflight-v10-collect")
 def m1_direct_option_zh_pest_preflight_v10_collect_command(experiment_id: str) -> None:
     config = _resolved(experiment_id, None); root = repository_root()
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "option_zh_pest_preflight_v10_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "option_zh_pest_preflight_v10_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -664,7 +679,7 @@ def m1_direct_open_pest_preflight_v3_collect_command(experiment_id: str) -> None
     """Run v3 collection; invoke through submit --detach for long remote calls."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "open_pest_preflight_v3_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "open_pest_preflight_v3_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "open_pest_preflight_gates")),
@@ -710,7 +725,7 @@ def _build_open_pest_preflight_version(config: dict, version: str) -> None:
 def _collect_open_pest_preflight_version(config: dict, version: str) -> None:
     root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", f"open_pest_preflight_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"open_pest_preflight_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "open_pest_preflight_gates")),
@@ -819,7 +834,7 @@ def m1_direct_open_pest_screen_v1_collect_command(experiment_id: str) -> None:
     """Run the v1 screen; submit with --detach to preserve checkpoints."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "open_pest_screen_v1_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "open_pest_screen_v1_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "open_pest_screen_gates")),
@@ -871,7 +886,7 @@ def _build_open_pest_screen_version(config: dict, version: str) -> None:
 def _collect_open_pest_screen_version(config: dict, version: str) -> None:
     root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", f"open_pest_screen_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"open_pest_screen_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", f"open_pest_screen_{version}_gates")),
@@ -975,7 +990,7 @@ def m1_direct_open_pest_preflight_v8_collect_command(experiment_id: str) -> None
     """Collect v8 through the explicit v4-to-v8 promotion route."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "open_pest_preflight_v8_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "open_pest_preflight_v8_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "open_pest_preflight_gates")),
@@ -1028,7 +1043,7 @@ def m1_direct_open_pest_preflight_v7_collect_command(experiment_id: str) -> None
     """Collect the screened v7 preflight through the promotion-only route."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "open_pest_preflight_v7_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "open_pest_preflight_v7_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "open_pest_preflight_gates")),
@@ -1156,7 +1171,7 @@ def m1_direct_pilot_screen_collect_command(experiment_id: str) -> None:
     """Collect the label-blind eight-cell candidate screen."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "stratified_screen_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_screen_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "stratified_screen_gates")),
@@ -1212,7 +1227,7 @@ def m1_direct_pilot_screen_v2_collect_command(experiment_id: str) -> None:
     """Collect the fresh, label-blind v2 eight-cell candidate screen."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "stratified_screen_v2_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_screen_v2_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "stratified_screen_gates")),
@@ -1276,7 +1291,7 @@ def m1_direct_pilot_screen_v3_collect_command(experiment_id: str) -> None:
     """Collect the fully isolated, expanded v3 candidate screen."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "stratified_screen_v3_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_screen_v3_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "stratified_screen_v3_gates")),
@@ -1340,7 +1355,7 @@ def m1_direct_pilot_screen_v4_collect_command(experiment_id: str) -> None:
     """Collect the fully isolated v4 screen."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "stratified_screen_v4_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_screen_v4_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "stratified_screen_v4_gates")),
@@ -1402,7 +1417,7 @@ def m1_direct_pilot_screen_v5_collect_command(experiment_id: str) -> None:
     """Collect the fresh v5 screen without replaying any v4 request."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", "stratified_screen_v5_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_screen_v5_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "stratified_screen_v5_gates")),
@@ -1463,7 +1478,7 @@ def m1_direct_pilot_screen_v6_plan_command(experiment_id: str) -> None:
 @app.command("m1-direct-pilot-screen-v6-collect")
 def m1_direct_pilot_screen_v6_collect_command(experiment_id: str) -> None:
     config = _resolved(experiment_id, None); root = repository_root(); version = "v6"
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", f"stratified_screen_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"stratified_screen_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", f"stratified_screen_{version}_gates")), "--gate-name", "stratified_distinguishability_screen",
@@ -1493,7 +1508,7 @@ def m1_direct_pilot_screen_v7_plan_command(experiment_id: str) -> None:
 @app.command("m1-direct-pilot-screen-v7-collect")
 def m1_direct_pilot_screen_v7_collect_command(experiment_id: str) -> None:
     config = _resolved(experiment_id, None); root = repository_root(); version = "v7"
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", f"stratified_screen_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"stratified_screen_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", f"stratified_screen_{version}_gates")), "--gate-name", "stratified_distinguishability_screen",
@@ -1527,7 +1542,7 @@ def m1_direct_pilot_screen_v8_plan_command(experiment_id: str) -> None:
 def m1_direct_pilot_screen_v8_collect_command(experiment_id: str) -> None:
     """Collect the fresh v8 screen with bounded no-replay request deadlines."""
     config = _resolved(experiment_id, None); root = repository_root(); version = "v8"
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", f"stratified_screen_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"stratified_screen_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", f"stratified_screen_{version}_gates")), "--gate-name", "stratified_distinguishability_screen",
@@ -1560,7 +1575,7 @@ def m1_direct_pilot_screen_v9_plan_command(experiment_id: str) -> None:
 def m1_direct_pilot_screen_v9_collect_command(experiment_id: str) -> None:
     """Collect the wholly fresh v9 eight-cell screen with no replay."""
     config = _resolved(experiment_id, None); root = repository_root(); version = "v9"
-    command = [sys.executable, "tools/rag_distill/run_m1_direct_image_screen.py",
+    command = [sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_image_screen",
         "--public-plan", str(_path(config, "outputs", f"stratified_screen_{version}_public_plan")),
         "--private-alignment", str(_path(config, "outputs", f"stratified_screen_{version}_private_alignment")),
         "--gate-config", str(_path(config, "inputs", f"stratified_screen_{version}_gates")), "--gate-name", "stratified_distinguishability_screen",
@@ -1592,7 +1607,7 @@ def m1_direct_pilot_collect_command(experiment_id: str) -> None:
     """Run the formal eight-cell pilot from promoted screen passes."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "stratified_pilot_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_pilot_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -1647,7 +1662,7 @@ def m1_direct_pilot_v8_collect_command(experiment_id: str) -> None:
     """Collect the fresh formal v8 pilot using the repaired Option auditor contract."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "stratified_pilot_v8_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_pilot_v8_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -1709,7 +1724,7 @@ def m1_direct_pilot_v9_collect_command(experiment_id: str) -> None:
     """Collect the fresh formal v9 pilot using only v7 screen lineage."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "stratified_pilot_v9_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_pilot_v9_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -1768,7 +1783,7 @@ def m1_direct_pilot_v10_collect_command(experiment_id: str) -> None:
     """Collect the formal pilot from v9-screened, newly contacted images only."""
     config = _resolved(experiment_id, None); root = repository_root()
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "stratified_pilot_v10_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "stratified_pilot_v10_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -1857,7 +1872,7 @@ def m1_direct_collect_command(experiment_id: str) -> None:
     ).get("ready_for_teacher") is not True:
         raise DataError("M1 Direct full collection requires a ready full plan")
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "public_plan")),
         "--private-alignment", str(_path(config, "outputs", "private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -2034,7 +2049,7 @@ def m1_direct_replenishment_v1_collect_command(experiment_id: str) -> None:
     if (planned_hashes & runtime) != already_this_round:
         raise DataError("M1 Direct replenishment v1 plan overlaps an already contacted image")
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(_path(config, "outputs", "replenishment_v1_public_plan")),
         "--private-alignment", str(_path(config, "outputs", "replenishment_v1_private_alignment")),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),
@@ -2329,7 +2344,7 @@ def m1_direct_replenishment_next_collect_command(experiment_id: str) -> None:
     if (planned_hashes & runtime) != allowed_runtime:
         raise DataError(f"M1 Direct replenishment v{round_number} plan overlaps an already contacted image")
     command = [
-        sys.executable, "tools/rag_distill/run_m1_direct_collection.py",
+        sys.executable, "-m", "agrinet.rag.distill.run_m1_direct_collection",
         "--public-plan", str(paths["public"]),
         "--private-alignment", str(paths["private"]),
         "--gate-config", str(_path(config, "inputs", "acceptance_gates")),

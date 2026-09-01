@@ -25,7 +25,7 @@ MILVUS_URI="${MILVUS_URI:-http://${MILVUS_HOST}:${MILVUS_PORT}}"
 
 echo "HOSTNAME=$HOSTNAME"
 echo "MILVUS_URI=$MILVUS_URI"
-"$REPO_ROOT/.venv/bin/python" tools/milvus/check_milvus_ready.py \
+"$REPO_ROOT/.venv/bin/python" src/agrinet/rag/milvus_tools/check_milvus_ready.py \
     --uri "$MILVUS_URI" \
     --timeout 20 \
     --interval 5

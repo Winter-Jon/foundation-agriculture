@@ -145,11 +145,11 @@ The wrapper uses the project VLooM runner with semaphore-limited parallel collec
 
 Implementation notes:
 
-- `tools/vloom_agrinet/run_contrast_cot.py` uses VLooM `PipelineConfig`, `LLMClient`, `AgentRegistry`, dataset creation, prompt templates, and agents.
+- `src/agrinet/data/vloom_tools/run_contrast_cot.py` uses VLooM `PipelineConfig`, `LLMClient`, `AgentRegistry`, dataset creation, prompt templates, and agents.
 - The project runner now dispatches dataset items with `asyncio.Semaphore(cfg.max_concurrent)` and `asyncio.as_completed`, so multiple teacher requests can be in flight.
 - Results are written once at the end with normal synchronous file I/O. This is intentional because upstream `vloom.pipelines.batch_runner` completed dry-run workers but hung while writing through `aiofiles` in this environment.
-- `tools/vloom_agrinet/agent.py` post-processes model responses that wrap JSON in Markdown fences such as ```json ... ```, improving parse success for OpenAI-compatible providers.
-- `tools/vloom_agrinet/run_contrast_cot.py` resolves API keys from `YUNWU_API_KEY` first, then `OPENAI_API_KEY`; saved `config.yaml` is redacted and should not contain credentials.
+- `src/agrinet/data/vloom_tools/agent.py` post-processes model responses that wrap JSON in Markdown fences such as ```json ... ```, improving parse success for OpenAI-compatible providers.
+- `src/agrinet/data/vloom_tools/run_contrast_cot.py` resolves API keys from `YUNWU_API_KEY` first, then `OPENAI_API_KEY`; saved `config.yaml` is redacted and should not contain credentials.
 
 The current formal config is:
 

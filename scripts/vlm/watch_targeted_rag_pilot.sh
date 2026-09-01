@@ -45,7 +45,7 @@ for check in $(seq 1 "$MAX_CHECKS"); do
     echo "artifact_exists=$OUT_DIR; watcher_exit"
     exit 0
   fi
-  if timeout 20s bash -c 'source <("$HOME/.apikeys/bin/apikey" env yunwu); [[ -n "$3" ]] && export YUNWU_API_BASE_URL="$3"; PYTHONPATH="$1" "$2" -m tools.rag_distill.run_pilot --preflight-only --teacher-timeout 8' _ "$REPO_ROOT" "$PYTHON_BIN" "$PROVIDER_BASE_URL" >/tmp/agrinet_rag_pilot_preflight.json 2>/tmp/agrinet_rag_pilot_preflight.err; then
+  if timeout 20s bash -c 'source <("$HOME/.apikeys/bin/apikey" env yunwu); [[ -n "$3" ]] && export YUNWU_API_BASE_URL="$3"; PYTHONPATH="$1" "$2" -m agrinet.rag.distill.run_pilot --preflight-only --teacher-timeout 8' _ "$REPO_ROOT" "$PYTHON_BIN" "$PROVIDER_BASE_URL" >/tmp/agrinet_rag_pilot_preflight.json 2>/tmp/agrinet_rag_pilot_preflight.err; then
     write_status "$check" preflight_passed""
     echo "preflight_passed check=$check $(date -Is)"
     SESSION="$SESSION" OUT_DIR="$OUT_DIR" PROVIDER_BASE_URL="$PROVIDER_BASE_URL" scripts/vlm/run_targeted_rag_pilot_resumable.sh

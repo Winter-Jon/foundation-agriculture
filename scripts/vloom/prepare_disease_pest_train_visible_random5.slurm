@@ -35,7 +35,7 @@ echo "NEGATIVE_COUNT=$NEGATIVE_COUNT"
 echo "RANDOM_SEED=$RANDOM_SEED"
 echo "SPLIT_INFO=$SPLIT_INFO"
 
-"$PYTHON_BIN" tools/vloom_agrinet/prepare_disease_pest_data.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/prepare_disease_pest_data.py \
   --data-root datasets/AgriNet-1K \
   --feature-root outputs/vit-base-cluster/vit-base-1 \
   --output-dir "$OUTPUT_DIR" \
@@ -45,7 +45,7 @@ echo "SPLIT_INFO=$SPLIT_INFO"
   --train-split-info "$SPLIT_INFO" \
   --random-seed "$RANDOM_SEED"
 
-"$PYTHON_BIN" tools/vloom_agrinet/validate_disease_pest_data.py \
+"$PYTHON_BIN" src/agrinet/data/vloom_tools/validate_disease_pest_data.py \
   --data-dir "$OUTPUT_DIR" \
   --expected-disease 79 \
   --expected-pest 61 \

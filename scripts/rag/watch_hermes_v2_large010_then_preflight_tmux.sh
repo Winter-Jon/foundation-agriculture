@@ -25,7 +25,7 @@ if bad: raise SystemExit(f'collection accounting incomplete: {bad}')
 print('all large-010 targets have closed accounting')
 PY
 [[ ! -e "$DEST" ]] || { print -u2 "preflight destination already exists: $DEST"; exit 1; }
-.venv/bin/python -m tools.rag_distill.select_hermes_1to1_large_freeze \
+.venv/bin/python -m agrinet.rag.distill.select_hermes_1to1_large_freeze \
   --collection-root "$COLLECTION" \
   --forbidden-hashes outputs/experiments/hermes_long_direct_blind_rag_1to1_v2/isolation/forbidden_image_sha256.json \
   --destination "$DEST"

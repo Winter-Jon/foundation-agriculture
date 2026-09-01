@@ -36,7 +36,7 @@ MILVUS_LITE_DB="${MILVUS_LITE_DB:-outputs/milvus/agrinet_wiki_lite.db}"
 COLLECTION="${COLLECTION:-agrinet_wiki_siglip2}"
 MODEL_NAME="${MODEL_NAME:-models/siglip2-so400m-patch16-naflex}"
 SAMPLE_FILE="${SAMPLE_FILE:-outputs/vlm_data/disease_pest_test/contrast_samples_vit_base.jsonl}"
-OUTPUT_DIR="${OUTPUT_DIR:-outputs/rag_distill/agrinet_rag_toolcall_v5_evidence_gated_pilot5}"
+OUTPUT_DIR="${OUTPUT_DIR:-outputs/experiments/rag-distill/agrinet_rag_toolcall_v5_evidence_gated_pilot5}"
 TEACHER_MODEL="${TEACHER_MODEL:-gpt-5.4-mini}"
 REASONING_EFFORT="${REASONING_EFFORT:-high}"
 MAX_TOOL_TURNS="${MAX_TOOL_TURNS:-5}"
@@ -73,7 +73,7 @@ echo "REASONING_EFFORT=$REASONING_EFFORT"
 echo "MAX_TOOL_TURNS=$MAX_TOOL_TURNS"
 
 echo "=== Start RAG API ==="
-"$PYTHON_BIN" tools/milvus/search_api.py \
+"$PYTHON_BIN" src/agrinet/rag/milvus_tools/search_api.py \
   --host "$RAG_HOST" \
   --port "$RAG_PORT" \
   --device cpu \
@@ -100,7 +100,7 @@ for attempt in $(seq 1 60); do
 done
 
 echo "=== Start YUNWU pilot distillation ==="
-"$PYTHON_BIN" -m tools.rag_distill.run_pilot \
+"$PYTHON_BIN" -m agrinet.rag.distill.run_pilot \
   --sample-file "$SAMPLE_FILE" \
   --limit 5 \
   --rag-api "$RAG_API" \
@@ -112,7 +112,7 @@ echo "=== Start YUNWU pilot distillation ==="
   --reasoning-effort "$REASONING_EFFORT"
 
 echo "=== Validate artifact ==="
-"$PYTHON_BIN" -m tools.rag_distill.validate_artifact \
+"$PYTHON_BIN" -m agrinet.rag.distill.validate_artifact \
   --artifact-dir "$OUTPUT_DIR"
 
 echo "=== RAG tool-call pilot complete ==="

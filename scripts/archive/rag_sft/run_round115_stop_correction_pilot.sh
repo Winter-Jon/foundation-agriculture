@@ -6,7 +6,7 @@ run_dir=outputs/runs/rag/rag-sft-round115-stop-correction-pilot/logs
 mkdir -p "$run_dir"
 source <("$HOME/.apikeys/bin/apikey" env yunwu)
 export YUNWU_API_BASE_URL=https://api3.wlai.vip/v1
-.venv/bin/python -m tools.rag_distill.run_pilot \
+.venv/bin/python -m agrinet.rag.distill.run_pilot \
   --plan-file outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/round115_stop_correction_pilot/plan.jsonl \
   --candidate-source outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/round115_stop_correction_pilot/source.jsonl \
   --limit 4 --rag-api http://127.0.0.1:8077 \

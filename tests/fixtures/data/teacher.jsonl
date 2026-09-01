@@ -1,1 +1,0 @@
-{"schema_version":"agrinet.data.teacher/v1","sample_id":"sample-1","messages":[{"role":"user","content":"<image> Identify the disease."},{"role":"assistant","content":"<answer>leaf rust</answer>"}],"images":["fixtures/leaf.jpg"],"provider":"mock","metadata":{}}

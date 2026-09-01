@@ -9,4 +9,4 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   PYTHON_BIN="${PYTHON:-python3}"
 fi
 
-exec "$PYTHON_BIN" tools/vloom_agrinet/validate_disease_pest_data.py "$@"
+exec "$PYTHON_BIN" src/agrinet/data/vloom_tools/validate_disease_pest_data.py "$@"

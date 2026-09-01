@@ -1,6 +1,21 @@
 # Checkpoint Cleanup Review
 
-Status: review only — **no checkpoint has been deleted**.
+Status: historical review only — **do not use the candidate list below for a
+current deletion decision**.
+
+## Current disk reconciliation (2026-09-02)
+
+The original review below captured a larger pre-archive checkpoint tree. A
+fresh read-only inventory at
+outputs/migration/repository-organization/20260902T014500-model-dataset-audit-v3.json
+finds 12 checkpoint directories under outputs/vlm_sft/, totaling about 106.6GB.
+Each has at least four versioned references in the current documentation,
+configurations, scripts, source, or VLM workflow tree.
+
+Therefore, no currently present checkpoint is an archive or deletion candidate
+in this review. The historical 60-checkpoint / 497GB candidate table remains
+only as evidence of the prior review state; any future retention decision must
+start from a new inventory and an explicit approved target list.
 
 ## Scope and safety rule
 

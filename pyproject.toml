@@ -53,3 +53,8 @@ packages = ["src/agrinet", "vendor/VLooM/vloom"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+  "unit: deterministic unit or contract tests with no process boundary",
+  "integration: CLI, subprocess, local-runtime, adapter, or service-boundary tests",
+  "regression: research protocol, data gate, or reproducibility regression tests",
+]

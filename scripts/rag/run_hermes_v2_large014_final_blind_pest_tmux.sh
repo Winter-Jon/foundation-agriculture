@@ -17,5 +17,5 @@ r = urllib.request.Request(os.environ['YUNWU_API_BASE_URL'].rstrip('/') + '/mode
 with urllib.request.urlopen(r, timeout=20) as response:
     if response.status >= 400: raise SystemExit(f'Micu teacher preflight HTTP {response.status}')
 PY
-.venv/bin/python -m tools.rag_distill.collect_hermes_1to1_v2 --targets "$PLAN" --route rag --output-dir "$OUT" --model gpt-5.6-terra --limit 9999 --request-timeout 120 --rag-api http://127.0.0.1:8077 >"$LOG_DIR/open-zh-pest.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || exit $rc; }
+.venv/bin/python -m agrinet.rag.distill.collect_hermes_1to1_v2 --targets "$PLAN" --route rag --output-dir "$OUT" --model gpt-5.6-terra --limit 9999 --request-timeout 120 --rag-api http://127.0.0.1:8077 >"$LOG_DIR/open-zh-pest.log" 2>&1 || { rc=$?; [[ $rc == 2 ]] || exit $rc; }
 print 'large-014 final Blind pest collection completed.'

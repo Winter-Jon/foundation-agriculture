@@ -12,4 +12,4 @@ fi
 
 CONFIG_PATH="${CONFIG_PATH:-configs/vloom/agrinet_insect_contrast_cot.yaml}"
 
-exec "$PYTHON_BIN" -m tools.vloom_agrinet.run_contrast_cot --config_path "$CONFIG_PATH" "$@"
+exec "$PYTHON_BIN" -m agrinet.data.vloom_tools.run_contrast_cot --config_path "$CONFIG_PATH" "$@"

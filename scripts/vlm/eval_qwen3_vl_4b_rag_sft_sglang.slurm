@@ -221,7 +221,7 @@ PY
 
 if [[ "$EVAL_MODE" == "rag" ]]; then
 echo "Starting CPU RAG server on ${RAG_PORT}"
-"$PYTHON_BIN" tools/milvus/search_api.py \
+"$PYTHON_BIN" src/agrinet/rag/milvus_tools/search_api.py \
     --host 127.0.0.1 \
     --port "$RAG_PORT" \
     --device cpu \

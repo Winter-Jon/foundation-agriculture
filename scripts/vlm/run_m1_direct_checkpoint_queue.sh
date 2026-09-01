@@ -46,7 +46,7 @@ for spec in $CHECKPOINT_SPECS; do
   [[ -d "$checkpoint" ]] || { echo "missing $checkpoint" >&2; exit 1; }
   root="$QUEUE_ROOT/$label/formal-direct"
   FORMAL_ROOT="$root" CANDIDATE="$checkpoint" EXPERIMENT_ID="$EXPERIMENT_ID-$label" MANIFEST="$MANIFEST" MAX_NEW_TOKENS="$MAX_NEW_TOKENS" SGLANG_TP_SIZE="$EVAL_SGLANG_TP_SIZE" SGLANG_DP_SIZE="$EVAL_SGLANG_DP_SIZE" CUDA_VISIBLE_DEVICES="$EVAL_CUDA_VISIBLE_DEVICES" bash scripts/vlm/run_direct_formal618_native_dp8.sh
-  if ! "$PYTHON_BIN" tools/rag_distill/validate_m1_direct_promotion_gate.py \
+  if ! "$PYTHON_BIN" src/agrinet/rag/distill/validate_m1_direct_promotion_gate.py \
     --raw-base-review "$root/artifacts/candidate_vs_raw_base_direct_paired_review.json" \
     --m1-review "$root/artifacts/candidate_vs_m1_direct_paired_review.json" \
     --output "$QUEUE_ROOT/$label/promotion_gate.json"; then

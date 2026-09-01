@@ -17,7 +17,8 @@ outputs:
   artifacts_root: outputs/artifacts/datasets
   pilot_dir: outputs/artifacts/datasets/agrinet-rag-recovery-pilot-v5
 parameters:
-  seed: 20260807
+  # Existing immutable plan/statistics were generated with this seed.
+  seed: 20260805
   rag_primary_per_cell: 4
   rag_reserve_per_cell: 16
   retrieval_top_k: 5

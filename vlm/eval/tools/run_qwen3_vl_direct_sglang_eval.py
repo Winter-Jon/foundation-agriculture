@@ -13,7 +13,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from tools.rag_distill.run_pilot import image_url_content
+from agrinet.rag.distill.run_pilot import image_url_content
 from eval_runner_common import SnapshotStore, load_jsonl, request_fingerprint, validate_manifest
 
 

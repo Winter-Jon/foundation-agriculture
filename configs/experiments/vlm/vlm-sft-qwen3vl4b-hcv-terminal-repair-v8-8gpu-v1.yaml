@@ -16,7 +16,7 @@ outputs:
   model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu
   run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-terminal-repair-v8-8gpu-v1/
 parameters:
-  entrypoint: .venv/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu_sft.yaml
+  entrypoint: .venv_test/bin/swift sft configs/vlm/qwen3_vl_4b_hcv_manual_json_terminal_repair_v8_8gpu_sft.yaml
   local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29687}
   training_authorized: outputs/artifacts/datasets/agrinet-hcv-manual-json-v8-terminal-repair/validation.json
 tags: [hcv, v8, terminal-repair, micu, eight-gpu, sft]

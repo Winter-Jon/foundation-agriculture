@@ -9,7 +9,7 @@ base=outputs/experiments/rag_sft_iteration/candidates
 run_one() {
   local name="$1" plan="$2"
   mkdir -p "$base/$name"
-  YUNWU_API_BASE_URL=https://api3.wlai.vip/v1 PYTHONPATH=. .venv/bin/python -m tools.rag_distill.run_pilot \
+  YUNWU_API_BASE_URL=https://api3.wlai.vip/v1 PYTHONPATH=. .venv/bin/python -m agrinet.rag.distill.run_pilot \
     --plan-file "outputs/experiments/rag_sft_iteration/rounds/round_0001/plan/$plan" \
     --candidate-source "$sourcepool" --limit 1 --rag-api http://127.0.0.1:8077 \
     --output-dir "$base/$name" --model gpt-4o --max-tool-turns 3 --top-k 5 \

@@ -49,7 +49,7 @@ docker run --name "$MILVUS_CONTAINER" \
 CONTAINER_LAUNCH_PID=$!
 echo "docker_launch_pid=$CONTAINER_LAUNCH_PID"
 
-"$REPO_ROOT/.venv/bin/python" tools/milvus/check_milvus_ready.py \
+"$REPO_ROOT/.venv/bin/python" src/agrinet/rag/milvus_tools/check_milvus_ready.py \
     --uri "http://127.0.0.1:${MILVUS_PORT}" \
     --timeout 600 \
     --interval 10

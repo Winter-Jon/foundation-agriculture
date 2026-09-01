@@ -17,7 +17,7 @@ fi
 CONFIG_PATH="${CONFIG_PATH:-configs/vloom/agrinet_disease_pest_contrast_cot_real.yaml}"
 MAX_CONCURRENT="${MAX_CONCURRENT:-4}"
 
-exec "$PYTHON_BIN" -m tools.vloom_agrinet.run_contrast_cot \
+exec "$PYTHON_BIN" -m agrinet.data.vloom_tools.run_contrast_cot \
   --config_path "$CONFIG_PATH" \
   --max-concurrent "$MAX_CONCURRENT" \
   "$@"

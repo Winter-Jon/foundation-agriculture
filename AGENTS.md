@@ -29,10 +29,15 @@ This repository runs on a local workstation, not a Slurm cluster. Use the projec
 
 ## Environment
 
-- Use the single project-root `.venv` managed with uv.
-- Install packages with `uv pip install -p .venv/bin/python ...`.
+- Use the project-root `.venv` managed with uv for the AgriNet CLI, Data,
+  RAG, and ordinary validation. Install its packages with
+  `uv pip install -p .venv/bin/python ...`.
+- Retain `.venv_test` as the dedicated SFT/ms-swift environment. VLM SFT
+  launchers must select `.venv_test/bin/python` or `.venv_test/bin/swift`
+  explicitly; it is not a disposable test cache.
 - Keep `uv.lock` versioned.
-- Do not introduce Conda absolute paths, `.venv-py312`, or task-specific environments unless explicitly requested.
+- Do not introduce Conda absolute paths, `.venv-py312`, or additional
+  task-specific environments unless explicitly requested.
 
 ## Input And Output Rules
 

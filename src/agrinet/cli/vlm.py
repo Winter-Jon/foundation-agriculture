@@ -58,6 +58,18 @@ def _config(experiment_id: str) -> dict:
     return resolve_config(spec)
 
 
+def sft_python() -> Path:
+    """Return the dedicated local environment for ms-swift SFT operations."""
+    path = repository_root() / ".venv_test" / "bin" / "python"
+    if not path.is_file():
+        raise ConfigError(f"SFT environment is unavailable: {path}")
+    return path
+
+
+def evaluation_root(experiment_id: str) -> Path:
+    return repository_root() / "outputs" / "experiments" / "vlm-evaluations" / experiment_id
+
+
 def local_training_env(config: dict) -> dict[str, str]:
     """Return explicit local DDP settings declared by a VLM experiment.
 
@@ -121,7 +133,9 @@ def assert_single_use_freeze_available(config: dict) -> None:
             status = json.loads(status_path.read_text(encoding="utf-8")).get("status")
         except (OSError, json.JSONDecodeError):
             status = "unknown"
-        if status in {"pending", "running", "completed", "failed", "unknown"}:
+        if status == "completed":
+            status = "complete"  # Historical alias; never emit it for a new managed run.
+        if status in {"pending", "running", "complete", "failed", "unknown"}:
             statuses.append(str(status))
     if statuses:
         raise ConfigError(
@@ -363,7 +377,9 @@ def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) 
     """Run or preview ms-swift training from a registered explicit config."""
     try:
         config = _config(experiment_id)
-        command = MsSwiftAdapter().train_command(repository_root() / config["inputs"]["config"])
+        command = MsSwiftAdapter().train_command(
+            repository_root() / config["inputs"]["config"], sft_python()
+        )
         if dry_run:
             typer.echo(" ".join(command)); return
         result = subprocess.run(command, cwd=repository_root(), env={**os.environ, **local_training_env(config)})
@@ -391,13 +407,13 @@ def evaluate(experiment_id: str, dataset: Path = typer.Option(...), dry_run: boo
     config = _config(experiment_id)
     model = str(repository_root() / config["inputs"]["baseline_model"])
     if backend == "vlmevalkit":
-        command = VLMEvalKitAdapter().evaluate_command(model, str(dataset), repository_root() / "outputs/evaluations" / experiment_id)
+        command = VLMEvalKitAdapter().evaluate_command(model, str(dataset), evaluation_root(experiment_id))
         if dry_run: typer.echo(" ".join(command)); return
         result = subprocess.run(command, cwd=repository_root())
         if result.returncode: raise typer.Exit(result.returncode)
         return
     artifact = ArtifactRef(schema_version="agrinet.model.transformers/v1", artifact_id="qwen3vl4b-rag-sft-full-v1", artifact_type="models", path=Path(config["inputs"]["baseline_model"]))
-    output = repository_root() / "outputs/evaluations" / experiment_id / "evaluation.json"
+    output = evaluation_root(experiment_id) / "evaluation.json"
     if dry_run: typer.echo(f"agrinet exact-name {dataset} -> {output}"); return
     result = evaluate_predictions(dataset, artifact, output)
     typer.echo(result.model_dump_json(indent=2))
@@ -421,14 +437,16 @@ def submit(
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(2) from exc
-        command = MsSwiftAdapter().train_command(root / config["inputs"]["config"])
+        command = MsSwiftAdapter().train_command(root / config["inputs"]["config"], sft_python())
     elif operation == "export":
         command = MsSwiftAdapter().export_command(root / config["inputs"]["baseline_model"], root / config["outputs"]["model"])
     elif operation == "evaluate":
         selected = dataset or config.get("parameters", {}).get("dataset")
         if not selected:
             typer.echo("error: evaluate requires --dataset or parameters.dataset", err=True); raise typer.Exit(2)
-        command = VLMEvalKitAdapter().evaluate_command(str(root / config["inputs"]["baseline_model"]), str(selected), root / "outputs/evaluations" / experiment_id)
+        command = VLMEvalKitAdapter().evaluate_command(
+            str(root / config["inputs"]["baseline_model"]), str(selected), evaluation_root(experiment_id)
+        )
     elif operation == "rag-diagnostic":
         try:
             command = rag_diagnostic_command(config)
