@@ -5,8 +5,9 @@ Status: current plan as of 2026-08-19.
 ## Goal
 
 Develop a successor that preserves strong no-tool agricultural recognition
-while retaining or improving the verified Hermes RAG gain. The two standing
-references are [M1 and M2](../results/MILESTONE_EXPERIMENTS.md); they are
+while retaining or improving the verified Hermes RAG gain. The current
+reference is [CURRENT_FORMAL618_EVALUATION.md](../results/CURRENT_FORMAL618_EVALUATION.md).
+Historical M1/M2 milestones remain in `docs/archive/results/`; they are
 different protocol-specific objectives, not one combined leaderboard.
 
 ## Decision
