@@ -1,302 +1,127 @@
-# 从检索增强分类到比较式开放词汇农业诊断
+# 从检索增强识别到比较式农业诊断：HCV 框架
 
-Status: paper-facing research motivation and proposed method framing. This
-document does not claim that the proposed framework, its enlarged knowledge
-base, or its training data have already been implemented or evaluated.
+> Nature Machine Intelligence 风格中文论文框架（不含实验结果章节）。每条内容为一个自然段的中心句，用于后续扩写；当前已验证结果和 v1–v11 演进见项目进展报告。
 
-## One-sentence thesis
+## 摘要
 
-Open-vocabulary agricultural disease and pest recognition is fundamentally a
-**comparative diagnosis** problem: a system should use visual observations to
-form competing, confusable hypotheses and retrieve external knowledge that can
-*distinguish* those hypotheses, rather than retrieve a plausible answer and
-let it overwrite the image evidence.
+1. 农业病虫害识别同时受到开放类别、长尾分布和细粒度视觉混淆的限制，单纯依赖封闭类别分类难以覆盖真实场景。
+2. 前期工作首先建立了直接视觉识别基线，随后验证了检索增强的可行性，但一轮检索带来的收益仍受候选覆盖、证据使用和推理协议稳定性的共同限制。
+3. 这些结果表明，知识增强的核心问题不是“是否接入检索”，而是“检索是否找到正确候选，以及模型是否利用了能够区分类别的证据”。
+4. 本文将开放词汇农业识别重新表述为比较式假设验证，并提出假设—对比—验证（Hypothesize–Contrast–Verify，HCV）框架。
+5. HCV 先根据图像形成可混淆候选，再针对候选之间的未决差异检索公开证据，最后通过图像与知识的一致性完成判断。
+6. 本文进一步定义比较式推理状态、差异导向的农业知识空间和可审计的监督轨迹，使该过程能够被训练、分析和复现。
+7. 论文的核心命题是：农业细粒度识别中的知识增强，关键不在于获得更多检索文本，而在于正确候选的召回和区分性证据的有效使用。
 
-## 1. Why conventional classification and RAG are insufficient
+## 1. 引言：从“接入检索”到“解决比较问题”
 
-Agricultural disease and pest recognition has three coupled properties.
+1. 真实农业识别包含长尾类别、别名差异、图像质量变化和跨地区知识差异，模型不能只依靠固定训练类别的参数记忆。
+2. 病虫害识别的主要困难是相似类别之间的细粒度判别，而不是判断图像属于病害还是虫害。
+3. 直接视觉识别可以提供初始观察和候选范围，但难以覆盖持续更新的专业知识和低频类别。
+4. 外部知识可以补充寄主、发生部位、症状、形态、别名和发育阶段等信息，但相关信息不一定具有类别区分力。
+5. 一轮检索的初步结果表明，知识增强路线能够带来正向收益，但其效果尚未超过直接识别能力，说明“检索相关资料”并不等于“完成可靠诊断”。
+6. 对一轮检索轨迹的分析进一步显示，错误至少分为正确类别未被检索到，以及正确类别已出现但模型仍未选对两类。
+7. 因此，本文把问题从“图像—文档—答案”改写为“视觉假设—候选对比—证据验证”。
+8. 在这一表述中，直接视觉识别是诊断锚点，知识检索服务于解决明确的候选差异，而不是覆盖原始图像证据。
+9. 本文提出 HCV 框架，并将其研究目标限定为候选生成、差异检索和证据判别三个可观察环节。
+10. 本文的贡献包括比较式问题表述、直接视觉锚定的知识增强框架、可审计的监督轨迹，以及区分检索召回和证据判断的评价方法。
 
-1. **Open vocabulary and long tail.** Test images can contain categories,
-   aliases, language forms, or fine-grained variants that are not adequately
-   represented in parametric training data.
-2. **Fine-grained visual confusability.** Closely related diseases and pests
-   often share host, colour, lesion shape, or body appearance; the decisive
-   cue may be subtle, local, or stage-dependent.
-3. **Plausible retrieval can be harmful.** A visually or semantically similar
-   but incorrect retrieved class is persuasive enough to pull a vision-language
-   model away from an initially useful Direct prediction.
+## 2. 相关工作：农业识别、细粒度视觉与知识增强
 
-Consequently, the task is not adequately captured by either closed-set image
-classification or the usual "image/question -> retrieve documents -> generate
-an answer" RAG pipeline. The critical question is not only *which class is
-relevant?* It is *which observable and publicly verifiable evidence separates
-the remaining similar classes?*
+1. 农业图像识别研究主要关注封闭类别和专用视觉模型，开放类别和长尾类别的覆盖仍然有限。
+2. 细粒度视觉分类研究关注局部特征和类间差异，但通常假设类别集合固定且主要知识可以由训练数据获得。
+3. 多模态检索增强研究关注何时检索、如何构造查询以及如何使用检索上下文，但通常以相关信息而非候选差异作为检索目标。
+4. 自适应检索、检索纠错和多轮推理为 HCV 提供了方法基础，但没有直接解决农业相似类别之间应比较什么证据的问题。
+5. HCV 的创新边界不是提出多轮检索或比较概念本身，而是将它们组织为面向农业细粒度混淆的可监督诊断过程。
 
-We therefore formulate the task as **comparative hypothesis verification for
-open-vocabulary agricultural recognition**. A prediction is the outcome of a
-diagnostic comparison among plausible alternatives, not merely the highest
-scoring class name.
+## 3. 问题定义：把识别拆成两个可分析问题
 
-## 2. Proposed paradigm: Hypothesize--Contrast--Verify
+1. 输入为农业图像和识别问题，输出为开放类别名称或给定候选中的正确选项。
+2. 模型可以调用公开农业知识，但查询不得使用测试标签或其他不可见目标信息。
+3. 任务同时考察直接视觉识别和知识增强识别，前者用于衡量视觉能力保持，后者用于衡量外部知识收益。
+4. 检索召回衡量正确类别是否进入模型可见的候选证据，证据条件准确率衡量正确类别出现后模型是否选对。
+5. 推理过程还需要记录证据增量、视觉—知识一致性、无效查询和异常结束，以避免把流程错误误认为能力提升。
 
-We propose the paper-level paradigm **Hypothesize--Contrast--Verify (HCV)**,
-also described as **Comparison-Centric Retrieval-Augmented Recognition**. It
-reorganizes the roles of Direct visual recognition and retrieval:
+## 4. 方法：假设—对比—验证
 
-```text
-Agricultural image
-        |
-        v
-Visual hypothesis formation
-  observations + confusable candidate classes + uncertainty
-        |
-        v
-Contrast state
-  which candidate differences remain unresolved?
-        |
-        v
-Similar-class knowledge retrieval
-  retrieve discriminative attributes, aliases, host/symptom evidence,
-  and reference evidence for the unresolved comparison
-        |
-        v
-Visual--knowledge verification
-  support, rule out, or revise competing hypotheses
-        |
-        v
-Open-vocabulary agricultural diagnosis
-```
+### 4.1 框架概览
 
-The Direct component is therefore not a baseline that RAG replaces. It is the
-visual diagnostic anchor that identifies what must be compared. RAG is not a
-generic knowledge appendage; it is an instrument for resolving a specific
-unsettled candidate relation.
+1. HCV 将一次识别组织为视觉假设形成、相似类别对比和证据验证三个阶段。
+2. 假设阶段从图像提取可观察属性并形成少量候选，避免模型过早锁定单一类别。
+3. 对比阶段明确候选之间尚未解决的区分性特征，并据此决定是否需要外部知识。
+4. 验证阶段把公开证据与图像观察共同用于支持、排除或修正候选。
+5. 只有能够改变候选集合或补充区分性证据的查询，才被视为有效的后续推理。
 
-### The contrast state
+### 4.2 视觉假设与对比状态
 
-The central intermediate representation is a compact, inspectable **contrast
-state**, not an unconstrained verbose chain of thought. It records:
+1. 视觉观察应描述寄主、受影响部位、病斑或虫体形态、颜色、纹理、分布和发育阶段等可见属性。
+2. 候选集合用于保留多个具有真实混淆关系的解释，而不是替代图像观察直接生成答案。
+3. 对比状态由当前观察、候选类别、未决差异和目标查询组成，是 HCV 的核心中间表示。
+4. 对比状态不是不可验证的自由思维链，而是可由公开证据和候选变化检查的诊断结构。
+5. 当证据充分时模型应停止查询，当候选不足时应扩展候选，当候选已知但差异不明时应检索区分性属性。
 
-- observable visual attributes (host, affected organ, lesion or body shape,
-  colour, texture, distribution, developmental stage);
-- a small set of visually confusable class hypotheses;
-- discriminative cues that would separate those hypotheses;
-- evidence that is missing, contradictory, or insufficient; and
-- a retrieval question targeted at resolving that particular contrast.
+### 4.3 面向差异的知识检索与验证
 
-For example, rather than searching only for a presumed label, a model can state
-that it observes rough black structures on a potato surface, contrast
-black-scurf-like symptoms with leaf-focused blights, and retrieve the public
-features that distinguish lesion location and characteristic structures. The
-final decision must then be consistent with both the visible image evidence and
-the retrieved differential evidence.
+1. HCV 的检索目标是寻找能够区分候选的属性、别名、寄主、症状、形态或参考证据，而不是寻找与初始预测一般相关的文档。
+2. 视觉检索用于候选扩展，语义检索用于属性辨别，图文联合检索用于结合外观和农业描述，名称检索只用于确认已经公开出现的名称关系。
+3. 后续查询中的类别和属性必须来自图像观察、公开候选或此前检索结果，以保证证据来源可追溯并避免标签泄漏。
+4. 检索结果首先作为待验证证据，模型需要判断其支持或排除哪些候选，而不能直接接受排名最高的类别。
+5. 最终答案应同时得到图像观察和公开证据支持，无法解决的冲突应转化为不确定性或拒绝判断。
 
-This makes the learned reasoning object a **discriminative contrastive
-reasoning trace**: a concise, checkable diagnostic process centred on candidate
-differences, rather than a free-form explanation or an imitation of a teacher's
-private reasoning.
+## 5. 方法实现：知识空间、监督轨迹与约束
 
-## 3. What makes HCV different from conventional RAG
+### 5.1 农业视觉—语义差异知识空间
 
-The distinction is architectural and epistemic, not simply an additional tool
-call.
+1. HCV 需要能够回答“相似类别有何可观察差异”的知识空间，而不只是类别描述的文档集合。
+2. 每个类别应连接规范名称、多语言别名、参考图像、寄主、发生部位、症状、形态和发育阶段。
+3. 相似类别关系和成对区分属性使知识资源从类别存储转化为可检索的比较空间。
+4. 知识空间应支持视觉、语义、图文联合和名称检索，并返回可读、可追溯的公开证据。
+5. 知识条目存在遗漏、冲突和地域差异，因此名称、关系和属性均需保留来源并允许修订。
 
-| Conventional multimodal RAG | HCV comparative recognition |
-| --- | --- |
-| Image/question -> retrieve relevant material -> generate an answer | Image -> form confusable hypotheses -> retrieve evidence that distinguishes them -> verify a decision |
-| The retrieval target is a relevant answer or document | The retrieval target is a discriminative fact, alias, or reference relation |
-| Image evidence and retrieved context are often concatenated as peer inputs | Direct visual observations remain a comparison anchor against which retrieved evidence is checked |
-| Additional turns mainly add more context | An additional turn is justified only by an unresolved candidate contrast |
-| Success is predominantly retrieval relevance and final accuracy | Success also requires candidate coverage, discriminative value, visual--knowledge consistency, and auditable resolution |
+### 5.2 可监督的比较式推理轨迹
 
-This framing provides a principled answer to the observed failure mode in
-multimodal RAG: retrieval is not automatically beneficial merely because its
-content is relevant. In fine-grained agriculture, a similar-class result can
-be relevant yet diagnostically misleading. HCV requires external evidence to
-participate in a comparison with the Direct visual prior, rather than allowing
-the retrieved top result to become an unexamined replacement answer.
+1. 监督目标是可观察的图像描述、候选、未决差异、查询、公开证据和最终判断，而不是教师模型的私有思维过程。
+2. 直接识别样本用于保持视觉能力，单次查询样本用于学习适时停止，多轮样本用于学习有证据增量的补充查询。
+3. 每条多轮轨迹必须满足查询差异和证据增量要求，重复证据轨迹不进入训练。
+4. 训练数据必须满足图像隔离、证据来源可追溯和测试标签不进入查询等约束。
+5. 数据配比应同时考虑独立图像、类别覆盖和有效文本量，避免长轨迹削弱直接识别能力。
+6. 教师蒸馏只是获得可审计轨迹的实现方式，不应被表述为论文的中心创新。
 
-### Relationship to existing adaptive RAG
+### 5.3 学习目标与推理约束
 
-Existing systems such as Self-RAG, Adaptive-RAG, and FLARE primarily study when
-to retrieve and how much retrieval is needed. CRAG evaluates retrieved
-evidence and triggers correction when it is unreliable. Query rewriting seeks
-better formulations for retrieval. Multimodal reliability work, including
-RULE, further shows that retrieved content can cause a vision-language model to
-abandon a correct initial prediction.
+1. 学习目标同时覆盖最终识别、正确类别召回、证据判别、有效查询和推理完整性。
+2. 模型不得使用隐藏标签查询、重复无增量调用或在查询预算耗尽后继续检索。
+3. 无效格式、来源不明和未正常结束的推理应作为显式失败，而不能通过后处理修复。
+4. 这些约束定义了方法可被科学检验的边界，而不仅是工程实现要求。
 
-HCV is complementary but asks a different question: **given a visual
-fine-grained ambiguity, what relation among candidate classes should the model
-retrieve in order to resolve that ambiguity?** Its queries are not generic
-rewrites of the user request; they arise from a candidate pair or set and from
-the missing diagnostic cue that separates them. The comparison anchor also
-makes retrieval correction bidirectional: public knowledge can revise a visual
-hypothesis, but visual evidence can flag a retrieved candidate as insufficient
-or inconsistent.
+## 6. 讨论：为什么需要 HCV
 
-The claim should remain appropriately scoped. The contribution is not the
-invention of multi-hop RAG, adaptive retrieval, or comparison itself. The
-proposed novelty is their integration into a **comparison-centred diagnostic
-paradigm for open-vocabulary, long-tail agricultural recognition**, where
-similar-class confusion is the primary object of retrieval and decision.
+1. 前期直接识别基线说明视觉模型能够提供有价值的初始判断，第一轮知识增强说明外部知识能够带来额外收益，但两者之间仍存在能力衔接问题。
+2. 现有结果表明，知识增强的收益同时受检索覆盖和证据使用影响，不能通过增加文本或调用次数简单获得。
+3. HCV 的价值在于把这两个瓶颈显式拆开，并让每次检索都对应一个可说明的候选差异。
+4. 该框架使视觉模型和知识库相互校验，任何一方都不能在缺少一致性证据时自动覆盖另一方。
+5. HCV 的方法主张是围绕农业相似类别混淆组织比较、检索和验证，而不是宣称多轮检索或比较概念本身全新。
 
-## 4. Knowledge-base contribution: from corpus to comparative evidence space
+## 7. 局限性与责任边界
 
-The resource should be positioned as an **Open-Vocabulary Agricultural
-Visual--Semantic Differential Knowledge Base**, rather than as a generic
-document collection. Its purpose is to make class differences publicly
-retrievable and auditable.
+1. 当关键视觉特征不可见时，外部知识无法补回缺失证据，系统应保留不确定性。
+2. 知识库覆盖不足、名称冲突和资料错误会直接限制候选召回与最终判断。
+3. 教师生成、公开资料和人工审核可能引入偏差，关键类别差异仍需要农业专家验证。
+4. 多轮检索增加延迟和资源消耗，实际部署需要学习选择性查询和及时停止。
+5. 类别识别不能直接替代防治决策，高风险建议需要独立的专业验证。
+6. 论文应报告数据来源、图像隔离、知识条目、轨迹筛选和评测协议，并保留可复核的模型与预测版本。
 
-The currently supported foundation includes canonical bilingual class names,
-aliases, reference images, visual, text, fused, and name-oriented search
-modes, as well as curated same-domain similar-class lists. A paper-facing
-expansion should represent, for each class and where available, the following
-comparable evidence:
+## 8. 结论
 
-- canonical names and multilingual/common aliases;
-- reference images and visual retrieval representations;
-- host, affected part, morphology, symptom, and developmental-stage
-  descriptions;
-- cross-modal indices for visual, semantic, fused, and name lookup;
-- links to visually confusable categories; and
-- discriminative attributes or diagnostic cues that distinguish those
-  categories.
+1. 本文将开放词汇农业识别重新定义为候选类别之间的比较式假设验证。
+2. HCV 以视觉观察为锚点，通过对比状态引导差异检索，并用视觉—知识一致性完成判断。
+3. 差异知识空间和可监督推理轨迹使该过程能够被训练、审计和分解评价。
+4. 论文最终需要验证比较导向检索能否提高候选召回，以及区分性证据能否改善命中后的判断。
 
-The first five elements describe the current database direction, including the
-existing curated similar-class relations. Explicit per-pair discriminative
-attributes remain a proposed enrichment and must not be claimed as completed
-until constructed and validated. Together, they transform the resource from a
-store of class descriptions into a **retrievable comparison space**: the
-system can ask not only "what resembles this image?" but also "what
-observable property separates these two public candidates?"
+## 9. 论文图表规划
 
-This is particularly valuable for open-vocabulary recognition: aliases connect
-different naming conventions, reference evidence grounds visual similarity, and
-differential attributes let the system explain why one long-tail class is
-preferred over its plausible neighbours.
-
-## 5. Learning the paradigm without making distillation the headline
-
-The framework needs supervision, but teacher distillation should be described
-as an **instantiation mechanism**, not the paper's primary novelty. The target
-of learning is not a teacher's unrestricted internal reasoning. It is the
-observable, auditable sequence required by HCV:
-
-1. identify visible diagnostic attributes;
-2. form a small, uncertainty-aware set of confusable hypotheses;
-3. state the candidate difference that is still unresolved;
-4. formulate a public query for discriminative evidence;
-5. compare retrieved evidence with image observations; and
-6. support, reject, or revise the hypotheses before producing the final class.
-
-This changes the role of a multi-turn trace. A second query is not evidence of
-better reasoning merely because it exists. It is useful only if it addresses an
-unresolved contrast and changes the public evidence available for a decision.
-Candidate-name confirmation, semantic attribute search, visual refinement, and
-fused retrieval can all be concrete actions inside the same HCV loop.
-
-Training-data construction can therefore enforce **evidence-delta** and
-public-evidence constraints: retain traces in which a follow-up exposes a new
-candidate, discriminative attribute, alias resolution, or meaningful rank
-change; retain valid one-query stop decisions; and reject duplicate or
-no-value tool trajectories. These are quality controls for learning the
-comparative diagnostic process, not independent headline claims.
-
-## 6. Paper-facing contributions
-
-The intended contribution structure is:
-
-1. **Problem formulation.** Formulate open-vocabulary agricultural disease and
-   pest recognition as comparative hypothesis verification under long-tail
-   visual confusability, rather than as closed-set classification or answer
-   retrieval.
-2. **Framework.** Introduce HCV, a Direct-anchored, comparison-centric
-   retrieval-augmented recognition framework in which retrieval seeks evidence
-   that distinguishes visually confusable agricultural candidates.
-3. **Reasoning object.** Define a compact discriminative contrastive reasoning
-   trace that connects visual observations, competing hypotheses, unresolved
-   diagnostic cues, public retrieval, and evidence-based revision.
-4. **Resource.** Build and evaluate an open-vocabulary agricultural
-   visual--semantic differential knowledge base that supports class, alias,
-   image, attribute, and similar-class comparison.
-5. **Evaluation.** Establish that improvements arise from more useful
-   comparative evidence, not simply from more retrieved tokens or more tool
-   calls, using strict protocol evaluation and paired analyses.
-
-An NMI-style central claim can be stated as follows:
-
-> We recast open-vocabulary agricultural recognition as comparative diagnosis.
-> Rather than retrieving a plausible class description after visual prediction,
-> our framework uses visual observations to construct confusable hypotheses and
-> retrieves public evidence specifically to distinguish them. This creates an
-> auditable visual--knowledge verification loop for long-tailed disease and
-> pest recognition.
-
-## 7. Evidence boundary and empirical agenda
-
-The present evidence motivates the problem but does not yet validate HCV:
-
-- **M1** is a strong Direct reference on the current 618-image bridge
-  (67.31% Direct), showing that parametric visual recognition can be a valuable
-  anchor.
-- **M3** is the protocol-clean strict-RAG reference: checkpoint-72 reaches
-  60.52% versus its matched strict raw base at 54.85%, a paired +5.66pp
-  improvement (95% CI [+3.07, +8.25]).
-- The M3/epoch-6 trajectory audit identifies two distinct limitations: truth
-  candidates are often absent from public retrieval, and a model can fail to
-  use retrieved truth-compatible evidence. The difficult M1-gap slices include
-  known Option, known pest, unknown Open, and unknown disease.
-
-These findings support the motivation for comparative retrieval but must not be
-presented as a completed validation of the new paradigm. The appropriate
-experimental sequence is:
-
-| Comparison | What it isolates |
-| --- | --- |
-| Current M3 one-query strict RAG | Protocol-clean starting point |
-| Fixed two-query RAG | Whether call count alone helps |
-| Query rewriting without contrast state | Generic retrieval reformulation |
-| HCV without selective trace filtering | Value of the Direct-anchored comparison loop |
-| Full HCV | Combined value of comparison-guided retrieval and high-value traces |
-
-Each route should report overall accuracy and independent slices for
-known/unknown, Open/Option, and disease/pest. It should additionally report
-first- and final-turn truth-hit@k, accuracy conditional on a truth hit, mean
-tool calls, retrieval-mode distribution, evidence-change rate,
-visual--knowledge conflict/resolution statistics, and strict protocol-error
-rates. Matched raw-base paired bootstrap remains the causal RAG-effect
-comparison; M1 Direct is a deployment reference, not a matched RAG baseline.
-
-## 8. Practical design principles
-
-- Keep Direct visual reasoning as an anchor, never as disposable preamble.
-- Retrieve to separate plausible candidates, not merely to repeat a predicted
-  label.
-- Require every extra retrieval turn to name the unresolved comparison it is
-  intended to settle.
-- Preserve public evidence lineage: a follow-up name or alias must originate
-  in earlier public retrieval, never from a hidden ground-truth label.
-- Measure whether retrieval changes usable evidence, not only whether it
-  returns more text.
-- Fail closed on invalid tool behaviour and report it separately from task
-  accuracy.
-- Treat database coverage and evidence use as separate bottlenecks: improving
-  one does not prove that the other is solved.
-
-## 9. Terminology to keep stable
-
-| Concept | Recommended paper term |
-| --- | --- |
-| Overall paradigm | Hypothesize--Contrast--Verify (HCV) / Comparison-Centric Retrieval-Augmented Recognition |
-| Task view | Comparative hypothesis verification for open-vocabulary agricultural recognition |
-| Direct intermediate state | Visual hypothesis or Direct visual prior |
-| Structured comparison representation | Contrast state |
-| Learnable trace | Discriminative contrastive reasoning trace |
-| Database | Open-Vocabulary Agricultural Visual--Semantic Differential Knowledge Base |
-| Retrieval purpose | Similar-class discriminative retrieval |
-| Final mechanism | Visual--knowledge verification loop |
-
-This vocabulary keeps the paper's centre of gravity on a new diagnostic
-paradigm and its supporting knowledge infrastructure. Data construction,
-teacher generation, multi-query scheduling, and evidence-delta filtering are
-important implementation choices, but they should serve this central story.
+1. 图 1：从直接识别和一轮检索到 HCV 的问题演进与整体流程。
+2. 图 2：对比状态、差异检索和视觉—知识验证的信息流。
+3. 图 3：农业视觉—语义差异知识空间的类别、属性和相似关系。
+4. 图 4：检索未命中、证据命中但判断错误和成功解决混淆的代表性案例。
+5. 主表和消融表：比较不同检索与对比组件，并同时报告最终结果和过程指标。
+6. 补充材料：数据治理、知识结构、轨迹筛选、完整协议和失败案例。

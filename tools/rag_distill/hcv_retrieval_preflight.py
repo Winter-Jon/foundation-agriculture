@@ -51,6 +51,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def display_path(path: Path) -> str:
+    """Render repository paths relatively while preserving shared-data paths."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def _digest_key(row: dict[str, Any]) -> str:
     return hashlib.sha256(str(row.get("sample_id") or "").encode()).hexdigest()
 
@@ -302,7 +311,7 @@ def main() -> int:
         rows = read_jsonl(audit_path)
         report = {
             "schema_version": "agrinet.hcv-retrieval-preflight/v1",
-            "source": str(args.source.resolve().relative_to(ROOT)),
+            "source": display_path(args.source),
             "rag_api": args.rag_api, "per_cell": args.per_cell,
             "cells": sorted(requested_cells) if requested_cells else ["/".join(cell) for cell in CELLS],
             "cell_offset": args.cell_offset,
@@ -328,7 +337,7 @@ def main() -> int:
     write_jsonl(args.output_dir / "audit.jsonl", rows)
     report = {
         "schema_version": "agrinet.hcv-retrieval-preflight/v1",
-        "source": str(args.source.resolve().relative_to(ROOT)),
+        "source": display_path(args.source),
         "rag_api": args.rag_api,
         "per_cell": args.per_cell,
         "cells": sorted(requested_cells) if requested_cells else ["/".join(cell) for cell in CELLS],

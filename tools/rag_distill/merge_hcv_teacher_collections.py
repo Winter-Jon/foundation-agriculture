@@ -19,18 +19,41 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--accepted", type=Path, nargs="+", required=True)
-    parser.add_argument("--private-audit", type=Path, required=True)
+    parser.add_argument("--private-audit", type=Path, nargs="+", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--exclude-sample-id", type=Path, nargs="*", default=())
+    parser.add_argument("--private-audit-output", type=Path)
     args = parser.parse_args()
     rows = [row for path in args.accepted for row in read_jsonl(path)]
     ids = [str(row.get("sample_id") or "") for row in rows]
-    expected = {str(row.get("sample_id") or "") for row in read_jsonl(args.private_audit)}
+    excluded_ids = {
+        str(row.get("sample_id") or "")
+        for path in args.exclude_sample_id
+        for row in read_jsonl(path)
+    }
+    expected = {
+        str(row.get("sample_id") or "")
+        for path in args.private_audit
+        for row in read_jsonl(path)
+        if str(row.get("sample_id") or "") not in excluded_ids
+    }
+    if args.private_audit_output:
+        private_rows = [
+            row
+            for path in args.private_audit
+            for row in read_jsonl(path)
+            if str(row.get("sample_id") or "") not in excluded_ids
+        ]
+        if {str(row.get("sample_id") or "") for row in private_rows} != expected:
+            raise SystemExit("filtered private audit output does not match expected coverage")
+        write_jsonl(args.private_audit_output, private_rows)
     observed = set(ids)
     report = {
         "schema_version": "agrinet.hcv-collection-merge/v1",
         "sources": [str(path) for path in args.accepted],
-        "private_audit": str(args.private_audit),
+        "private_audit": [str(path) for path in args.private_audit],
+        "excluded_sample_ids": sorted(excluded_ids),
         "rows": len(rows),
         "expected_rows": len(expected),
         "invariants": {

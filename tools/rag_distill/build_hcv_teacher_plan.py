@@ -43,9 +43,12 @@ def parse_args() -> argparse.Namespace:
         "--diagnostic-pilot", action="store_true",
         help="Mark this as a quality diagnostic: it is never eligible for SFT freeze.",
     )
-    parser.add_argument("--strategy-id", default="hcv_contrast_verify", choices=("hcv_visual_expand", "hcv_contrast_verify"))
     parser.add_argument(
-        "--selection-mode", default="repair_only", choices=("repair_only", "expanded_truth_hit", "all_diagnostic"),
+        "--strategy-id", default="hcv_contrast_verify",
+        choices=("hcv_visual_expand", "hcv_contrast_verify", "hcv_contrast_verify_five_turn"),
+    )
+    parser.add_argument(
+        "--selection-mode", default="repair_only", choices=("repair_only", "expanded_truth_hit", "public_evidence_hit", "all_diagnostic"),
         help="Select only top-3 misses repaired by expansion (default), or retain all retrieval-valid rows for a diagnostic-only teacher pilot.",
     )
     parser.add_argument("--supplement-only", action="store_true", help="When rebuilding, emit only newly selected replacement rows.")
@@ -83,9 +86,14 @@ def public_plan_row(
         "language": audit_row["language"],
         "candidate_labels": source_row.get("candidate_labels") or [],
         "strategy_id": strategy_id,
-        "preferred_sequence": ["visual", "visual", "semantic"] if strategy_id == "hcv_contrast_verify" else ["visual", "visual"],
+        "preferred_sequence": (
+            ["visual", "visual", "semantic", "rrf", "name"]
+            if strategy_id == "hcv_contrast_verify_five_turn" else
+            ["visual", "visual", "semantic"]
+            if strategy_id == "hcv_contrast_verify" else ["visual", "visual"]
+        ),
         "top_k": 3,
-        "max_tool_turns": 3 if strategy_id == "hcv_contrast_verify" else 2,
+        "max_tool_turns": 5 if strategy_id == "hcv_contrast_verify_five_turn" else 3 if strategy_id == "hcv_contrast_verify" else 2,
         "generation_route": "blind_evidence",
         "label_visible_to_teacher": False,
         "trajectory_mode": "standard",
@@ -183,7 +191,7 @@ def build(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     if per_cell_cap < 1:
         raise ValueError("per_cell_cap must be positive")
-    if selection_mode not in {"repair_only", "expanded_truth_hit", "all_diagnostic"}:
+    if selection_mode not in {"repair_only", "expanded_truth_hit", "public_evidence_hit", "all_diagnostic"}:
         raise ValueError(f"unknown selection_mode: {selection_mode}")
     if selection_mode == "all_diagnostic" and not diagnostic_pilot:
         raise ValueError("--selection-mode all_diagnostic requires --diagnostic-pilot")
@@ -213,9 +221,16 @@ def build(
     for row in audit_rows:
         audit = row.get("audit") if isinstance(row.get("audit"), dict) else {}
         expanded_hit = bool((audit.get("actions") or {}).get("visual_expand", {}).get("truth_hit"))
+        actions = audit.get("actions") or {}
+        public_evidence_hit = any(
+            bool((actions.get(action) or {}).get("truth_hit"))
+            for action in ("visual_first", "visual_expand", "balanced_compare", "semantic_compare", "name_confirm")
+        )
         if selection_mode == "repair_only" and not is_visual_expand_repair(row):
             continue
         if selection_mode == "expanded_truth_hit" and not expanded_hit:
+            continue
+        if selection_mode == "public_evidence_hit" and not public_evidence_hit:
             continue
         image_hash = str(row.get("image_sha256") or "")
         if image_hash in excluded_hashes:
@@ -248,6 +263,7 @@ def build(
             reason = {
                 "all_diagnostic": "all_retrieval_valid_diagnostic",
                 "expanded_truth_hit": "public_visual_top10_truth_hit",
+                "public_evidence_hit": "public_evidence_truth_hit_in_preflight_action",
                 "repair_only": "first_visual_top3_miss_repaired_by_public_visual_top10",
             }[selection_mode]
             plan = public_plan_row(row, source, strategy_id, reason)
@@ -303,6 +319,8 @@ def rebuild(
     retained_private: list[dict[str, Any]],
     retired_sample_ids: set[str],
     per_cell_cap: int,
+    strategy_id: str = "hcv_visual_expand",
+    selection_mode: str = "repair_only",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Replace retired teacher-contact images without replaying them.
 
@@ -312,6 +330,8 @@ def rebuild(
     """
     if per_cell_cap < 1:
         raise ValueError("per_cell_cap must be positive")
+    if selection_mode not in {"repair_only", "expanded_truth_hit"}:
+        raise ValueError("rebuild selection_mode must be repair_only or expanded_truth_hit")
     retained = [row for row in retained_plan if str(row.get("sample_id") or "") not in retired_sample_ids]
     private_by_id = {str(row.get("sample_id") or ""): row for row in retained_private}
     if any(str(row.get("sample_id") or "") not in private_by_id for row in retained):
@@ -337,7 +357,12 @@ def rebuild(
             raise ValueError(f"retained plan exceeds per-cell cap for {key}")
         candidates = [
             row for row in audit_rows
-            if cell_key(row) == key and is_visual_expand_repair(row)
+            if cell_key(row) == key
+            and (
+                is_visual_expand_repair(row)
+                if selection_mode == "repair_only"
+                else bool((row.get("audit") or {}).get("actions", {}).get("visual_expand", {}).get("truth_hit"))
+            )
             and str(row.get("image_sha256") or "") not in selected_hashes
             and str(row.get("image_sha256") or "") not in retired_hashes
         ]
@@ -347,7 +372,7 @@ def rebuild(
             if source is None or not image_hash:
                 excluded.append({"id": str(row.get("id") or ""), "reason": "missing_source_or_image_hash"})
                 continue
-            plan = public_plan_row(row, source)
+            plan = public_plan_row(row, source, strategy_id=strategy_id)
             if plan["sample_id"] in retained_ids:
                 excluded.append({"id": str(row.get("id") or ""), "reason": "duplicate_retained_sample_id"})
                 continue
@@ -374,7 +399,7 @@ def rebuild(
     hashes = [str(row.get("image_sha256") or "") for row in selected]
     report = {
         "schema_version": "agrinet.hcv-teacher-plan-rebuild/v1",
-        "seed": SEED, "retired_sample_ids": sorted(retired_sample_ids),
+        "seed": SEED, "retired_sample_ids": sorted(retired_sample_ids), "selection_mode": selection_mode,
         "retained_rows": len(retained), "replacement_rows": len(additions),
         "selected_rows": len(selected), "selected_by_cell": dict(sorted(counts.items())),
         "shortages": shortages, "excluded": excluded,
@@ -383,7 +408,7 @@ def rebuild(
             "unique_image_hashes": len(hashes) == len(set(hashes)) and all(hashes),
             "retired_ids_absent": not (set(ids) & retired_sample_ids),
             "retired_hashes_absent": not (set(hashes) & retired_hashes),
-            "all_hcv_strategy": all(row.get("strategy_id") in {"hcv_visual_expand", "hcv_contrast_verify"} for row in selected),
+            "all_hcv_strategy": all(row.get("strategy_id") == strategy_id for row in selected),
             "all_blind_teacher": all(row.get("generation_route") == "blind_evidence" and row.get("label_visible_to_teacher") is False for row in selected),
             "no_truth_in_public_plan": all(not ({"final_label", "final_label_zh", "audit_truth_code"} & set(row)) for row in selected),
         },
@@ -402,7 +427,7 @@ def main() -> int:
         retired = {str(row.get("sample_id") or "") for row in read_jsonl(args.retire_sample_ids)} if args.retire_sample_ids else set()
         selected, private_audit, report = rebuild(
             audit_rows, read_jsonl(args.source), read_jsonl(args.retain_plan),
-            read_jsonl(args.retain_private_audit), retired, args.per_cell_cap,
+            read_jsonl(args.retain_private_audit), retired, args.per_cell_cap, args.strategy_id, args.selection_mode,
         )
         if args.supplement_only:
             prior_ids = {str(row.get("sample_id") or "") for row in read_jsonl(args.retain_plan)}
