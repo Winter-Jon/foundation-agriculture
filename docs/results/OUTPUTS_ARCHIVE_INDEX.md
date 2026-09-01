@@ -40,6 +40,11 @@ current RAG, or v4 endpoints.
   training outputs. This is the sole location for these historical families;
   no top-level compatibility symlinks are retained. Historical launchers that
   remain useful must reference this archive path directly.
+- `outputs/archive/vlm-runs/`: completed low-volume VLM intermediate runs,
+  organized as `early-rag-iterations/`, `legacy-rounds/`,
+  `smoke-and-preflight/`, and `stage-validation/`. These directories have
+  no active exact-path references and were moved here without compatibility
+  symlinks. Current Formal-618 evidence remains under `outputs/runs/vlm/`.
 
 ## Retention policy
 
