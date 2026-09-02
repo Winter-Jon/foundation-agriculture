@@ -4,7 +4,7 @@ model: outputs/vlm_sft/qwen3_vl_4b_m1_direct_current_hcv_terminal_v5_m1like_8gpu
 model_type: qwen3_vl
 template: qwen3_vl
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: true
 tuner_type: full
 freeze_vit: false

@@ -2,7 +2,7 @@ model: outputs/vlm_sft/qwen3_vl_4b_nonrag_init_dual_route_rag_sft_v2/v1-20260808
 model_type: qwen3_vl
 template: qwen3_vl
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: true
 tuner_type: full
 freeze_vit: false

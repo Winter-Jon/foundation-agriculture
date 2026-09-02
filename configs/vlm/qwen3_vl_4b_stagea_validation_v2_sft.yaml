@@ -3,7 +3,7 @@ model: outputs/vlm_sft/qwen3_vl_4b_disease_pest_full_all_e5_len2048_liger_lr1e5_
 model_type: qwen3_vl
 template: qwen3_vl
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: true
 tuner_type: full
 freeze_vit: false

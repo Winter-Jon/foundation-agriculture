@@ -3,7 +3,7 @@ model_type: qwen3_vl
 template: qwen3_vl
 agent_template: hermes
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: true
 tuner_type: full
 freeze_vit: false

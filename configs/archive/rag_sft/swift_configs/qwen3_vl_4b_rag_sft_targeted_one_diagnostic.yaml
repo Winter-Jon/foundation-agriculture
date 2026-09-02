@@ -3,7 +3,7 @@ template: qwen3_vl
 agent_template: manual_json
 loss_scale: manual_json
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: false
 tuner_type: full
 freeze_vit: false
