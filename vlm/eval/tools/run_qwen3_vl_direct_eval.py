@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_qwen3_vl_rag_sglang_eval import (
     _chat_completion, _eval_sample, _load_jsonl, _resolve,
 )
-from agrinet.rag.distill.run_pilot import image_url_content, public_option_question
+from agrinet.research.hcv.collector import image_url_content, public_option_question
 
 
 def parse_args() -> argparse.Namespace:

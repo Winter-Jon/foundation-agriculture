@@ -18,7 +18,7 @@ for path in "$ROOT/hermes_formal618_candidate_rag/run_status.exit_code" "$ROOT/h
   [[ "$(tr -d '[:space:]' <"$path")" == 0 ]] || { echo "nonzero run status: $path"; exit 1; }
 done
 
-.venv/bin/python src/agrinet/rag/distill/review_matched_diagnostic.py \
+.venv/bin/python src/agrinet/vlm/evaluation/paired_bootstrap.py \
   --candidate "$ROOT/hermes_formal618_candidate_rag/scored.jsonl" \
   --baseline "$ROOT/hermes_formal618_base_rag/scored.jsonl" \
   --out "$ROOT/hermes_formal618_candidate_vs_base_rag_paired_review.json" \

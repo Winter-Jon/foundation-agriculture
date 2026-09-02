@@ -67,8 +67,8 @@ local -a args=(--manifest "$MANIFEST" --output "$output/predictions.jsonl" --rep
 run_route candidate_direct "$CANDIDATE"
 run_route m1_direct "$M1"
 run_route raw_base_direct models/Qwen3-VL-4B-Instruct
-"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/m1_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_m1_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
-"$PYTHON_BIN" src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_raw_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/vlm/evaluation/paired_bootstrap.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/m1_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_m1_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+"$PYTHON_BIN" src/agrinet/vlm/evaluation/paired_bootstrap.py --candidate "$EVAL_ROOT/candidate_direct/scored.jsonl" --baseline "$EVAL_ROOT/raw_base_direct/scored.jsonl" --out "$EVAL_ROOT/candidate_vs_raw_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
 "$PYTHON_BIN" - "$EVAL_ROOT" "$MANIFEST" "$CANDIDATE" "$M1" "$TP_SIZE" "$DP_SIZE" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

@@ -29,12 +29,17 @@ if report.get('training_authorized') is not True:
     raise SystemExit('M1 Direct freeze does not authorize SFT')
 PY
 mkdir -p "$QUEUE_ROOT"
+if [[ -n "${PARENT_EXPERIMENT_ID:-}" ]]; then
+  RESUME_TRAIN_DIR=$("$PYTHON_BIN" scripts/vlm/resolve_completed_parent_sft_dir.py "$PARENT_EXPERIMENT_ID" "$MODEL_ROOT")
+  echo "resolved completed parent SFT directory: $RESUME_TRAIN_DIR"
+fi
 if [[ -n "$RESUME_TRAIN_DIR" ]]; then
   [[ -d "$RESUME_TRAIN_DIR" ]] || { echo "missing completed training directory: $RESUME_TRAIN_DIR" >&2; exit 2; }
   TRAIN_DIR="$RESUME_TRAIN_DIR"
   echo "evaluation-only: reusing completed training directory $TRAIN_DIR"
 else
-  NPROC_PER_NODE="${NPROC_PER_NODE:-8}" MASTER_PORT="${MASTER_PORT:-29732}" "$REPO_ROOT/.venv/bin/swift" sft "$TRAINING_CONFIG"
+  NPROC_PER_NODE="${NPROC_PER_NODE:-4}" MASTER_PORT="${MASTER_PORT:-29732}" \
+    "$REPO_ROOT/.venv_test/bin/python" -m swift.cli.main sft "$TRAINING_CONFIG"
   TRAIN_DIR=$("$PYTHON_BIN" scripts/vlm/find_completed_sft_dir.py "$MODEL_ROOT")
 fi
 TRAINER_STATE="$TRAIN_DIR/checkpoint-$(find "$TRAIN_DIR" -mindepth 1 -maxdepth 1 -type d -name 'checkpoint-*' -printf '%f\n' | sed 's/^checkpoint-//' | sort -n | tail -1)/trainer_state.json"
@@ -46,7 +51,7 @@ for spec in $CHECKPOINT_SPECS; do
   [[ -d "$checkpoint" ]] || { echo "missing $checkpoint" >&2; exit 1; }
   root="$QUEUE_ROOT/$label/formal-direct"
   FORMAL_ROOT="$root" CANDIDATE="$checkpoint" EXPERIMENT_ID="$EXPERIMENT_ID-$label" MANIFEST="$MANIFEST" MAX_NEW_TOKENS="$MAX_NEW_TOKENS" SGLANG_TP_SIZE="$EVAL_SGLANG_TP_SIZE" SGLANG_DP_SIZE="$EVAL_SGLANG_DP_SIZE" CUDA_VISIBLE_DEVICES="$EVAL_CUDA_VISIBLE_DEVICES" bash scripts/vlm/run_direct_formal618_native_dp8.sh
-  if ! "$PYTHON_BIN" src/agrinet/rag/distill/validate_m1_direct_promotion_gate.py \
+  if ! "$PYTHON_BIN" src/agrinet/research/m1/promotion_gate.py \
     --raw-base-review "$root/artifacts/candidate_vs_raw_base_direct_paired_review.json" \
     --m1-review "$root/artifacts/candidate_vs_m1_direct_paired_review.json" \
     --output "$QUEUE_ROOT/$label/promotion_gate.json"; then

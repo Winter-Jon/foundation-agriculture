@@ -56,6 +56,11 @@ if [[ -n "${WAIT_FOR_RUN_DIR:-}" ]]; then
   done
 fi
 
+if [[ -n "${PARENT_EXPERIMENT_ID:-}" ]]; then
+  TRAIN_DIR=$("$PYTHON_BIN" scripts/vlm/resolve_completed_parent_sft_dir.py "$PARENT_EXPERIMENT_ID" "$MODEL_ROOT")
+  echo "resolved completed parent SFT directory: $TRAIN_DIR"
+fi
+
 check_training_gpu_capacity() {
   "$PYTHON_BIN" - "$CUDA_VISIBLE_DEVICES" "$MIN_FREE_GPU_MIB" <<'PY'
 import shutil, subprocess, sys
@@ -298,7 +303,7 @@ PY
     # A promotion denial is an expected experiment outcome, not a queue
     # runtime failure. Keep it in an if-condition so the global ERR trap
     # cannot terminate the remaining checkpoint evaluations.
-    if ! "$PYTHON_BIN" src/agrinet/rag/distill/validate_hcv_promotion_gate.py \
+    if ! "$PYTHON_BIN" src/agrinet/research/hcv/promotion_gate.py \
       --direct-review "$QUEUE_ROOT/$label/formal-direct/artifacts/candidate_vs_m1_direct_paired_review.json" \
       --rag-review "$QUEUE_ROOT/$label/formal/artifacts/candidate_vs_raw_base_rag_paired_review.json" \
       --output "$QUEUE_ROOT/$label/promotion_gate.json"; then

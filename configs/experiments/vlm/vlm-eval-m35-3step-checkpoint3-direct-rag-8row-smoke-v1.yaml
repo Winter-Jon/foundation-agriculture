@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-eval-m35-3step-checkpoint3-direct-rag-8row-smoke-v1
+display_name: {en: M3.5 three-step checkpoint Direct/RAG eight-row smoke, zh: M3.5 三步 checkpoint Direct/RAG 八条烟测}
+domain: vlm
+task: checkpoint_evaluation_smoke
+description: >-
+  Candidate-only eight-row Direct then strict-RAG evaluation smoke for the
+  completed M3.5 three-step checkpoint. It validates manual-JSON serving and
+  protocol behavior; it is not a Formal-618 evaluation and has no baseline
+  or bootstrap comparison.
+lifecycle: active
+components: {runtime: runtime/local-a800-8gpu-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-eval
+inputs:
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_m35_e9_8gpu_3step_smoke/v1-20260902-110300/checkpoint-3
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  run_root: outputs/runs/vlm/vlm-eval-m35-3step-checkpoint3-direct-rag-8row-smoke-v1/
+parameters:
+  entrypoint: scripts/vlm/run_checkpoint_smoke_evaluation.sh
+  routes: direct,rag
+  smoke_limit: 8
+  max_new_tokens: 512
+  max_tool_turns: 5
+  rag_api: http://127.0.0.1:8078
+  tensor_parallel_size: 1
+  data_parallel_size: 8
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29962, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+tags: [m35, hcv, manual-json, checkpoint-3, direct, rag, strict, eight-row, smoke, no-formal-eval]

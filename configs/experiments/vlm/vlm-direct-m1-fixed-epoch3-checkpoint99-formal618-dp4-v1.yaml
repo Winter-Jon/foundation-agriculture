@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: vlm-direct-m1-fixed-epoch3-checkpoint99-formal618-dp4-v1
+display_name: {en: Fixed M1 epoch-3 checkpoint-99 Direct-618 evaluation, zh: 修复版 M1 第三 epoch checkpoint-99 Direct-618 评测}
+domain: vlm
+task: direct_formal_evaluation
+description: >-
+  User-selected Direct-618 evaluation of the completed epoch-3 checkpoint-99
+  after controlled termination of the five-epoch fixed-M1 reproduction. This
+  evaluates only the materialized checkpoint and never resumes training.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_m1_fixed_ms_swift_reproduction_4gpu/v0-20260902-120203/checkpoint-99, runtime: runtime/local-a800-4gpu-eval, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-4gpu-eval
+inputs:
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_m1_fixed_ms_swift_reproduction_4gpu/v0-20260902-120203/checkpoint-99
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  evaluation: outputs/runs/vlm/vlm-direct-m1-fixed-epoch3-checkpoint99-formal618-dp4-v1/
+parameters:
+  entrypoint: scripts/vlm/run_direct_formal618_native_dp8.sh
+  runtime: {tensor_parallel_size: 1, data_parallel_size: 4}
+  local_launch: {cuda_visible_devices: '0,1,2,3', nproc_per_node: 4, master_port: 29933, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  selection: {checkpoint: 99, epoch: 3, selection_reason: 'user-requested controlled stop at completed epoch 3', parent_training_run: outputs/runs/vlm/vlm-sft-qwen3vl4b-m1-fixed-ms-swift-reproduction-4gpu-v1/20260902T120153-2b1be564-a01/}
+  evaluation: {manifest_rows: 618, scoring_policy: final-answer-strict-v2, max_new_tokens: 2048, paired_bootstrap_samples: 10000, bootstrap_seed: 20260819}
+tags: [m1, fixed, epoch3, checkpoint99, direct, formal618, dp4, controlled-stop]

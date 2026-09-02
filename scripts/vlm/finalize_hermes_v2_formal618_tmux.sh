@@ -12,8 +12,8 @@ for route in candidate_direct base_direct candidate_rag base_rag; do
   [[ "$(tr -d '[:space:]' <"$ROOT/$route/run_status.exit_code")" == 0 ]] || { echo "nonzero route: $route"; exit 1; }
 done
 [[ ! -e "$ROOT/candidate_vs_base_direct_paired_review.json" && ! -e "$ROOT/candidate_vs_base_rag_paired_review.json" && ! -e "$ROOT/summary.json" ]] || { echo "refusing review output reuse"; exit 2; }
-.venv/bin/python src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$ROOT/candidate_direct/scored.jsonl" --baseline "$ROOT/base_direct/scored.jsonl" --out "$ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
-.venv/bin/python src/agrinet/rag/distill/review_matched_diagnostic.py --candidate "$ROOT/candidate_rag/scored.jsonl" --baseline "$ROOT/base_rag/scored.jsonl" --out "$ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+.venv/bin/python src/agrinet/vlm/evaluation/paired_bootstrap.py --candidate "$ROOT/candidate_direct/scored.jsonl" --baseline "$ROOT/base_direct/scored.jsonl" --out "$ROOT/candidate_vs_base_direct_paired_review.json" --bootstrap-samples 10000 --seed 20260819
+.venv/bin/python src/agrinet/vlm/evaluation/paired_bootstrap.py --candidate "$ROOT/candidate_rag/scored.jsonl" --baseline "$ROOT/base_rag/scored.jsonl" --out "$ROOT/candidate_vs_base_rag_paired_review.json" --bootstrap-samples 10000 --seed 20260819
 .venv/bin/python - "$ROOT" <<'PY'
 import json, sys
 from pathlib import Path

@@ -9,6 +9,9 @@ max_steps = int(state.get('max_steps') or 0)
 explicit_steps = []
 epoch_specs = []
 for item in requested:
+    if item == 'final':
+        explicit_steps.append((item, max_steps))
+        continue
     if item.startswith(('step:', 'step=')):
         step = int(item.split(item[4], 1)[1])
         if step <= 0 or step > max_steps:

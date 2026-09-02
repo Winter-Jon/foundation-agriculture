@@ -17,7 +17,7 @@ from agrinet.vlm.inspect import inspect_model
 from agrinet.common.local import run_foreground, start_detached
 from agrinet.common.contracts import ArtifactRef
 from agrinet.common.artifacts import sha256_file
-from agrinet.vlm.evaluate import evaluate_predictions
+from agrinet.vlm.evaluation import evaluate_predictions
 from agrinet.vlm.export import export_transformers_checkpoint
 
 app = domain_app(Domain.VLM)
@@ -58,9 +58,23 @@ def _config(experiment_id: str) -> dict:
     return resolve_config(spec)
 
 
-def sft_python() -> Path:
-    """Return the dedicated local environment for ms-swift SFT operations."""
-    path = repository_root() / ".venv_test" / "bin" / "python"
+def sft_python(config: dict | None = None) -> Path:
+    """Return the declared SFT runtime, defaulting to ``.venv_test``.
+
+    The retained HCV manual-JSON route is an explicit compatibility exception:
+    its checked-in ms-swift checkout registers the custom ``manual_json``
+    template that current PyPI ms-swift does not provide.
+    """
+    runtime = (config or {}).get("parameters", {}).get("sft_runtime", "venv_test")
+    if runtime == "venv_test":
+        path = repository_root() / ".venv_test" / "bin" / "python"
+    elif runtime == "legacy_manual_json_checkout":
+        checkout = repository_root() / "vlm" / "sft" / "ms-swift" / "swift" / "agent_template" / "manual_json.py"
+        if not checkout.is_file():
+            raise ConfigError(f"legacy manual-JSON ms-swift checkout is unavailable: {checkout}")
+        path = repository_root() / ".venv" / "bin" / "python"
+    else:
+        raise ConfigError(f"unsupported SFT runtime: {runtime}")
     if not path.is_file():
         raise ConfigError(f"SFT environment is unavailable: {path}")
     return path
@@ -289,6 +303,11 @@ def manual_json_checkpoint_queue_command(config: dict) -> list[str]:
         if not isinstance(wait_for_run_dir, str) or not wait_for_run_dir:
             raise ConfigError("wait_for_run_dir must be a non-empty string when declared")
         command.append(f"WAIT_FOR_RUN_DIR={wait_for_run_dir}")
+    parent_experiment_id = parameters.get("parent_experiment_id")
+    if parent_experiment_id is not None:
+        if not isinstance(parent_experiment_id, str) or not parent_experiment_id:
+            raise ConfigError("parent_experiment_id must be a non-empty string when declared")
+        command.extend(["SKIP_TRAIN=1", f"PARENT_EXPERIMENT_ID={parent_experiment_id}"])
     resume_training_dir = parameters.get("resume_training_dir")
     if resume_training_dir is not None:
         if not isinstance(resume_training_dir, str) or not resume_training_dir:
@@ -347,6 +366,11 @@ def m1_direct_checkpoint_queue_command(config: dict) -> list[str]:
             if not isinstance(value, str) or not value:
                 raise ConfigError(f"{parameter} must be a non-empty string when declared")
             command.append(f"{environment}={value}")
+    parent_experiment_id = parameters.get("parent_experiment_id")
+    if parent_experiment_id is not None:
+        if not isinstance(parent_experiment_id, str) or not parent_experiment_id:
+            raise ConfigError("parent_experiment_id must be a non-empty string when declared")
+        command.append(f"PARENT_EXPERIMENT_ID={parent_experiment_id}")
     evaluation_devices = parameters.get("evaluation_cuda_visible_devices")
     if evaluation_devices is not None:
         if not isinstance(evaluation_devices, str) or not evaluation_devices.strip():
@@ -372,13 +396,63 @@ def m1_direct_checkpoint_queue_command(config: dict) -> list[str]:
     return command
 
 
+def checkpoint_smoke_evaluation_command(config: dict) -> list[str]:
+    """Build a bounded candidate-only checkpoint evaluation smoke command.
+
+    This operation is intentionally distinct from the Formal-618 queue: it
+    exercises model serving, manifest alignment and (when selected) strict RAG
+    protocol on a small deterministic prefix without running baselines or a
+    paired comparison.
+    """
+    parameters = config.get("parameters", {})
+    inputs = config.get("inputs", {})
+    entrypoint = parameters.get("entrypoint")
+    checkpoint = inputs.get("candidate_checkpoint")
+    manifest = inputs.get("manifest")
+    routes = parameters.get("routes")
+    required = (entrypoint, checkpoint, manifest, routes)
+    if not all(isinstance(value, str) and value for value in required):
+        raise ConfigError(
+            "checkpoint smoke evaluation requires entrypoint, candidate_checkpoint, manifest, and routes"
+        )
+    route_values = [route.strip() for route in routes.split(",") if route.strip()]
+    if not route_values or any(route not in {"direct", "rag"} for route in route_values):
+        raise ConfigError("checkpoint smoke routes must be a comma-separated subset of direct,rag")
+    command = [
+        "env",
+        f"EXPERIMENT_ID={config['id']}",
+        f"CANDIDATE_CHECKPOINT={checkpoint}",
+        f"MANIFEST={manifest}",
+        f"ROUTES={','.join(route_values)}",
+    ]
+    for parameter, environment in (
+        ("smoke_limit", "SMOKE_LIMIT"),
+        ("max_new_tokens", "MAX_NEW_TOKENS"),
+        ("max_tool_turns", "MAX_TOOL_TURNS"),
+        ("rag_api", "RAG_API"),
+        ("tensor_parallel_size", "SGLANG_TP_SIZE"),
+        ("data_parallel_size", "SGLANG_DP_SIZE"),
+    ):
+        value = parameters.get(parameter)
+        if value is None:
+            continue
+        if parameter == "rag_api":
+            if not isinstance(value, str) or not value:
+                raise ConfigError("rag_api must be a non-empty string when declared")
+        elif not isinstance(value, int) or value < 1:
+            raise ConfigError(f"{parameter} must be a positive integer when declared")
+        command.append(f"{environment}={value}")
+    command.extend(["bash", entrypoint])
+    return command
+
+
 @app.command("train")
 def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) -> None:
     """Run or preview ms-swift training from a registered explicit config."""
     try:
         config = _config(experiment_id)
         command = MsSwiftAdapter().train_command(
-            repository_root() / config["inputs"]["config"], sft_python()
+            repository_root() / config["inputs"]["config"], sft_python(config)
         )
         if dry_run:
             typer.echo(" ".join(command)); return
@@ -437,7 +511,7 @@ def submit(
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(2) from exc
-        command = MsSwiftAdapter().train_command(root / config["inputs"]["config"], sft_python())
+        command = MsSwiftAdapter().train_command(root / config["inputs"]["config"], sft_python(config))
     elif operation == "export":
         command = MsSwiftAdapter().export_command(root / config["inputs"]["baseline_model"], root / config["outputs"]["model"])
     elif operation == "evaluate":
@@ -475,15 +549,24 @@ def submit(
     elif operation == "m1-direct-checkpoint-queue":
         try:
             assert_training_authorized(config)
-            if config.get("parameters", {}).get("resume_completed_sft_dir") is None:
+            if (
+                config.get("parameters", {}).get("resume_completed_sft_dir") is None
+                and config.get("parameters", {}).get("parent_experiment_id") is None
+            ):
                 assert_single_use_freeze_available(config)
             command = m1_direct_checkpoint_queue_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "checkpoint-smoke-evaluation":
+        try:
+            command = checkpoint_smoke_evaluation_command(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
     env = local_training_env(config) if operation in {
         "train", "manual-json-checkpoint-queue", "m1-direct-checkpoint-queue",
+        "checkpoint-smoke-evaluation",
         "formal-direct-native", "formal-rag-native",
     } else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
     if dry_run:

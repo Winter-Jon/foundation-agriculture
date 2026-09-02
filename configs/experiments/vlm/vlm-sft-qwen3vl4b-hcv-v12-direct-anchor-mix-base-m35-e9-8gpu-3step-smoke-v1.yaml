@@ -1,0 +1,27 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-8gpu-3step-smoke-v1
+display_name: {en: HCV v12 M3.5 nine-epoch route three-step SFT smoke, zh: HCV v12 M3.5 九 epoch 路线三步 SFT 测试}
+domain: vlm
+task: sft
+description: >-
+  Execution-only smoke for the M3.5 route. It retains the nine-epoch M3.5
+  configuration and its sole scientific delta from v12, but max_steps=3
+  bounds the run. It does not trigger Direct/RAG formal evaluation.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_m35_e9_8gpu_3step_smoke.yaml
+  immutable_source: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_m35_e9_8gpu_3step_smoke
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-8gpu-3step-smoke-v1/
+parameters:
+  sft_runtime: legacy_manual_json_checkout
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29952, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  training_authorized: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+  smoke_only: true
+  max_steps: 3
+  full_reproduction_experiment: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-8gpu-v1
+  sft: {initialization_model: models/Qwen3-VL-4B-Instruct, devices: 8, global_batch_size: 64, planned_epochs: 9, max_steps: 3, per_device_batch_size: 2, gradient_accumulation_steps: 4, learning_rate: 2.0e-6, lr_scheduler: cosine, warmup_ratio: 0.05, deepspeed: zero3, max_length: 16384, truncation_strategy: left, seed: 42, data_seed: 42}
+tags: [hcv, v12, direct-anchor, m35, e9-route, smoke, three-step, eight-gpu, no-eval]

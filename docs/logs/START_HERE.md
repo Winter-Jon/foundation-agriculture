@@ -1,8 +1,10 @@
 # Research Log Start Here
 
-Last updated: 2026-09-02 02:12:00 CST
+Last updated: 2026-09-02 13:20:15 CST
 
 ## Current focus
+
+2026-09-02 已验证迁移后 M1 的训练、checkpoint 保存/加载、Direct 服务、严格评分与配对评测链路均可用：三步 SFT、8 条 Direct smoke 和 epoch-3 checkpoint-99 的 Direct-618 都正常完成。M1 训练按用户请求在完整 epoch 3 受控停止；checkpoint-99 为 48.87%，相对 raw base +8.58pp（95% CI [+5.02,+12.14]），相对历史 M1 −3.56pp（95% CI [−6.80,−0.32]）。因此当前没有迁移实现或运行时阻塞，后续 M1 训练/评测可沿同一链路进行；但这不是 epoch-5 数值复现的证明。M3.5 全量与 Formal-618 尚未启动，且仍需其 `manual_json` 兼容 runtime。
 
 当前唯一的 Formal-618 评测入口是 `docs/results/CURRENT_FORMAL618_EVALUATION.md`。它锁定 `final-answer-strict-v2` 评分、修正后的 historical M1 checkpoint-165、恢复训练 system prompt 的 v4 checkpoint-320，以及 HCV v12 RAG checkpoint-232。旧的当前比较报告已归档，不能再作为当前结论引用。
 
@@ -288,6 +290,11 @@ not. Do not train, freeze, expand, or run DP8 until a stronger offline-tested de
 mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
+
+- 迁移后 M1 端到端链路验证与 epoch-3 结论：[experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-02 13:20:15 CST)。训练/评测实现无运行时阻塞；epoch-3 优于 raw base、低于历史 M1，完整 epoch-5 数值复现仍未验证。
+- checkpoint-3 评测 smoke 与 M1 全量 SFT 启动：[experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-02 12:03:51 CST)。M1 Direct、M3.5 Direct/strict-RAG 的 8 条 smoke 通过；M1 全量 SFT 正在运行。
+- M1/M3.5 全量队列启动前审计：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 11:28:50 CST)。串行 SFT/评测队列的状态轮询、父 checkpoint 复用和运行时定义均已验证；尚未启动。
+- M1 修复与 M3.5 三步 SFT 冒烟复现：[experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-02 11:10:00 CST)。两条路线完成 3/3 和 checkpoint-3；没有启动完整训练或评测。
 
 - Remaining-organization audit: [changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 02:12:00 CST). The main remaining reproducibility issue is that active CLI/workflow paths still depend on ignored `tools/`; 167 failed run records and several non-standard output roots require separate, non-destructive review batches.
 - Recovery-pilot lineage repair: [changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 02:03:31 CST). The five active v1--v5 definitions remain in place; artifact ID, output-directory, config ID, and seed checks now all pass. New preparation fails closed on a non-versioned or pre-existing output directory.

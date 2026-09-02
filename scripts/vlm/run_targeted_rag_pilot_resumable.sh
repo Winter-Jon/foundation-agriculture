@@ -18,8 +18,8 @@ source <("$HOME/.apikeys/bin/apikey" env yunwu)
 if [[ -n "${PROVIDER_BASE_URL:-}" ]]; then export YUNWU_API_BASE_URL="$PROVIDER_BASE_URL"; fi
 export PYTHONPATH="$REPO_ROOT:${PYTHONPATH:-}"
 mkdir -p "$OUT_DIR"
-"$PYTHON_BIN" -m agrinet.rag.distill.run_pilot --preflight-only --preflight-image --plan-file "$PLAN" --candidate-source "$CANDIDATE_SOURCE" --limit 1 --teacher-timeout 30 --model "$MODEL" --reasoning-effort "$REASONING_EFFORT" >"$OUT_DIR/preflight.json"
-"$PYTHON_BIN" -m agrinet.rag.distill.run_pilot \
+"$PYTHON_BIN" -m agrinet.research.hcv.collector --preflight-only --preflight-image --plan-file "$PLAN" --candidate-source "$CANDIDATE_SOURCE" --limit 1 --teacher-timeout 30 --model "$MODEL" --reasoning-effort "$REASONING_EFFORT" >"$OUT_DIR/preflight.json"
+"$PYTHON_BIN" -m agrinet.research.hcv.collector \
   --plan-file "$PLAN" --candidate-source "$CANDIDATE_SOURCE" --limit "$LIMIT" --offset "$OFFSET" \
   --rag-api "$RAG_API" --output-dir "$OUT_DIR" --model "$MODEL" \
   --max-tool-turns 3 --top-k 5 --max-concurrent 1 --reasoning-effort "$REASONING_EFFORT"

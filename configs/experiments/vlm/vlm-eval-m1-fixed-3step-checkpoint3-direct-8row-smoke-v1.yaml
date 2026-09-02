@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: vlm-eval-m1-fixed-3step-checkpoint3-direct-8row-smoke-v1
+display_name: {en: Fixed M1 three-step checkpoint Direct eight-row smoke, zh: 修复版 M1 三步 checkpoint Direct 八条烟测}
+domain: vlm
+task: checkpoint_evaluation_smoke
+description: >-
+  Candidate-only eight-row Direct evaluation smoke for the completed fixed-M1
+  three-step checkpoint. It validates serving and manifest alignment; it is
+  not a Formal-618 evaluation and has no baseline or bootstrap comparison.
+lifecycle: active
+components: {runtime: runtime/local-a800-4gpu-eval}
+runtime_profile: runtime/local-a800-4gpu-eval
+inputs:
+  candidate_checkpoint: outputs/vlm_sft/qwen3_vl_4b_m1_fixed_ms_swift_reproduction_4gpu_3step_smoke/v0-20260902-105325/checkpoint-3
+  manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  run_root: outputs/runs/vlm/vlm-eval-m1-fixed-3step-checkpoint3-direct-8row-smoke-v1/
+parameters:
+  entrypoint: scripts/vlm/run_checkpoint_smoke_evaluation.sh
+  routes: direct
+  smoke_limit: 8
+  max_new_tokens: 512
+  tensor_parallel_size: 1
+  data_parallel_size: 4
+  local_launch: {cuda_visible_devices: '0,1,2,3', nproc_per_node: 4, master_port: 29961, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+tags: [m1, fixed, checkpoint-3, direct, eight-row, smoke, no-formal-eval]
