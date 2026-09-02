@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import re
 import sys
@@ -50,11 +51,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-tool-turns", type=int, default=3, help="Maximum model-driven tool turns.")
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--top-p", type=float, default=1.0, help="OpenAI sampling top_p.")
+    parser.add_argument("--seed", type=int, default=None, help="Optional fixed OpenAI sampling seed.")
     parser.add_argument("--request-timeout", type=int, default=300)
     parser.add_argument("--max-concurrent", type=int, default=DEFAULT_MAX_CONCURRENT, help="Concurrent samples; tool turns within one sample remain ordered.")
     parser.add_argument("--request-retries", type=int, default=2)
     parser.add_argument("--snapshot-every", type=int, default=1, help="Progress reporting cadence; every completion is durable.")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--terminal-errors", action="store_true",
+        help="Persist explicit terminal request failures as completed evidence instead of retrying them on resume.",
+    )
     parser.add_argument("--capture-protocol-trace", action="store_true", help="Persist bounded model-output forms for non-formal protocol smoke diagnostics.")
     parser.add_argument("--disable-forced-first-call", action="store_true", help="Do not inject the mandatory first retrieval when the model answers directly.")
     parser.add_argument(
@@ -115,21 +122,38 @@ def _eval_sample(row: dict[str, Any], image_path: Path) -> dict[str, Any]:
     }
 
 
-def _build_eval_messages(sample: dict[str, Any], image_path: Path, top_k: int) -> list[dict[str, Any]]:
-    question = str(sample.get("evaluation_question") or STUDENT_USER_QUERY)
+def _eval_system_prompt(top_k: int) -> str:
     # The frozen Swift native ``tool_call`` role is rendered as a bare JSON
     # assistant object, not Hermes XML.  Keep XML parsing only as historical
     # input recovery; asking for XML here creates an evaluation-only wire
     # mismatch and confounds strict protocol diagnostics.
-    system = (
+    return (
         "You are a helpful agricultural recognition assistant. When retrieval is needed, output exactly one bare JSON tool-call object and no other text: "
         f'{{"name":"{TOOL_NAME}","arguments":{{"query":"...","retrieval_type":"visual","image":"query_image","top_k":{top_k},"rationale":"..."}}}}. '
         "After a tool result, either output one bare JSON tool-call object or the trained final form <think>brief evidence</think><answer>...</answer>. Never use <tool_call> XML tags, markdown fences, or mix a call with an answer."
     )
+def _build_eval_messages(sample: dict[str, Any], image_path: Path, top_k: int) -> list[dict[str, Any]]:
+    question = str(sample.get("evaluation_question") or STUDENT_USER_QUERY)
     return [
-        {"role": "system", "content": system + " Tool schema: " + json.dumps(tool_schema(), ensure_ascii=False, separators=(",", ":"))},
+        {"role": "system", "content": _eval_system_prompt(top_k) + " Tool schema: " + json.dumps(tool_schema(), ensure_ascii=False, separators=(",", ":"))},
         {"role": "user", "content": [{"type": "text", "text": question}, image_url_content(image_path)]},
     ]
+
+
+def _protocol_hashes(top_k: int) -> dict[str, str]:
+    """Hash the exact model-visible static RAG wire contract.
+
+    The hashes intentionally exclude sample inputs and generation parameters.
+    They make it possible to prove that a multi-seed evidence run changed only
+    the seed, rather than quietly changing the prompt or tool schema.
+    """
+    system = _eval_system_prompt(top_k) + " Tool schema: " + json.dumps(tool_schema(), ensure_ascii=False, separators=(",", ":"))
+    encoded_system = str(system).encode("utf-8")
+    encoded_schema = json.dumps(tool_schema(), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "system_prompt_sha256": hashlib.sha256(encoded_system).hexdigest(),
+        "tool_schema_sha256": hashlib.sha256(encoded_schema).hexdigest(),
+    }
 
 
 
@@ -232,6 +256,8 @@ def _chat_completion(
     *,
     max_new_tokens: int,
     temperature: float,
+    top_p: float = 1.0,
+    seed: int | None = None,
     timeout: int,
     chat_template_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -240,7 +266,10 @@ def _chat_completion(
         "messages": messages,
         "max_tokens": max_new_tokens,
         "temperature": temperature,
+        "top_p": top_p,
     }
+    if seed is not None:
+        payload["seed"] = seed
     if chat_template_kwargs:
         payload["chat_template_kwargs"] = chat_template_kwargs
     response = requests.post(
@@ -662,6 +691,8 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
                                 if terminal_answer_pending else args.max_new_tokens
                             ),
                             temperature=args.temperature,
+                            top_p=getattr(args, "top_p", 1.0),
+                            seed=getattr(args, "seed", None),
                             timeout=args.request_timeout,
                             # Frozen RAG rows contain one pure assistant planning
                             # turn before their first tool call. Keep thinking
@@ -936,7 +967,16 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
                 break
 
             out = dict(row)
+            image_sha256 = hashlib.sha256(image_path.read_bytes()).hexdigest()
             out["prediction"] = final_text.strip()
+            out["seed"] = getattr(args, "seed", None)
+            out["temperature"] = args.temperature
+            out["top_p"] = getattr(args, "top_p", 1.0)
+            out["rag_protocol_version"] = PROTOCOL_VERSION
+            out["model_identifier"] = args.model
+            out["test_id"] = str(row.get("id") or "")
+            out["image_sha256"] = str(row.get("image_sha256") or image_sha256)
+            out.update(_protocol_hashes(args.top_k))
             out["tool_turns"] = tool_turns
             out["forced_tool_turns"] = forced_tool_turns
             out["tool_history"] = tool_history
@@ -970,6 +1010,10 @@ def _evaluate_sample(args: argparse.Namespace, row: dict[str, Any], repo_root: P
 async def run(args: argparse.Namespace) -> None:
     if args.max_concurrent < 1 or args.request_retries < 0 or args.snapshot_every < 1:
         raise ValueError("--max-concurrent and --snapshot-every must be positive; --request-retries must be non-negative")
+    top_p = getattr(args, "top_p", 1.0)
+    seed = getattr(args, "seed", None)
+    if not 0.0 < top_p <= 1.0:
+        raise ValueError("--top-p must be in (0, 1]")
     manifest = Path(args.manifest)
     rows = durable_load_jsonl(manifest)
     if args.offset:
@@ -979,10 +1023,13 @@ async def run(args: argparse.Namespace) -> None:
     ids = validate_manifest(rows)
     fingerprint = request_fingerprint(manifest=manifest, protocol=PROTOCOL_VERSION, model=args.model, parameters={
         "offset": args.offset, "limit": args.limit, "top_k": args.top_k, "max_tool_turns": args.max_tool_turns,
-        "max_new_tokens": args.max_new_tokens, "temperature": args.temperature, "disable_forced_first_call": args.disable_forced_first_call,
+        "max_new_tokens": args.max_new_tokens, "temperature": args.temperature, "top_p": top_p, "seed": seed,
+        "prompt_hashes": _protocol_hashes(args.top_k), "disable_forced_first_call": args.disable_forced_first_call,
         "invalid_tool_call_policy": args.invalid_tool_call_policy, "terminal_policy": "one-terminal-closure-v1",
     })
-    store = SnapshotStore(Path(args.output), fingerprint, resume=args.resume)
+    store = SnapshotStore(
+        Path(args.output), fingerprint, resume=args.resume, terminal_errors=getattr(args, "terminal_errors", False)
+    )
     completed = store.completed(set(ids))
     semaphore = asyncio.Semaphore(args.max_concurrent)
     lock = asyncio.Lock()
@@ -1021,7 +1068,12 @@ async def run(args: argparse.Namespace) -> None:
                     raise RuntimeError(f"sample failed after {args.request_retries + 1} attempts: {last_error}")
         except Exception as exc:
             result = dict(row)
-            result.update({"prediction": "", "error": str(exc), "request_attempts": args.request_retries + 1, "tool_history": []})
+            result.update({
+                "prediction": "", "error": str(exc), "request_attempts": args.request_retries + 1, "tool_history": [],
+                "seed": seed, "temperature": args.temperature, "top_p": top_p,
+                "rag_protocol_version": PROTOCOL_VERSION, "model_identifier": args.model,
+                "test_id": item_id, "image_sha256": row.get("image_sha256"), **_protocol_hashes(args.top_k),
+            })
         async with lock:
             completed[item_id] = result
             store.append(result)

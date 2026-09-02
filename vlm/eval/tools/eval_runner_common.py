@@ -62,11 +62,12 @@ def request_fingerprint(*, manifest: Path, protocol: str, model: str, parameters
 class SnapshotStore:
     """Append-only completed-sample snapshots with an immutable request fingerprint."""
 
-    def __init__(self, output: Path, fingerprint: str, *, resume: bool) -> None:
+    def __init__(self, output: Path, fingerprint: str, *, resume: bool, terminal_errors: bool = False) -> None:
         self.output = output
         self.snapshot = output.with_suffix(output.suffix + ".snapshot.jsonl")
         self.metadata = output.with_suffix(output.suffix + ".run.json")
         self.fingerprint = fingerprint
+        self.terminal_errors = terminal_errors
         output.parent.mkdir(parents=True, exist_ok=True)
         if self.metadata.exists():
             previous = json.loads(self.metadata.read_text(encoding="utf-8"))
@@ -79,7 +80,7 @@ class SnapshotStore:
         elif resume and (self.snapshot.exists() or output.exists()):
             raise ValueError(f"cannot safely resume {output}: run metadata is missing")
         else:
-            self.metadata.write_text(json.dumps({"request_fingerprint": fingerprint}, indent=2) + "\n", encoding="utf-8")
+            self.metadata.write_text(json.dumps({"request_fingerprint": fingerprint, "terminal_errors": terminal_errors}, indent=2) + "\n", encoding="utf-8")
 
     def completed(self, allowed_ids: set[str]) -> dict[str, dict[str, Any]]:
         if not self.snapshot.exists():
@@ -95,7 +96,7 @@ class SnapshotStore:
             # request.  Append-only snapshots therefore may contain a later
             # replacement for an earlier failed row, but never silently
             # replace a successful row.
-            failed = bool(row.get("error"))
+            failed = bool(row.get("error")) and not self.terminal_errors
             if item_id in result:
                 previous = result[item_id]
                 if not previous.get("error"):
