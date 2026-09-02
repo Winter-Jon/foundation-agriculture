@@ -36,6 +36,7 @@
 
 ## Observations
 
+- [2026-W36-0831-0906](observations/2026-W36-0831-0906.md)
 - 2026-W24 - observations/2026-W24-0608-0614.md
 
 ## Handoffs

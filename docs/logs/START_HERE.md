@@ -1,10 +1,14 @@
 # Research Log Start Here
 
-Last updated: 2026-09-02 13:20:15 CST
+Last updated: 2026-09-03 03:23:15 CST
 
 ## Current focus
 
-2026-09-02 已验证迁移后 M1 的训练、checkpoint 保存/加载、Direct 服务、严格评分与配对评测链路均可用：三步 SFT、8 条 Direct smoke 和 epoch-3 checkpoint-99 的 Direct-618 都正常完成。M1 训练按用户请求在完整 epoch 3 受控停止；checkpoint-99 为 48.87%，相对 raw base +8.58pp（95% CI [+5.02,+12.14]），相对历史 M1 −3.56pp（95% CI [−6.80,−0.32]）。因此当前没有迁移实现或运行时阻塞，后续 M1 训练/评测可沿同一链路进行；但这不是 epoch-5 数值复现的证明。M3.5 全量与 Formal-618 尚未启动，且仍需其 `manual_json` 兼容 runtime。
+论文主用 benchmark 现为 `open_agri_v2`（正式版本）：它以 test-blind 的 class-disjoint 长尾 × 视觉混淆分层选择 Known/Unknown，角色选择只读取 v1 训练图清单、冻结类别 catalog 和冻结 SigLIP2/Milvus Top-3 近邻图；final test 不参与角色选择。正式角色为病害 73/72、虫害 36/36 Known/Unknown；109 个 Known 在 3--5 张 dev 和 pHash 隔离后都保留至少 25 张 SFT train-candidate，108 个 Unknown 都有严格 Top-3 Known bridge。正式数据卡为 `docs/datasets/open_agri_v2.md`。v1.1 HCV-base 与 v1.2 RAG-difficulty 均为中间产物；后者是 test-informed RAG 困难度诊断，不能作为独立 final-test benchmark。
+
+`.venv_test` 已验证安装 `flash-attn==2.8.3.post1`（PyTorch 2.13 / CUDA 13.0 / A800 `sm_80`）。所有 118 份明确指定注意力实现的 YAML 已统一使用 `attn_impl: flash_attn`；后续 SFT 由 `.venv_test` 启动时会采用该后端，并继续搭配 `use_liger_kernel: true`。
+
+2026-09-02 已验证迁移后 M1 的训练、checkpoint 保存/加载、Direct 服务、严格评分与配对评测链路均可用：三步 SFT、8 条 Direct smoke 和 epoch-3 checkpoint-99 的 Direct-618 都正常完成。M1 训练按用户请求在完整 epoch 3 受控停止；checkpoint-99 为 48.87%，相对 raw base +8.58pp（95% CI [+5.02,+12.14]），相对历史 M1 −3.56pp（95% CI [−6.80,−0.32]）。因此当前没有迁移实现或运行时阻塞，后续 M1 训练/评测可沿同一链路进行；但这不是 epoch-5 数值复现的证明。M3.5 使用 `.venv_test` 的当前 PyPI ms-swift（Hermes tool supervision）；其 Formal-618 尚未启动。
 
 当前唯一的 Formal-618 评测入口是 `docs/results/CURRENT_FORMAL618_EVALUATION.md`。它锁定 `final-answer-strict-v2` 评分、修正后的 historical M1 checkpoint-165、恢复训练 system prompt 的 v4 checkpoint-320，以及 HCV v12 RAG checkpoint-232。旧的当前比较报告已归档，不能再作为当前结论引用。
 
@@ -178,6 +182,8 @@ The two errors are qualitatively different from retrieval failure: (1) `Tomato B
 
 ## Next safe action
 
+对 v3 的后续工作仅能使用 `datasets/AgriNet-1K/open_agri_v3/` 的 known train-candidate 与已过滤 historical canonical 视图；不要用其 test-informed RAG 角色证据挑选模型、训练超参数、prompt 或检索策略。
+
 Current M1 Direct action (supersedes the older historical notes below): do not
 promote any interim checkpoint or start an additional SFT. The three Direct-618
 promotion gates are terminal rejects. Before a regular freeze can resume, find
@@ -291,6 +297,15 @@ mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
 
+- FlashAttention SFT 配置统一：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:23:15 CST)。`flash-attn==2.8.3.post1` 已针对 A800/CUDA 13 验证 forward/backward；118 份显式注意力 YAML 全部从 SDPA 切换为 `flash_attn`，解析与注册实验 dry-run 均通过。
+- 正式 OpenAgri v2 数据状态与入口：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:21:33 CST)。唯一数据根为 `datasets/AgriNet-1K/open_agri_v2/`；`manifests/summary.json` 为机器总清单，SFT 只从 accepted/train 的四个并列 JSONL 进入，private truth 只用于离线评分。
+- 正式 OpenAgri v2 四个并列训练文件：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:16:40 CST)。accepted/train 仅保留 disease_direct、disease_rag、pest_direct、pest_rag 四个 JSONL：358/739/350/717 条；不保留 all.jsonl，混合训练必须显式声明这四个固定文件。
+- Correct formal OpenAgri v2 historical-supervision boundary: [changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:58:02 CST)。已确认旧链路错误继承 v1.1 canonical，遗漏 v1.1 Unknown→v2 Known 的有效历史监督；现改为从原始已审核 source 直接按 v2 边界 canonicalize。accepted/train 为 2,164 条（708 Direct、1,456 RAG），0 拒绝，覆盖 102/109 Known 类。
+- 正式 OpenAgri v2 VLM 训练数据导入（已被上述边界纠正替代）：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:39:16 CST)。初版从 v1.1 canonical 再过滤得到 1,324 条；它不是当前正式训练入口。
+- 正式 OpenAgri v2 类别/图像比例复核：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 02:27:43 CST)。Known/Unknown 类别配额和 test 角色比例合理；训练图像存在预期的长尾（疾病更强），正式结果须以 class-macro 为主并分疾病/虫害、Known/Unknown 与长尾/混淆子集报告。
+- 正式 OpenAgri v2 数据卡与 manifest 复核：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:14:45 CST)。已将版本谱系、test-blind 边界、训练/dev/test/reference 分布、每类范围、Known/Unknown 组成、数据层和评测报告要求写入 `docs/datasets/open_agri_v2.md`；manifest 独立复核通过。
+- open_agri_v3 RAG test-informed 类别重划：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 23:11:19 CST)。3,057 条固定 raw-base strict-RAG 证据完成；v3 复用 v2 test/truth/reference 内容，角色、dev、SFT eligibility 和 historical canonical 过滤已重建。
+- open_agri_v2 历史 SFT 规范化迁移：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 21:14:16 CST)。正式 v2 边界过滤后的 local historical/canonical 为 Direct 416、RAG 908；训练渲染尚未冻结。
 - 迁移后 M1 端到端链路验证与 epoch-3 结论：[experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-02 13:20:15 CST)。训练/评测实现无运行时阻塞；epoch-3 优于 raw base、低于历史 M1，完整 epoch-5 数值复现仍未验证。
 - checkpoint-3 评测 smoke 与 M1 全量 SFT 启动：[experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-02 12:03:51 CST)。M1 Direct、M3.5 Direct/strict-RAG 的 8 条 smoke 通过；M1 全量 SFT 正在运行。
 - M1/M3.5 全量队列启动前审计：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 11:28:50 CST)。串行 SFT/评测队列的状态轮询、父 checkpoint 复用和运行时定义均已验证；尚未启动。
