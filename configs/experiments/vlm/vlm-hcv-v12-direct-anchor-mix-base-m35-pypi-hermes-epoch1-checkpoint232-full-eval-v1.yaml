@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: vlm-hcv-v12-direct-anchor-mix-base-m35-pypi-hermes-epoch1-checkpoint232-full-eval-v1
+display_name: {en: HCV v12 M3.5 PyPI Hermes epoch-1 checkpoint-232 full evaluation, zh: HCV v12 M3.5 PyPI Hermes epoch-1 checkpoint-232 全量评测}
+domain: vlm
+task: sft_checkpoint_evaluation_queue
+description: >-
+  User-selected full 618-row Direct and strict-RAG evaluation of the current
+  PyPI ms-swift/Hermes M3.5 epoch-1 checkpoint. No smoke gate is run.
+lifecycle: active
+components: {model: outputs/vlm_sft/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes/v0-20260902-163758/checkpoint-232, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api, baseline_model: models/Qwen3-VL-4B-Instruct}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes_sft.yaml
+  immutable_source: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+  formal_manifest: outputs/vlm_eval/qwen3_vl_4b_rag_sft/bounded_latest_sft_rag_test_20260804/manifest.jsonl
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes
+  run_root: outputs/runs/vlm/vlm-hcv-v12-direct-anchor-mix-base-m35-pypi-hermes-epoch1-checkpoint232-full-eval-v1/
+parameters:
+  entrypoint: scripts/vlm/run_manual_json_e6_checkpoint_queue.sh
+  resume_training_dir: outputs/vlm_sft/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes/v0-20260902-163758
+  checkpoint_specs: 'step:232'
+  full_eval_without_smoke: true
+  hcv_freeze_audit: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+  rag_api: http://127.0.0.1:8078
+  wait_for_gpu_capacity: true
+  gpu_wait_interval_seconds: 60
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29963, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  evaluation: {backend: sglang.launch_server, tensor_parallel_size: 1, data_parallel_size: 8, direct_concurrency: 64, rag_concurrency: 24, max_tool_turns: 5, invalid_tool_call_policy: strict, smoke_mode: disabled, formal_rows: 618, paired_bootstrap_samples: 10000, bootstrap_seed: 20260902, protocol_error_scoring: included_as_incorrect}
+  selection: {checkpoint: 232, epoch: 1, selection_reason: 'user stopped training after saved epoch-1 checkpoint; current PyPI ms-swift 4.5.2 with Hermes supervision'}
+tags: [hcv, v12, direct-anchor, m35, pypi-ms-swift, hermes, epoch1, checkpoint232, full-eval, direct, rag, dp8]

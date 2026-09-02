@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-pypi-hermes-v1
+display_name: {en: HCV v12 Direct-anchor M3.5 nine-epoch SFT (current PyPI Hermes), zh: HCV v12 Direct-anchor M3.5 九 epoch SFT（当前 PyPI Hermes）}
+domain: vlm
+task: sft
+description: >-
+  Nine-epoch M3.5 execution reproduction using the current PyPI ms-swift runtime.
+  It preserves the frozen HCV v12 dataset, model, batch, optimizer and LR, while
+  replacing unavailable legacy manual_json formatting with native Hermes supervision.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs:
+  config: configs/vlm/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes_sft.yaml
+  immutable_source: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+outputs:
+  model: outputs/vlm_sft/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes
+  run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-pypi-hermes-v1/
+parameters:
+  entrypoint: .venv_test/bin/python -m swift.cli.main sft configs/vlm/qwen3_vl_4b_hcv_v12_direct_anchor_mix_base_m35_e9_pypi_hermes_sft.yaml
+  sft_runtime: venv_test
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29961, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  training_authorized: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
+  sft: {initialization_model: models/Qwen3-VL-4B-Instruct, devices: 8, global_batch_size: 64, epochs: 9, per_device_batch_size: 2, gradient_accumulation_steps: 4, learning_rate: 2.0e-6, lr_scheduler: cosine, warmup_ratio: 0.05, deepspeed: zero3, max_length: 16384, truncation_strategy: left, seed: 42, data_seed: 42}
+tags: [hcv, v12, direct-anchor, m35, e9, pypi-ms-swift, hermes, eight-gpu, sft]

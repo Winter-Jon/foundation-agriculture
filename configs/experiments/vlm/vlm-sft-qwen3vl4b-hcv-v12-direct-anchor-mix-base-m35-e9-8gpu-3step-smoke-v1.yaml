@@ -17,7 +17,7 @@ outputs:
   model: outputs/vlm_sft/qwen3_vl_4b_hcv_manual_json_v12_direct_anchor_mix_base_m35_e9_8gpu_3step_smoke
   run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-hcv-v12-direct-anchor-mix-base-m35-e9-8gpu-3step-smoke-v1/
 parameters:
-  sft_runtime: legacy_manual_json_checkout
+  sft_runtime: venv_test
   local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29952, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
   training_authorized: outputs/artifacts/authorizations/hcv-v12-direct-anchor-mix-m35-e9-v1/authorization.json
   smoke_only: true

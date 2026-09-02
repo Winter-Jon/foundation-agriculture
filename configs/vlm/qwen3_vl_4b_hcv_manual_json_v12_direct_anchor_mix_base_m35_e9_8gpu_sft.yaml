@@ -3,10 +3,12 @@
 model: models/Qwen3-VL-4B-Instruct
 model_type: qwen3_vl
 template: qwen3_vl
-agent_template: manual_json
-loss_scale: manual_json
+# Latest PyPI ms-swift does not retain the legacy manual_json extension.
+# Use its supported tool-supervision contract for this execution reproduction.
+agent_template: hermes
+loss_scale: hermes
 torch_dtype: bfloat16
-attn_impl: sdpa
+attn_impl: flash_attn
 use_liger_kernel: true
 tuner_type: full
 freeze_vit: false

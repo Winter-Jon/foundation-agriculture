@@ -59,20 +59,10 @@ def _config(experiment_id: str) -> dict:
 
 
 def sft_python(config: dict | None = None) -> Path:
-    """Return the declared SFT runtime, defaulting to ``.venv_test``.
-
-    The retained HCV manual-JSON route is an explicit compatibility exception:
-    its checked-in ms-swift checkout registers the custom ``manual_json``
-    template that current PyPI ms-swift does not provide.
-    """
+    """Return the declared SFT runtime, defaulting to ``.venv_test``."""
     runtime = (config or {}).get("parameters", {}).get("sft_runtime", "venv_test")
     if runtime == "venv_test":
         path = repository_root() / ".venv_test" / "bin" / "python"
-    elif runtime == "legacy_manual_json_checkout":
-        checkout = repository_root() / "vlm" / "sft" / "ms-swift" / "swift" / "agent_template" / "manual_json.py"
-        if not checkout.is_file():
-            raise ConfigError(f"legacy manual-JSON ms-swift checkout is unavailable: {checkout}")
-        path = repository_root() / ".venv" / "bin" / "python"
     else:
         raise ConfigError(f"unsupported SFT runtime: {runtime}")
     if not path.is_file():
