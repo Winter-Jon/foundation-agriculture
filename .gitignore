@@ -5,12 +5,17 @@ CLAUDE.md
 *.swp
 *.lock
 !uv.lock
+*.pptx
 
 datasets/*
 models/*
 scripts/custom/*
 tools/
-tests/
+
+# Per-attempt experiment snapshots are retained only in the ignored local
+# output workspace.  Versioned experiment definitions are reusable routes.
+configs/experiments/rag/*-retry*-v*.yaml
+configs/experiments/rag/*-restart-v*.yaml
 
 **/wandb
 **/outputs
