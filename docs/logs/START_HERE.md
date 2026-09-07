@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-07 16:55:23 CST
+Last updated: 2026-09-07 17:18:45 CST
 
 ## Repository state
 
@@ -12,6 +12,13 @@ active test collection contains 599 tests; three legacy tests that referenced
 missing historical builders are retained locally under
 \`outputs/volatile/tests/legacy-orphans/\` rather than presented as current
 contracts. See the 2026-W37 change record for the migration and validation.
+
+Long-term rule: commit only portable, reproducible project assets: source,
+stable reusable configuration, tests, compact documentation, and small curated
+evidence. Keep machine-specific, credential-dependent, per-attempt, mutable,
+or bulky state—run logs, outputs, checkpoints, downloaded data, models,
+caches, retry snapshots, and ad-hoc launchers—under ignored local roots,
+normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
