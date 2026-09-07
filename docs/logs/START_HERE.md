@@ -1,8 +1,117 @@
 # Research Log Start Here
 
-Last updated: 2026-09-03 03:23:15 CST
+Last updated: 2026-09-07 16:55:23 CST
+
+## Repository state
+
+The versioned mainline now contains source, reusable experiment definitions,
+tests, compact documentation, and report drafts only. Per-attempt retry/restart
+definitions, tmux/queue launchers, orphaned legacy tests, outputs, checkpoints,
+models, datasets, and caches are local volatile state under ignored roots. The
+active test collection contains 599 tests; three legacy tests that referenced
+missing historical builders are retained locally under
+\`outputs/volatile/tests/legacy-orphans/\` rather than presented as current
+contracts. See the 2026-W37 change record for the migration and validation.
 
 ## Current focus
+
+### Running — OpenAgri v3 Known-only ViT-L MAE pretraining
+
+The manifest-driven closed-set vision workflow uses 107 v3 Known classes: 142,726
+train, 547 dev, and 545 Known-only private-test images. MAE excludes all 1,831 v3
+dev/test images through their SHA-audited source paths; its full corpus is
+1,668,771 AgriNet-1K images. The corrected 100-epoch, eight-A800 MAE ViT-L/16 run
+is active at outputs/runs/vision/vision-openagri-v3-known-vitl-mae-v1/20260906T181703-ed8bb030-a01/.
+Only the future formal MAE encoder may initialize the 50-epoch class-balanced
+classifier; selection is Known-dev macro-F1, with one Known-only final test.
+The formal MAE run has passed epoch 25 and is at epoch 39/100 with finite,
+decreasing reconstruction loss; the epoch-25 checkpoint is recoverability-only.
+
+### Active — HCV v13 Micu retry37 public-only pilot is running after bounded delivery repair
+
+retry32 and retry35 both completed fresh 32/32 collectors and label-blind public
+validation, but each private Micu audit accepted only 9/32. retry36 was retired
+at 9/32 after the isolated provider delivery path stopped making progress; every
+contacted image from all retired batches remains excluded.
+
+No retired batch may enter stability, human review, conversion, freeze, SFT, or
+full collection. Isolated Micu receipt now uses a bounded one-shot Pipe, the
+continuation path uses the narrow public candidate-link repair, and terminal
+finalization sees per-turn public candidate/evidence/rank-1 alias cards. retry37
+started from a fresh zero-overlap source: 32 rows, eight cells x four rows, and
+zero ID/SHA overlap against 1,184 earlier candidate records. Its managed run is
+volatile at `outputs/runs/rag/rag-hcv-v13-micu-collect-pilot-r1-retry37-v1/20260906T164741-ed8bb030-a01/`.
+
+### Running — OpenAgri v3 8B Direct-anchor RAG 600-step experiment
+
+The 600-step Qwen3-VL-8B B1 training completed and remains the immutable baseline.
+An eight-GPU B2 long-tail preflight evaluated length bucketing, padding-free, and
+sequential packing without changing the frozen data's training fields, Hermes
+supervision, global batch 64, or the 16,384-token cap. Bucketing completed but
+reached 65.04 GiB with allocator pressure; padding-free completed cleanly at
+42.65 GiB; sequential packing completed cleanly at 42.38 GiB and is selected by
+the lowest-peak-memory rule. The registered formal candidate is
+`vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-packing-v1`; it has not yet
+been launched. The fresh reverse-order test
+queue is also complete: 4B raw base, 8B raw base, then checkpoints 600 through
+100, each on Direct/RAG × EN/ZH (32 cells total, 1,019 predictions each). It had
+no failed tasks and zero request errors. The strongest observed diagnostic Overall
+scores are Direct EN 25.61% at step 300, Direct ZH 17.96% at step 300, RAG EN
+33.86% at step 600, and RAG ZH 31.70% at step 300. No test result was used for
+promotion or checkpoint selection; step 600 remains the sole final recoverable
+checkpoint.
+
+Evidence: fresh evaluation root `outputs/runs/vlm/vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-reverse-eval-v1/20260905T122208Z-restart/`; experiment record:
+`docs/logs/experiments/2026-W36-0831-0906.md`.
+
+Verified 2026-09-06 13:41 CST; per-cell private offline scores and predictions are
+retained under the fresh evaluation root.
+
+### Milestone — OpenAgri v3 four-arm SFT evaluation complete
+
+The user-authorized OpenAgri v3 four-arm, 300-step SFT milestone is complete:
+Direct-Only, Direct+RAG, Direct(open-only), and Direct+RAG(open-only) each have
+checkpoint 100/200/300 evaluated with Direct/RAG inference in EN/ZH. All 48 planned
+full cells contain 1,019 predictions and Overall/Known/Unknown metrics (Known 545;
+Unknown 474). Terminal `<tool_call>` remains in the denominator and counts as an
+incorrect prediction. The strongest RAG result is Direct+RAG step-100 EN (33.37%
+overall, 32.28% Unknown); the strongest Direct result is Direct-Only step-100 EN
+(30.91% overall). The complete table, evidence paths, and limitations are recorded
+in [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md).
+
+当前可训练数据集正式命名为 `datasets/AgriNet-1K/open_agri_v3`：
+它以已审核的 canonical-v1 registry 为类别名权威，合并历史数据与补采数据，完成
+答案、选项和 RAG retrieval 名称转换。default train 为 2,368 行；短预算
+`tool_budget_exhausted` terminal 的 461 行已隔离而未进入训练。最新覆盖审计确认：
+107 个 Known 类中仅 N04094（1 图）和 N04117（3 图）低于四图下限；另有 N04113
+缺 Direct，N04081/N04111/N04134/N05020 的 RAG 行数少于四。完整统计见
+`outputs/runs/data/open-agri-v3-audit/20260904T042800-open-agri-v3-rename-audit/artifacts/`。
+本地 Milvus Lite 已同步创建并切换至并行的 `open_agri_v3` 显示名 collection：
+`open_agri_v3_classes/images`。它逐字段复制旧索引，仅转换主类名和
+similar-class 显示名；描述、图像、ID、向量和关系顺序未变。
+
+OpenAgri 的 current new benchmark line 为 open_agri_v2_canonical_v1。它是与冻结
+open_agri_v2 并行的 canonical taxonomy proposal：217 source codes 映射到 211
+canonical classes；三组原跨角色合并类已成为 Known。taxonomy 审批已由用户授权解除：
+approval.json 为 approved，正式 SFT、scoring 与 Milvus 的 require_approval gate
+现可加载该 registry。
+
+人工审阅从 datasets/AgriNet-1K/open_agri_v2_canonical_v1/taxonomy/review/README.md
+开始。current/ 只展示待确认的规范提案；legacy/ 只展示冻结来源标签；
+review_decisions.jsonl 是 211 条逐类的签核记录。v2 与 v4 merged-code prototype
+仍是不可变历史基线，不能用于 canonical-v1 正式结果主张。
+
+已完成对全部 211 个 canonical 类别的 Micu bilingual taxonomy audit，产物位于
+datasets/AgriNet-1K/open_agri_v2_canonical_v1/taxonomy/review/micu_alias_audit_v1/。
+审查包包含版本化 prompt、每类请求/原始结构化响应、推荐名、可提取别名候选与冲突报告。
+已按用户授权采纳 Micu 的明确 revise 建议：89 个类别发生 103 项 canonical 字段变更，
+249 条 Micu 别名全部已写入 registry；21 个 manual_review 类别的 canonical English、
+Chinese、scientific_name 与 life_stage 全部保持审查前值。N04112 的中文 revise 建议与
+N04122 canonical 中文发生归一化冲突，故保留 N04112 当前中文以维持 JSON 唯一解析。
+211 条 review_decisions 均已签为 approve；approval.json 的 registry SHA-256 与最终
+registry 一致（4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8）。
+require_approval=True registry load 和 approved Milvus collection-spec preflight 均通过；
+尚未自动启动 SFT 准备或 Milvus ingestion。
 
 论文主用 benchmark 现为 `open_agri_v2`（正式版本）：它以 test-blind 的 class-disjoint 长尾 × 视觉混淆分层选择 Known/Unknown，角色选择只读取 v1 训练图清单、冻结类别 catalog 和冻结 SigLIP2/Milvus Top-3 近邻图；final test 不参与角色选择。正式角色为病害 73/72、虫害 36/36 Known/Unknown；109 个 Known 在 3--5 张 dev 和 pHash 隔离后都保留至少 25 张 SFT train-candidate，108 个 Unknown 都有严格 Top-3 Known bridge。正式数据卡为 `docs/datasets/open_agri_v2.md`。v1.1 HCV-base 与 v1.2 RAG-difficulty 均为中间产物；后者是 test-informed RAG 困难度诊断，不能作为独立 final-test benchmark。
 
@@ -13,6 +122,16 @@ Last updated: 2026-09-03 03:23:15 CST
 当前唯一的 Formal-618 评测入口是 `docs/results/CURRENT_FORMAL618_EVALUATION.md`。它锁定 `final-answer-strict-v2` 评分、修正后的 historical M1 checkpoint-165、恢复训练 system prompt 的 v4 checkpoint-320，以及 HCV v12 RAG checkpoint-232。旧的当前比较报告已归档，不能再作为当前结论引用。
 
 当前对比为 RAG 58.41%、修正 M1 52.43%、v4（恢复训练时 system prompt）54.21%。RAG 相对修正 M1 为 +5.99pp（95% CI [+1.62,+10.36]）；RAG 相对 v4 为 +4.21pp（95% CI [-0.49,+8.90]）。
+
+Verified: the user-authorized round-6 `open_agri_v2` Known staging supplement used `ceil(3.0 × shortfall)` and a constrained rejected-image replay only for N04094/N04117/N04113, without modifying the formal dataset. It planned 63 images / 504 views and replayed 18 image groups (N04094 12; N04117 6; N04113 had sufficient fresh candidates and replayed 0). Direct completed 252/252 views (159 accepted); blind RAG produced 135 accepted and 117 rejected trajectories, including one retained TLS-EOF `unknown_delivery` on a fresh N04023 view. Complete eight-view review accepted 4 of 63 round-6 image groups and rejected 59, including the unknown-delivery image; aggregate staging is 129 accepted / 567 rejected groups, with 117 quota-selected. The post-round-6 floor remains unmet for 9 Known classes / 17 images, so no approval/merge is eligible. N04094's 12 replayed images were all rejected; N04117 yielded 2 accepted replay images. Evidence: `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/review/summary.json` and `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/reports/final_shortfall_after_round6.json`.
+
+Verified: a separately lineaged Micu Oracle-RAG recovery for only N04094/N04113 completed in staging. It used private teacher forcing solely inside the collector and required public retrieval evidence before the final answer. The plan sampled 27 images / 108 views at 3× (N04094: 12 authorized replays; N04113: 15 fresh). The independent Oracle audit accepted 48 trajectories and rejected 60; all 48 accepts are evidence-anchored and passed the no-leakage audit. N04113 has 6 images that pass all four Oracle-RAG views, while N04094 has none: public retrieval and the model's final judgement still prefer sheath blight/false smut over rice panicle blight. This Oracle result does not supersede normal/blind review, count toward quota, or make any data merge-eligible; it remains human-review-only. Evidence: `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/recoveries/oracle-n04094-n04113-v1/review/summary.json`. Any formal merge into `datasets/AgriNet-1K/open_agri_v2/` still requires a human-written `review/approval.json` plus explicit merge acknowledgement.
+
+Verified: the user-authorized N04094-only Oracle continuation used the 12 remaining ordinary-review rejections (48 views at 3×), in a new recovery root with zero image overlap against the first Oracle batch. Micu completed all views with 2 accepted / 46 rejected / 0 unknown delivery; both accepts were public-evidence-anchored and leak-free, but each is only one English Option view on a different image. The two Oracle batches together have 5 accepted N04094 views across 3 images and still zero images completing all four views. This strengthens the diagnosis that the remaining N04094 candidate pool lacks stable public-evidence support; it does not alter the normal/blind shortfall of four images or eligibility for merge. Evidence: `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/recoveries/oracle-n04094-continuation-v1/review/summary.json`.
+
+Verified: the user-approved Oracle-only provisional package is now separately lineaged at `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/oracle_provisional/`. Its rerun audit inspected 264 trajectories across all three Oracle recoveries: 91 passed public-evidence/no-leakage checks, but the package retains only the 48 trajectories forming 12 complete four-view images (N04094: 1; N04113: 11); 43 individually valid trajectories remain excluded because their image group is incomplete. All candidates are explicitly `source=oracle_rag`, `oracle_provisional=true`, `eligible_for_formal_merge=false`, `human_review_required=true`, and `training_eligible=false`. The 173 rejected trajectories and all 46 image decisions remain in separate ledgers. This does not supersede normal/blind review, change its shortfall, or authorize training or merge. Evidence: `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/oracle_provisional/reports/audit_summary.json`.
+
+Verified: Oracle collection is complete and frozen. The final N04094-only 3× replay (12 images / 48 views) delivered 0 accepted, 48 rejected and 0 unknown deliveries, adding only negative evidence. The final export now contains all four Oracle recoveries in an exhaustive, disjoint 312-trajectory partition: 48 complete-four-view accepted trajectories (N04094: 1 image; N04113: 11 images), 221 collector/audit rejections, and 43 audit-valid but incomplete-image exclusions. It includes source-file SHA-256 provenance and remains human-review-only: not merge-eligible, not training-eligible, and not a normal/blind substitute. Evidence: `outputs/artifacts/datasets/open-agri-v2-known-supplement-v1/oracle_final_export/reports/final_manifest.json`.
 
 本地整理审计已完成：当前磁盘实际存在 12 个 checkpoint（约 106.6GB），每个均有至少四处版本化引用；全部为 `retain_review`，没有已批准的归档或删除候选。未删除任何 checkpoint。
 
@@ -297,12 +416,28 @@ mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
 
+- OpenAgri v3 Known-only ViT-L MAE launch: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-06 18:14:37 CST). v3 manifests and smoke validation passed; corrected eight-A800 MAE pretraining is volatile, while classification waits for its formal encoder.
+- OpenAgri v3 ViT-L MAE epoch-25 checkpoint: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-07 01:19:00 CST). Formal pretraining is healthy at epoch 39/100; keep classification blocked until the planned final encoder is written.
+
+- OpenAgri canonical-v1 taxonomy gate release: [changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-04 03:01:56 CST). All 211 canonical rows and decisions are approved; formal require_approval consumers may load the signed registry.
+- OpenAgri v2 N04094 Oracle continuation: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-03 19:48:03 CST). A disjoint 12-image continuation found 2 additional leak-free views but no complete four-view image; it remains staging-only diagnostic evidence.
+- OpenAgri v2 Oracle-RAG recovery and audit: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-03 19:27:15 CST). N04094/N04113 Oracle trajectories are leak-free, publicly evidence-anchored staging evidence only; they neither override blind review nor permit a merge.
 - FlashAttention SFT 配置统一：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:23:15 CST)。`flash-attn==2.8.3.post1` 已针对 A800/CUDA 13 验证 forward/backward；118 份显式注意力 YAML 全部从 SDPA 切换为 `flash_attn`，解析与注册实验 dry-run 均通过。
 - 正式 OpenAgri v2 数据状态与入口：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:21:33 CST)。唯一数据根为 `datasets/AgriNet-1K/open_agri_v2/`；`manifests/summary.json` 为机器总清单，SFT 只从 accepted/train 的四个并列 JSONL 进入，private truth 只用于离线评分。
 - 正式 OpenAgri v2 四个并列训练文件：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 03:16:40 CST)。accepted/train 仅保留 disease_direct、disease_rag、pest_direct、pest_rag 四个 JSONL：358/739/350/717 条；不保留 all.jsonl，混合训练必须显式声明这四个固定文件。
 - Correct formal OpenAgri v2 historical-supervision boundary: [changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:58:02 CST)。已确认旧链路错误继承 v1.1 canonical，遗漏 v1.1 Unknown→v2 Known 的有效历史监督；现改为从原始已审核 source 直接按 v2 边界 canonicalize。accepted/train 为 2,164 条（708 Direct、1,456 RAG），0 拒绝，覆盖 102/109 Known 类。
 - 正式 OpenAgri v2 VLM 训练数据导入（已被上述边界纠正替代）：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:39:16 CST)。初版从 v1.1 canonical 再过滤得到 1,324 条；它不是当前正式训练入口。
 - 正式 OpenAgri v2 类别/图像比例复核：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 02:27:43 CST)。Known/Unknown 类别配额和 test 角色比例合理；训练图像存在预期的长尾（疾病更强），正式结果须以 class-macro 为主并分疾病/虫害、Known/Unknown 与长尾/混淆子集报告。
+- Direct-Only OpenAgri v2 双语诊断：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 14:17:09 CST)。同图中英差异是真实的语言条件预测差异，集中在 disease/已见类；更重要的是当前 Direct-Only 视图误混入 50% Option 监督，而正式评测全为 Open canonical-name 输出，后续重跑前必须修复该任务格式错配。
+- Direct-Only 英文严格命名复核：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 14:24:00 CST)。至少 221 个英文 test 输出已命中其他冻结 canonical 类别，属于确定性误判；但其后续审计已更正 143/177 的下划线字符串误计，Direct English 训练答案未发现跨类错误，主要是 human-readable alias/Latin name 与 catalog display 的规范化差异。
+- Direct English Open 答案审计更正：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 19:49:33 CST)。177 条中 122 条仅大小写/下划线/空格差异，38 条为同类常用名/学名/描述变体；中英同图、catalog 和 6 类图片抽查均支持同类，未发现跨类错标。v2 import 未做 `class_code`→Open answer 校验，须在 successor view 加入。
+- Direct+RAG 中英文反转诊断：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 16:10:00 CST)。RAG 中文 Open SFT target 有 305/366 是英文/非中文 final answer，而 ZH 评测严格要求中文 canonical name；test-ZH 866/1,019 非中文答案均计错。该数据契约缺陷使当前中英文 RAG 比较无效，后续重跑前必须由 class_code 统一重写 target 并冻结唯一 tool schema。
+- 双语 canonical 重评分与队列停止：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 17:06:30 CST)。默认 scorer 现接受同类冻结中/英文名称，完整 16 份已完成预测已离线重评分；Direct+RAG RAG test 为 EN 23.75%、ZH 27.28%。按请求已停止第三实验（exit 143，159/336），保留 checkpoint-56/112，未启动其评测。
+- OpenAgri v2 固定汇报口径：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 17:10:00 CST)。后续只报 test image-micro；`unknown_dev + unknown_holdout` 合并为 Unknown；四行 EN/ZH×Disease/Pest，Direct 与 RAG 分表，列为 Known/Unknown 的准确率与样本数。
+- Direct/RAG 模板一致性复核：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 17:20:00 CST)。除 Option/Open 和中文 RAG target 混乱外，ms-swift Hermes 训练与自定义评测在 tools JSON 容器、序列化和 tool-response role/wrapper 上也不相同；后续必须共用同一 renderer 并用夹具验证消息/token parity。
+- 下轮前必须修复的三个模板契约问题：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 17:25:00 CST)。Direct EN Open canonical target、RAG ZH Open target 语言、Hermes SFT/推理轨迹 parity 均已单独记录为 preflight blocker；另有 Open/Option 混训范围问题也必须在 successor view 中排除。
+- Hermes 训练/推理轨迹 parity 修复：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 17:35:00 CST)。评测器现逐字复用 ms-swift 4.5.2 Hermes 的 tools system 与 `<tool_response>` user-turn 格式，16 项 focused tests 与直接模板比较均通过；其余两个 target-data 问题和 Open/Option 问题仍待 successor view 修复。
+- 完整 Hermes 渲染 parity 审计：[observations/2026-W36-0831-0906.md](observations/2026-W36-0831-0906.md) (2026-09-03 19:31:00 CST)。28 个冻结 RAG 轨迹结构均在 Qwen3-VL chat-template 文本及 token-id 层面相同；评测已对齐 16K context / 6 tool turns。冻结 v1 仍含 121 条旧长 schema，且 Open/Option、规范答案语言缺陷未消除，不能称为全局数据契约一致。
 - 正式 OpenAgri v2 数据卡与 manifest 复核：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-03 02:14:45 CST)。已将版本谱系、test-blind 边界、训练/dev/test/reference 分布、每类范围、Known/Unknown 组成、数据层和评测报告要求写入 `docs/datasets/open_agri_v2.md`；manifest 独立复核通过。
 - open_agri_v3 RAG test-informed 类别重划：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 23:11:19 CST)。3,057 条固定 raw-base strict-RAG 证据完成；v3 复用 v2 test/truth/reference 内容，角色、dev、SFT eligibility 和 historical canonical 过滤已重建。
 - open_agri_v2 历史 SFT 规范化迁移：[changes/2026-W36-0831-0906.md](changes/2026-W36-0831-0906.md) (2026-09-02 21:14:16 CST)。正式 v2 边界过滤后的 local historical/canonical 为 Direct 416、RAG 908；训练渲染尚未冻结。
