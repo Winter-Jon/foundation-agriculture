@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-openagri-v3-direct-open-only-300-v1
+display_name: {en: OpenAgri v3 Direct open-only 300-step SFT, zh: OpenAgri v3 Direct仅Open 300步训练}
+domain: vlm
+task: sft
+description: Current XML Direct Open-only ablation; evaluates checkpoints 100, 200, and 300 on v3 Direct and strict-RAG routes.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs: {config: configs/vlm/qwen3_vl_4b_open_agri_v3_direct_open_only_300_sft.yaml}
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_open_agri_v3_direct_open_only_300, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-openagri-v3-direct-open-only-300-v1/}
+parameters:
+  sft_runtime: venv_test
+  training_authorized: outputs/artifacts/datasets/open-agri-v3-four-arm-sft-v1/views/direct-open-only/authorization.json
+  required_authorization_type: open-agri-v3-four-arm-canonical-view
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 30103, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  checkpoint_steps: [50, 100, 150, 200, 250, 300]
+  evaluated_steps: [100, 200, 300]
+  final_resume_step: 300
+tags: [open-agri-v3, direct-open-only, xml, hermes-agent, 300-step, eight-gpu]

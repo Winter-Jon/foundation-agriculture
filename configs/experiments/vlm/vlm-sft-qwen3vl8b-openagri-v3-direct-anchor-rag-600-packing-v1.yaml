@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-packing-v1
+display_name: {en: OpenAgri v3 8B Direct-anchor RAG 600-step B2 sequential-packing SFT, zh: OpenAgri v3 8B Direct锚定RAG 600步B2顺序打包训练}
+domain: vlm
+task: sft
+description: Full-parameter B2 SFT selected by long-tail capacity preflight; preserves Hermes supervision with causally isolated sequential packing.
+lifecycle: active
+components: {model: models/Qwen3-VL-8B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs: {config: configs/vlm/qwen3_vl_8b_open_agri_v3_direct_anchor_rag_600_sft_packing.yaml}
+outputs: {model: outputs/vlm_sft/qwen3_vl_8b_open_agri_v3_direct_anchor_rag_600_packing, run_root: outputs/runs/vlm/vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-packing-v1/}
+parameters:
+  sft_runtime: venv_test
+  training_authorized: outputs/artifacts/datasets/open-agri-v3-direct-anchor-rag-600-v1/authorization.json
+  required_authorization_type: open-agri-v3-direct-anchor-rag-600-view
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 30113, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  checkpoint_steps: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600]
+  evaluated_steps: [100, 200, 300, 400, 500, 600]
+  final_resume_step: 600
+  global_batch_size: 64
+  capacity_preflight: {winner: sequential_packing, candidate_peak_gib: 42.38, padding_free_peak_gib: 42.65, bucket_peak_gib: 65.04, stress_steps: 8}
+tags: [open-agri-v3, qwen3-vl-8b, direct-anchor, rag, 600-step, batch2, sequential-packing]

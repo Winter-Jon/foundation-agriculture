@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl4b-openagri-v2-direct3-rag-e3-v1
+display_name: {en: OpenAgri v2 Direct×3+RAG three-epoch SFT, zh: OpenAgri v2 Direct×3+RAG 三 epoch SFT}
+domain: vlm
+task: sft
+description: Formal OpenAgri v2 Direct×3+RAG ablation from Qwen3-VL-4B-Instruct with v4 system prompt and Hermes rendering.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval, retrieval: local_agrinet_rag_api}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs: {config: configs/vlm/qwen3_vl_4b_open_agri_v2_direct3_rag_e3_sft.yaml}
+outputs: {model: outputs/vlm_sft/qwen3_vl_4b_open_agri_v2_direct3_rag_e3, run_root: outputs/runs/vlm/vlm-sft-qwen3vl4b-openagri-v2-direct3-rag-e3-v1/}
+parameters:
+  sft_runtime: venv_test
+  training_authorized: outputs/artifacts/open-agri-v2-sft-ablation-v1/views/direct3-rag/authorization.json
+  required_authorization_type: open-agri-v2-sft-ablation-view
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29973, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+tags: [open-agri-v2, direct3-rag, v4-prompt, hermes, e3, eight-gpu, liger, flash-attn]

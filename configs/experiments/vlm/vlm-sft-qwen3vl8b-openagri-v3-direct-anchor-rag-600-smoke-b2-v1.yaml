@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-smoke-b2-v1
+display_name: {en: OpenAgri v3 8B Direct-anchor RAG 3-step capacity smoke B2, zh: OpenAgri v3 8B Direct锚定RAG 3步容量测试B2}
+domain: vlm
+task: sft
+description: Three-step capacity-only preflight for the 600-step 8B Direct-anchor RAG experiment; global batch is 64.
+lifecycle: active
+components: {model: models/Qwen3-VL-8B-Instruct, runtime: runtime/local-a800-8gpu-train-and-eval}
+runtime_profile: runtime/local-a800-8gpu-train-and-eval
+inputs: {config: configs/vlm/qwen3_vl_8b_open_agri_v3_direct_anchor_rag_600_smoke_b2.yaml}
+outputs: {model: outputs/vlm_sft/qwen3_vl_8b_open_agri_v3_direct_anchor_rag_600_smoke_b2, run_root: outputs/runs/vlm/vlm-sft-qwen3vl8b-openagri-v3-direct-anchor-rag-600-smoke-b2-v1/}
+parameters:
+  sft_runtime: venv_test
+  training_authorized: outputs/artifacts/datasets/open-agri-v3-direct-anchor-rag-600-v1/authorization.json
+  required_authorization_type: open-agri-v3-direct-anchor-rag-600-view
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 30106, pytorch_cuda_alloc_conf: 'expandable_segments:True'}
+  smoke_only: true
+  sft: {max_steps: 3, global_batch_size: 64, per_device_batch_size: 2, gradient_accumulation_steps: 4, max_length: 16384, deepspeed: zero3}
+tags: [open-agri-v3, qwen3-vl-8b, direct-anchor, rag, smoke, batch2, eight-gpu]
