@@ -189,6 +189,23 @@ def mae_vit_base_patch16_224(**kwargs):
     return MaskedAutoencoderViT(**model_args)
 
 
+def mae_vit_large_patch16_224(**kwargs):
+    """MAE ViT-L/16 encoder with the standard lightweight MAE decoder."""
+    model_args = dict(
+        img_size=224,
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        decoder_embed_dim=512,
+        decoder_depth=8,
+        decoder_num_heads=16,
+        mlp_ratio=4,
+    )
+    model_args.update(kwargs)
+    return MaskedAutoencoderViT(**model_args)
+
+
 def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
     import numpy as np
 

@@ -1,4 +1,4 @@
 from .FocusNet import FocusNet, focusnet_tiny_224
 from .dynamic_transformer import DynamicTransformer, dynamic_transformer_tiny_patch4_window7_224
 from .hybrid_transformer import hybrid_transformer_base
-from .mae import MaskedAutoencoderViT, mae_vit_base_patch16_224
+from .mae import MaskedAutoencoderViT, mae_vit_base_patch16_224, mae_vit_large_patch16_224

@@ -12,7 +12,7 @@ from agrinet.common.contracts import Domain, ExperimentSpec
 from agrinet.common.paths import experiment_root
 
 EXPERIMENT_ID_PATTERN = re.compile(
-    r"^(data|rag|vlm)-[a-z0-9]+(?:-[a-z0-9]+){2,}-v[1-9][0-9]*$"
+    r"^(data|rag|vlm|vision)-[a-z0-9]+(?:-[a-z0-9]+){2,}-v[1-9][0-9]*$"
 )
 
 

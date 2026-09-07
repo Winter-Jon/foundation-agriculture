@@ -16,6 +16,7 @@ class Domain(StrEnum):
     DATA = "data"
     RAG = "rag"
     VLM = "vlm"
+    VISION = "vision"
 
 
 class Lifecycle(StrEnum):
