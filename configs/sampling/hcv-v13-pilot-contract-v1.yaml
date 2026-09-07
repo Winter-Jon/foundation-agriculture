@@ -1,0 +1,41 @@
+schema_version: agrinet.hcv-v13-pilot-contract/v1
+id: hcv-v13-pilot-contract-v1
+description: >-
+  Direct-first, Micu-audited HCV pilot contract. This route is non-training
+  and cannot release full collection without the declared stability gate.
+pilot:
+  rows_per_round: 32
+  rows_per_cell: 4
+  cells:
+    - open/en/disease
+    - open/en/pest
+    - open/zh/disease
+    - open/zh/pest
+    - option/en/disease
+    - option/en/pest
+    - option/zh/disease
+    - option/zh/pest
+direct_first:
+  candidate_count: [2, 3]
+  confidence_values: [high, medium, low]
+  high_confidence_requires_calibration: true
+  uncalibrated_or_nonhigh_route: rag
+rag:
+  max_effective_retrieval_turns: 5
+  early_abstention: only_no_progress_or_unresolved_conflict
+  final_abstention_token: INSUFFICIENT_EVIDENCE
+micu_audit:
+  private_truth_sidecar: true
+  minimum_accepts_per_round: 31
+  zero_tolerance:
+    - private_label_leakage
+    - tool_protocol_invalid
+    - final_answer_incorrect
+    - unjustified_abstention
+    - abstention_contains_guessed_diagnosis
+  required_rule_consistency: 1.0
+  stable_rounds_before_human_review: 2
+human_review:
+  new_image_confirmation_batch: 32
+  minimum_usable_fraction: 0.9
+  full_collection_blocked_until_pass: true

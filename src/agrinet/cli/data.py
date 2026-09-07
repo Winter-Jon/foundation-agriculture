@@ -40,6 +40,73 @@ from agrinet.research.m1.gates import (
 
 app = domain_app(Domain.DATA)
 Overrides = Annotated[list[str] | None, typer.Option("--config-override")]
+OPEN_AGRI_V2_SUPPLEMENT_OPERATIONS = {
+    "open-agri-v2-supplement-plan",
+    "open-agri-v2-supplement-plan-replenishment",
+    "open-agri-v2-supplement-collect-direct",
+    "open-agri-v2-supplement-collect-rag",
+    "open-agri-v2-supplement-round1-collect-direct",
+    "open-agri-v2-supplement-round1-collect-rag",
+    "open-agri-v2-supplement-round1-wait-review",
+    "open-agri-v2-supplement-round2-plan",
+    "open-agri-v2-supplement-round2-collect-direct",
+    "open-agri-v2-supplement-round2-collect-rag",
+    "open-agri-v2-supplement-round2-wait-review",
+    "open-agri-v2-supplement-round3-plan",
+    "open-agri-v2-supplement-round3-collect-direct",
+    "open-agri-v2-supplement-round3-collect-rag",
+    "open-agri-v2-supplement-round3-wait-review",
+    "open-agri-v2-supplement-round4-plan",
+    "open-agri-v2-supplement-round4-collect-direct",
+    "open-agri-v2-supplement-round4-collect-rag",
+    "open-agri-v2-supplement-round4-wait-review",
+    "open-agri-v2-supplement-round5-plan",
+    "open-agri-v2-supplement-round5-collect-direct",
+    "open-agri-v2-supplement-round5-collect-rag",
+    "open-agri-v2-supplement-round5-wait-review",
+    "open-agri-v2-supplement-round6-plan",
+    "open-agri-v2-supplement-round6-collect-direct",
+    "open-agri-v2-supplement-round6-collect-rag",
+    "open-agri-v2-supplement-round6-wait-review",
+    "open-agri-v2-supplement-round7-plan",
+    "open-agri-v2-supplement-round7-collect-direct",
+    "open-agri-v2-supplement-round7-collect-rag",
+    "open-agri-v2-supplement-round7-wait-review",
+    "open-agri-v2-supplement-round8-plan",
+    "open-agri-v2-supplement-round8-collect-direct",
+    "open-agri-v2-supplement-round8-collect-rag",
+    "open-agri-v2-supplement-round8-wait-review",
+    "open-agri-v2-supplement-round9-plan",
+    "open-agri-v2-supplement-round9-collect-direct",
+    "open-agri-v2-supplement-round9-collect-rag",
+    "open-agri-v2-supplement-round9-wait-review",
+    "open-agri-v2-supplement-round10-plan",
+    "open-agri-v2-supplement-round10-collect-direct",
+    "open-agri-v2-supplement-round10-collect-rag",
+    "open-agri-v2-supplement-round10-wait-review",
+    "open-agri-v2-supplement-round11-plan",
+    "open-agri-v2-supplement-round11-collect-direct",
+    "open-agri-v2-supplement-round11-collect-rag",
+    "open-agri-v2-supplement-round11-wait-review",
+    "open-agri-v2-supplement-oracle-plan",
+    "open-agri-v2-supplement-oracle-collect",
+    "open-agri-v2-supplement-oracle-review",
+    "open-agri-v2-supplement-oracle-provisional-audit",
+    "open-agri-v2-supplement-oracle-final-export",
+    "open-agri-v2-supplement-oracle-n04094-continuation-plan",
+    "open-agri-v2-supplement-oracle-n04094-continuation-collect",
+    "open-agri-v2-supplement-oracle-n04094-continuation-review",
+    "open-agri-v2-supplement-oracle-replay-plan",
+    "open-agri-v2-supplement-oracle-replay-collect",
+    "open-agri-v2-supplement-oracle-replay-review",
+    "open-agri-v2-supplement-oracle-n04094-final-replay-plan",
+    "open-agri-v2-supplement-oracle-n04094-final-replay-collect",
+    "open-agri-v2-supplement-oracle-n04094-final-replay-review",
+    "open-agri-v2-supplement-recover-n04094-rag",
+    "open-agri-v2-supplement-stage",
+    "open-agri-v2-supplement-review",
+    "open-agri-v2-supplement-merge",
+}
 
 
 @app.command("doctor")
@@ -54,6 +121,796 @@ def doctor() -> None:
         "yunwu_credentials": "checked only when generate starts",
     }
     typer.echo(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def _open_agri_v2_supplement_command(config: dict, action: str) -> list[str]:
+    parameters = config.get("parameters", {})
+    staging = _path(config, "outputs", "staging_root")
+    command = [
+        sys.executable, "scripts/data/open_agri_v2_supplement.py", action,
+        "--staging-root", str(staging),
+        "--seed", str(parameters.get("seed", "open-agri-v2-known-supplement-v1")),
+        "--oversample", str(parameters.get("oversample", 1.5)),
+        "--workers", str(parameters.get("workers", 8)),
+        "--model", str(parameters.get("model", "gpt-5.6-terra")),
+        "--rag-api", str(parameters.get("rag_api", "http://127.0.0.1:8077")),
+    ]
+    if action == "merge":
+        command.append("--approve-review")
+    return command
+
+
+@app.command("open-agri-v2-supplement-plan")
+def open_agri_v2_supplement_plan_command(experiment_id: str) -> None:
+    """Build the staging-only Known-class supplement plan; never edits v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "plan"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-plan-replenishment")
+def open_agri_v2_supplement_plan_replenishment_command(experiment_id: str) -> None:
+    """Build the next fresh staging-only retry round; never edits formal v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-collect-direct")
+def open_agri_v2_supplement_collect_direct_command(experiment_id: str) -> None:
+    """Collect staged Direct teacher/auditor views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "collect-direct"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-collect-rag")
+def open_agri_v2_supplement_collect_rag_command(experiment_id: str) -> None:
+    """Collect staged label-blind HCV RAG views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "collect-rag"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round1-collect-direct")
+def open_agri_v2_supplement_round1_collect_direct_command(experiment_id: str) -> None:
+    """Collect fresh round-1 Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round1-collect-rag")
+def open_agri_v2_supplement_round1_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect fresh round-1 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round1-wait-review")
+def open_agri_v2_supplement_round1_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-1 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "wait-review"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round2-plan")
+def open_agri_v2_supplement_round2_plan_command(experiment_id: str) -> None:
+    """Build the final permitted fresh retry round; never edits formal v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "2"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round2-collect-direct")
+def open_agri_v2_supplement_round2_collect_direct_command(experiment_id: str) -> None:
+    """Collect fresh round-2 Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "2"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round2-collect-rag")
+def open_agri_v2_supplement_round2_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect fresh round-2 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "2"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round2-wait-review")
+def open_agri_v2_supplement_round2_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-2 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "2"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round3-plan")
+def open_agri_v2_supplement_round3_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized third fresh retry round; never edits v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "3"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round3-collect-direct")
+def open_agri_v2_supplement_round3_collect_direct_command(experiment_id: str) -> None:
+    """Collect user-authorized fresh round-3 Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "3"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round3-collect-rag")
+def open_agri_v2_supplement_round3_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect user-authorized round-3 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "3"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round3-wait-review")
+def open_agri_v2_supplement_round3_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-3 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "3"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round4-plan")
+def open_agri_v2_supplement_round4_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fourth fresh retry round; never edits v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "4"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round4-collect-direct")
+def open_agri_v2_supplement_round4_collect_direct_command(experiment_id: str) -> None:
+    """Collect user-authorized fresh round-4 Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "4"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round4-collect-rag")
+def open_agri_v2_supplement_round4_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect user-authorized round-4 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "4"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round4-wait-review")
+def open_agri_v2_supplement_round4_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-4 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "4"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round5-plan")
+def open_agri_v2_supplement_round5_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fifth fresh retry round; never edits v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "5"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round5-collect-direct")
+def open_agri_v2_supplement_round5_collect_direct_command(experiment_id: str) -> None:
+    """Collect user-authorized fresh round-5 Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "5"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round5-collect-rag")
+def open_agri_v2_supplement_round5_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect user-authorized round-5 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "5"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round5-wait-review")
+def open_agri_v2_supplement_round5_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-5 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "5"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round6-plan")
+def open_agri_v2_supplement_round6_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized 3x round-6 plan with a scoped replay exception."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [
+            *_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "6",
+            "--authorized-replay-code", "N04094",
+            "--authorized-replay-code", "N04117",
+            "--authorized-replay-code", "N04113",
+        ],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round6-collect-direct")
+def open_agri_v2_supplement_round6_collect_direct_command(experiment_id: str) -> None:
+    """Collect user-authorized round-6 Direct views, including only scoped replays."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "6"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round6-collect-rag")
+def open_agri_v2_supplement_round6_collect_rag_command(experiment_id: str) -> None:
+    """Preflight local retrieval then collect scoped-replay round-6 blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "6"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round6-wait-review")
+def open_agri_v2_supplement_round6_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-6 completion then stage and audit immutable evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "6"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round7-plan")
+def open_agri_v2_supplement_round7_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fresh-only round-7 staging plan."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "7"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round7-collect-direct")
+def open_agri_v2_supplement_round7_collect_direct_command(experiment_id: str) -> None:
+    """Collect round-7 fresh Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "7"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round7-collect-rag")
+def open_agri_v2_supplement_round7_collect_rag_command(experiment_id: str) -> None:
+    """Preflight retrieval then collect round-7 fresh blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "7"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round7-wait-review")
+def open_agri_v2_supplement_round7_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-7 collection and recompute the formal staging review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "7"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round8-plan")
+def open_agri_v2_supplement_round8_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fresh-only round-8 staging plan."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "8"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round8-collect-direct")
+def open_agri_v2_supplement_round8_collect_direct_command(experiment_id: str) -> None:
+    """Collect round-8 fresh Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "8"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round8-collect-rag")
+def open_agri_v2_supplement_round8_collect_rag_command(experiment_id: str) -> None:
+    """Preflight retrieval then collect round-8 fresh blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "8"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round8-wait-review")
+def open_agri_v2_supplement_round8_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-8 collection and recompute the formal staging review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "8"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round9-plan")
+def open_agri_v2_supplement_round9_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fresh-only round-9 staging plan."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "9"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round9-collect-direct")
+def open_agri_v2_supplement_round9_collect_direct_command(experiment_id: str) -> None:
+    """Collect round-9 fresh Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "9"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round9-collect-rag")
+def open_agri_v2_supplement_round9_collect_rag_command(experiment_id: str) -> None:
+    """Preflight retrieval then collect round-9 fresh blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "9"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round9-wait-review")
+def open_agri_v2_supplement_round9_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-9 collection and recompute the formal staging review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "9"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round10-plan")
+def open_agri_v2_supplement_round10_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fresh-only round-10 staging plan."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "10"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round10-collect-direct")
+def open_agri_v2_supplement_round10_collect_direct_command(experiment_id: str) -> None:
+    """Collect round-10 fresh Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "10"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round10-collect-rag")
+def open_agri_v2_supplement_round10_collect_rag_command(experiment_id: str) -> None:
+    """Preflight retrieval then collect round-10 fresh blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "10"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round10-wait-review")
+def open_agri_v2_supplement_round10_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-10 collection and recompute the formal staging review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "10"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round11-plan")
+def open_agri_v2_supplement_round11_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized fresh-only round-11 staging plan."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "plan-replenishment"), "--round", "11"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round11-collect-direct")
+def open_agri_v2_supplement_round11_collect_direct_command(experiment_id: str) -> None:
+    """Collect round-11 fresh Direct views through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-direct"), "--round", "11"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round11-collect-rag")
+def open_agri_v2_supplement_round11_collect_rag_command(experiment_id: str) -> None:
+    """Preflight retrieval then collect round-11 fresh blind RAG views."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "collect-rag"), "--round", "11"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-round11-wait-review")
+def open_agri_v2_supplement_round11_wait_review_command(experiment_id: str) -> None:
+    """Wait for round-11 collection and recompute the formal staging review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "wait-review"), "--round", "11"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-plan")
+def open_agri_v2_supplement_oracle_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized private Oracle-RAG staging plan for N04094/N04113."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-plan"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-collect")
+def open_agri_v2_supplement_oracle_collect_command(experiment_id: str) -> None:
+    """Collect private, evidence-anchored Oracle-RAG trajectories through Micu."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-collect"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-review")
+def open_agri_v2_supplement_oracle_review_command(experiment_id: str) -> None:
+    """Audit Oracle trajectories for evidence anchors and private-label leakage only."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-review"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-provisional-audit")
+def open_agri_v2_supplement_oracle_provisional_audit_command(experiment_id: str) -> None:
+    """Reaudit and package Oracle-only candidates for human review."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-provisional-audit"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-final-export")
+def open_agri_v2_supplement_oracle_final_export_command(experiment_id: str) -> None:
+    """Export the completed Oracle acceptance and rejection package."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-final-export"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-continuation-plan")
+def open_agri_v2_supplement_oracle_n04094_continuation_plan_command(experiment_id: str) -> None:
+    """Plan a separate 3x N04094-only Oracle-RAG continuation without image reuse."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-plan"), "--oracle-recovery-id", "oracle-n04094-continuation-v1", "--oracle-code", "N04094"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-continuation-collect")
+def open_agri_v2_supplement_oracle_n04094_continuation_collect_command(experiment_id: str) -> None:
+    """Collect the separately lineaged N04094-only Oracle-RAG continuation."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-collect"), "--oracle-recovery-id", "oracle-n04094-continuation-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-continuation-review")
+def open_agri_v2_supplement_oracle_n04094_continuation_review_command(experiment_id: str) -> None:
+    """Audit only the N04094 continuation for evidence and private-label leakage."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-review"), "--oracle-recovery-id", "oracle-n04094-continuation-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-replay-plan")
+def open_agri_v2_supplement_oracle_replay_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized 3x Oracle replay plan for N04094 and N04113."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-plan"), "--oracle-recovery-id", "oracle-n04094-n04113-replay-v1", "--oracle-code", "N04094", "--oracle-code", "N04113", "--allow-oracle-replay"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-replay-collect")
+def open_agri_v2_supplement_oracle_replay_collect_command(experiment_id: str) -> None:
+    """Collect the separately lineaged N04094/N04113 Oracle replay batch."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-collect"), "--oracle-recovery-id", "oracle-n04094-n04113-replay-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-replay-review")
+def open_agri_v2_supplement_oracle_replay_review_command(experiment_id: str) -> None:
+    """Audit the Oracle replay batch without promoting it to blind evidence."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-review"), "--oracle-recovery-id", "oracle-n04094-n04113-replay-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-final-replay-plan")
+def open_agri_v2_supplement_oracle_n04094_final_replay_plan_command(experiment_id: str) -> None:
+    """Build the user-authorized final 3x Oracle replay for N04094 only."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-plan"), "--oracle-recovery-id", "oracle-n04094-final-replay-v1", "--oracle-code", "N04094", "--allow-oracle-replay"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-final-replay-collect")
+def open_agri_v2_supplement_oracle_n04094_final_replay_collect_command(experiment_id: str) -> None:
+    """Collect only the user-authorized final N04094 Oracle replay."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-collect"), "--oracle-recovery-id", "oracle-n04094-final-replay-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-oracle-n04094-final-replay-review")
+def open_agri_v2_supplement_oracle_n04094_final_replay_review_command(experiment_id: str) -> None:
+    """Audit the final N04094 Oracle replay and refresh provisional evidence."""
+    config = _resolved(experiment_id, None)
+    review = subprocess.run(
+        [*_open_agri_v2_supplement_command(config, "oracle-review"), "--oracle-recovery-id", "oracle-n04094-final-replay-v1"],
+        cwd=repository_root(), check=False,
+    )
+    if review.returncode:
+        raise typer.Exit(review.returncode)
+    provisional = subprocess.run(
+        _open_agri_v2_supplement_command(config, "oracle-provisional-audit"),
+        cwd=repository_root(), check=False,
+    )
+    if provisional.returncode:
+        raise typer.Exit(provisional.returncode)
+
+
+@app.command("open-agri-v2-supplement-recover-n04094-rag")
+def open_agri_v2_supplement_recover_n04094_rag_command(experiment_id: str) -> None:
+    """Run only the user-approved N04094 RAG retry after the local 502 outage."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(
+        _open_agri_v2_supplement_command(config, "recover-n04094-rag"),
+        cwd=repository_root(), check=False,
+    )
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-stage")
+def open_agri_v2_supplement_stage_command(experiment_id: str) -> None:
+    """Normalize collection results in staging; never edits formal v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "stage"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-review")
+def open_agri_v2_supplement_review_command(experiment_id: str) -> None:
+    """Create the complete human review ledger for staged image groups."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "review"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
+
+
+@app.command("open-agri-v2-supplement-merge")
+def open_agri_v2_supplement_merge_command(experiment_id: str) -> None:
+    """Merge only explicitly human-approved staging results into formal v2."""
+    config = _resolved(experiment_id, None)
+    completed = subprocess.run(_open_agri_v2_supplement_command(config, "merge"), cwd=repository_root(), check=False)
+    if completed.returncode:
+        raise typer.Exit(completed.returncode)
 
 
 def _resolved(experiment_id: str, overrides: list[str] | None) -> dict:
@@ -2922,16 +3779,42 @@ def submit_command(
         "m1-direct-terminal-reconvert-task-guidance-v2",
         "m1-direct-terminal-reconvert-user-guidance-v3",
         "m1-direct-terminal-derive-open-only-v1",
+        *OPEN_AGRI_V2_SUPPLEMENT_OPERATIONS,
     }:
         command = [sys.executable, "-m", "agrinet.cli.app", "data", operation, experiment_id]
         if dry_run:
             typer.echo(" ".join(command))
             return
+        child_env: dict[str, str] = {}
+        if operation in {
+            "open-agri-v2-supplement-collect-direct", "open-agri-v2-supplement-collect-rag",
+            "open-agri-v2-supplement-round1-collect-direct", "open-agri-v2-supplement-round1-collect-rag",
+            "open-agri-v2-supplement-round2-collect-direct", "open-agri-v2-supplement-round2-collect-rag",
+            "open-agri-v2-supplement-round3-collect-direct", "open-agri-v2-supplement-round3-collect-rag",
+            "open-agri-v2-supplement-round4-collect-direct", "open-agri-v2-supplement-round4-collect-rag",
+            "open-agri-v2-supplement-round5-collect-direct", "open-agri-v2-supplement-round5-collect-rag",
+            "open-agri-v2-supplement-round6-collect-direct", "open-agri-v2-supplement-round6-collect-rag",
+            "open-agri-v2-supplement-round7-collect-direct", "open-agri-v2-supplement-round7-collect-rag",
+            "open-agri-v2-supplement-round8-collect-direct", "open-agri-v2-supplement-round8-collect-rag",
+            "open-agri-v2-supplement-round9-collect-direct", "open-agri-v2-supplement-round9-collect-rag",
+            "open-agri-v2-supplement-round10-collect-direct", "open-agri-v2-supplement-round10-collect-rag",
+            "open-agri-v2-supplement-round11-collect-direct", "open-agri-v2-supplement-round11-collect-rag",
+            "open-agri-v2-supplement-oracle-collect",
+            "open-agri-v2-supplement-oracle-n04094-continuation-collect",
+            "open-agri-v2-supplement-oracle-replay-collect",
+            "open-agri-v2-supplement-recover-n04094-rag",
+        }:
+            try:
+                child_env.update(yunwu_environment(profile="micu_slb"))
+                child_env.update(local_proxy_environment())
+            except (CredentialError, NetworkConfigError) as exc:
+                typer.echo(f"error: local Micu runtime preflight failed: {exc}", err=True)
+                raise typer.Exit(1) from exc
         if detach:
-            run = start_detached("data", experiment_id, command, {}, resolved)
+            run = start_detached("data", experiment_id, command, child_env, resolved)
             typer.echo(f"run_id={run.run_id} pid={run.pid} run_dir={run.run_dir}")
             return
-        run_id, run_dir, exit_code = run_foreground("data", experiment_id, command, {}, resolved)
+        run_id, run_dir, exit_code = run_foreground("data", experiment_id, command, child_env, resolved)
         typer.echo(f"run_id={run_id} run_dir={run_dir} exit_code={exit_code}")
         if exit_code:
             raise typer.Exit(exit_code)

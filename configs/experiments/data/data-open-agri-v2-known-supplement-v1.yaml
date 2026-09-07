@@ -1,0 +1,31 @@
+schema_version: agrinet.experiment/v1
+id: data-open-agri-v2-known-supplement-v1
+display_name:
+  en: OpenAgri v2 Known-class staged supplement
+  zh: OpenAgri v2 Known 类别暂存补采
+domain: data
+task: iteration_control
+description: Staged Direct plus blind HCV RAG supplement. Formal v2 changes require an explicit human review approval file.
+lifecycle: active
+components:
+  data: datasets/AgriNet-1K/open_agri_v2
+  runtime: runtime/local-data
+runtime_profile: runtime/local-data
+inputs:
+  dataset_root: datasets/AgriNet-1K/open_agri_v2
+  class_roles: datasets/AgriNet-1K/open_agri_v2/manifests/class_split.jsonl
+  image_pool: datasets/AgriNet-1K/open_agri_v2/vlm_data/candidates/image_pool.jsonl
+  accepted_train: datasets/AgriNet-1K/open_agri_v2/vlm_data/accepted/train/summary.json
+outputs:
+  staging_root: outputs/artifacts/datasets/open-agri-v2-known-supplement-v1
+parameters:
+  credential_profile: micu_slb
+  seed: open-agri-v2-known-supplement-v1
+  oversample: 3.0
+  workers: 8
+  model: gpt-5.6-terra
+  rag_api: http://127.0.0.1:8078
+  maximum_replenishment_rounds: 11
+  accepted_images_per_known_class: 5
+  views_per_image: 8
+tags: [open-agri-v2, known, supplement, micu, hcv-rag, human-review]
