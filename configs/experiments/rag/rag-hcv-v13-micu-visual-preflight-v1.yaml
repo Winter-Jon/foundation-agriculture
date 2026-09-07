@@ -1,0 +1,27 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-micu-visual-preflight-v1
+display_name:
+  en: HCV v13 Micu retired-image visual preflight
+  zh: HCV v13 Micu 退休图像视觉预检
+domain: rag
+task: audit
+description: >-
+  One retired r1_restart image validates Micu multimodal reachability only. It
+  does not collect a trajectory, create training data, or permit image replay.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan: outputs/experiments/hcv_v13/pilot/r1_restart/public/collection_plan.jsonl
+  calibration: outputs/experiments/hcv_v13/calibration/direct_route_r1_restart.json
+  output_dir: outputs/experiments/hcv_v13/pilot/r1_restart
+  rag_api: http://127.0.0.1:8078
+  model: gpt-5.6-terra
+  max_tool_turns: 5
+  top_k: 3
+  timeout: 45
+  preflight_timeout: 20
+  max_tokens: 256
+  visual_preflight_only: true
+tags: [hcv-v13, micu-slb, visual-preflight, retired-image, no-collection, no-training]

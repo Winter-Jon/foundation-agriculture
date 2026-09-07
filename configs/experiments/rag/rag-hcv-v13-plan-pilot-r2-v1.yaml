@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-plan-pilot-r2-v1
+display_name:
+  en: HCV v13 image-isolated pilot plan round 2
+  zh: HCV v13 图像隔离试采样计划第2轮
+domain: rag
+task: plan
+description: Local-only plan construction for the independent HCV v13 second pilot round.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  source: outputs/experiments/hcv_v13/candidates/r2_source.jsonl
+  output_root: outputs/experiments/hcv_v13/pilot/r2
+tags: [hcv-v13, plan, pilot-only, independent-r2, no-remote]

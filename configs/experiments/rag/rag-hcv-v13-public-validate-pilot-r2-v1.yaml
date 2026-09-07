@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-public-validate-pilot-r2-v1
+display_name:
+  en: HCV v13 public trajectory validation round 2
+  zh: HCV v13 第2轮公共轨迹验证
+domain: rag
+task: audit
+description: Local label-blind validation before the private r2 Micu audit.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  plan: outputs/experiments/hcv_v13/pilot/r2/public/collection_plan.jsonl
+  accepted: outputs/experiments/hcv_v13/pilot/r2/train/agent_sft.accepted.jsonl
+  report: outputs/experiments/hcv_v13/pilot/r2/reports/public_validation.json
+tags: [hcv-v13, public-validation, pilot-only, label-blind, independent-r2]

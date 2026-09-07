@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-micu-collect-pilot-r1-v1
+display_name:
+  en: HCV v13 Micu Direct-first pilot collection round 1
+  zh: HCV v13 Micu Direct-first 试采样第1轮
+domain: rag
+task: distill
+description: >-
+  Pilot-only, exactly 32 image-isolated Direct-first HCV trajectories. The
+  generated artifact is not training eligible and must pass private Micu audit
+  before any human review; no full collection, freeze, or SFT is authorized.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan: outputs/experiments/hcv_v13/pilot/r1/public/collection_plan.jsonl
+  calibration: outputs/experiments/hcv_v13/calibration/direct_route_v1.json
+  output_dir: outputs/experiments/hcv_v13/pilot/r1
+  rag_api: http://127.0.0.1:8078
+  model: gpt-5.6-terra
+  max_tool_turns: 5
+  top_k: 3
+  timeout: 180
+  max_tokens: 2048
+tags: [hcv-v13, micu-slb, direct-first, pilot-only, image-isolated, no-freeze]

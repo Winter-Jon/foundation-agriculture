@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-source-pilot-r1-v1
+display_name:
+  en: HCV v13 fresh image source preparation round 1
+  zh: HCV v13 第1轮新鲜图像候选源准备
+domain: rag
+task: plan
+description: >-
+  Local-only preparation of a 32-row, image-isolated HCV v13 pilot source and
+  explicit bootstrap calibration that forces all rows through RAG. No remote
+  request, full collection, freeze, or SFT is authorized by this operation.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  output: outputs/experiments/hcv_v13/candidates/r1_source.jsonl
+  calibration_output: outputs/experiments/hcv_v13/calibration/direct_route_v1.json
+  report: outputs/experiments/hcv_v13/candidates/r1_source_report.json
+  classes: outputs/artifacts/datasets/m1-direct-current-hcv-v1/classes.jsonl
+  images_root: datasets/AgriNet-1K/all
+  exclude:
+    - outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation
+  seed: hcv-v13-r1
+tags: [hcv-v13, source-preparation, pilot-only, image-isolated, force-rag, no-remote]

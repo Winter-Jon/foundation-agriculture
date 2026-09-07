@@ -88,7 +88,11 @@ def register_contacted_images(
             {
                 "image_sha256": str(row["image_sha256"]), "contact_stage": contact_stage, "round": contact_round,
                 "promoted_from": {
-                    "contact_stage": permitted_prior_stage,
+                    # Preserve the actual source reference rather than the
+                    # broad authorization filter. A scoped replay can draw
+                    # from multiple prior rounds, and the original evidence
+                    # remains addressable through this immutable pointer.
+                    "contact_stage": row.get("contact_stage"),
                     "round": by_hash[str(row["image_sha256"])].get("round"),
                 },
             } if str(row["image_sha256"]) in plan else row

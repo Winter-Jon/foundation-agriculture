@@ -118,7 +118,33 @@ def submit(
         config = resolve_config(spec)
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
-    if operation == "distill":
+    if operation == "v13-source":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.research.hcv.v13_source"]
+        bindings = (("output", "--output"), ("calibration_output", "--calibration-output"),
+                    ("report", "--report"), ("classes", "--classes"),
+                    ("images_root", "--images-root"), ("seed", "--seed"))
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        for path in parameters.get("exclude", []):
+            command.extend(["--exclude", str(path)])
+        child_env = {}
+    elif operation == "v13-plan":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.research.hcv.v13_plan"]
+        for key, flag in (("source", "--source"), ("output_root", "--output-root"), ("exclude_hashes", "--exclude-hashes")):
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        child_env = {}
+    elif operation == "v13-validate":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.research.hcv.v13_validation"]
+        for key, flag in (("plan", "--plan"), ("accepted", "--accepted"), ("report", "--report")):
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        child_env = {}
+    elif operation == "distill":
         command = [sys.executable, "-m", "agrinet.research.hcv.collector"]
         parameters = config.get("parameters", {})
         bindings = (("sample_file", "--sample-file"), ("plan_file", "--plan-file"), ("candidate_source", "--candidate-source"), ("approval_scope", "--approval-scope"), ("private_final_adjudication_file", "--private-final-adjudication-file"), ("rag_api", "--rag-api"), ("output_dir", "--output-dir"), ("model", "--model"), ("limit", "--limit"), ("offset", "--offset"), ("stop_after_accepted", "--stop-after-accepted"), ("max_concurrent", "--max-concurrent"), ("max_tool_turns", "--max-tool-turns"), ("top_k", "--top-k"), ("temperature", "--temperature"), ("max_tokens", "--max-tokens"), ("teacher_timeout", "--teacher-timeout"), ("teacher_retries", "--teacher-retries"), ("teacher_retry_sleep", "--teacher-retry-sleep"), ("preflight_report", "--preflight-report"))
@@ -128,6 +154,60 @@ def submit(
         if parameters.get("preflight_image"): command.append("--preflight-image")
         try:
             credential_profile = str(parameters.get("credential_profile", "yunwu"))
+            child_env = {**yunwu_environment(profile=credential_profile), **local_proxy_environment()} if not dry_run else {}
+        except (CredentialError, NetworkConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "v13-collect":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.research.hcv.v13_collector"]
+        bindings = (
+            ("plan", "--plan"), ("calibration", "--calibration"),
+            ("output_dir", "--output-dir"), ("rag_api", "--rag-api"),
+            ("model", "--model"), ("credential_profile", "--credential-profile"),
+            ("max_tool_turns", "--max-tool-turns"), ("top_k", "--top-k"),
+            ("timeout", "--timeout"), ("max_tokens", "--max-tokens"),
+            ("preflight_timeout", "--preflight-timeout"),
+            ("trajectory_preflight_index", "--trajectory-preflight-index"),
+            ("trajectory_preflight_max_tool_turns", "--trajectory-preflight-max-tool-turns"),
+        )
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        if parameters.get("visual_preflight_only"):
+            command.append("--visual-preflight-only")
+        if parameters.get("trajectory_preflight_only"):
+            command.append("--trajectory-preflight-only")
+        try:
+            credential_profile = str(parameters.get("credential_profile", "micu_slb"))
+            child_env = {**yunwu_environment(profile=credential_profile), **local_proxy_environment()} if not dry_run else {}
+        except (CredentialError, NetworkConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "v13-audit":
+        parameters = config.get("parameters", {})
+        validation_path = parameters.get("public_validation")
+        if not dry_run and validation_path:
+            try:
+                validation = json.loads((repository_root() / str(validation_path)).read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                typer.echo(f"error: v13 private audit requires a readable public validation report: {validation_path}", err=True)
+                raise typer.Exit(1) from exc
+            if validation.get("ready_for_private_audit") is not True or validation.get("private_truth_read") is not False:
+                typer.echo("error: v13 private audit requires a passing label-blind public validation report", err=True)
+                raise typer.Exit(1)
+        command = [sys.executable, "-m", "agrinet.research.hcv.v13_pilot"]
+        bindings = (
+            ("accepted", "--accepted"), ("private_truth", "--private-truth"),
+            ("output_dir", "--output-dir"), ("round_id", "--round-id"),
+            ("model", "--model"), ("credential_profile", "--credential-profile"),
+            ("timeout", "--timeout"), ("max_tokens", "--max-tokens"),
+            ("image_max_side", "--image-max-side"),
+            ("previous_round_report", "--previous-round-report"),
+        )
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        try:
+            credential_profile = str(parameters.get("credential_profile", "micu_slb"))
             child_env = {**yunwu_environment(profile=credential_profile), **local_proxy_environment()} if not dry_run else {}
         except (CredentialError, NetworkConfigError) as exc:
             typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc

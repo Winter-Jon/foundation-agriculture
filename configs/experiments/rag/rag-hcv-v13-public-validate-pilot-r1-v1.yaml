@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-public-validate-pilot-r1-v1
+display_name:
+  en: HCV v13 public trajectory validation round 1
+  zh: HCV v13 第1轮公共轨迹验证
+domain: rag
+task: audit
+description: >-
+  Local, label-blind validation of the 32-row HCV v13 public collection before
+  private Micu audit. It does not read private truth or create training data.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  plan: outputs/experiments/hcv_v13/pilot/r1/public/collection_plan.jsonl
+  accepted: outputs/experiments/hcv_v13/pilot/r1/train/agent_sft.accepted.jsonl
+  report: outputs/experiments/hcv_v13/pilot/r1/reports/public_validation.json
+tags: [hcv-v13, public-validation, pilot-only, label-blind, no-training]

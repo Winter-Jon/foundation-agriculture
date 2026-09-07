@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-micu-audit-pilot-r2-v1
+display_name:
+  en: HCV v13 Micu private audit and stability gate round 2
+  zh: HCV v13 Micu 私有审计与稳定门第2轮
+domain: rag
+task: audit
+description: >-
+  Private r2 Micu audit after label-blind public validation. It evaluates r1+r2
+  stability and writes the public human-review package only when the two-round gate passes.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  accepted: outputs/experiments/hcv_v13/pilot/r2/train/agent_sft.accepted.jsonl
+  public_validation: outputs/experiments/hcv_v13/pilot/r2/reports/public_validation.json
+  private_truth: outputs/experiments/hcv_v13/pilot/r2/private/truth_alignment.jsonl
+  output_dir: outputs/experiments/hcv_v13/pilot/r2
+  round_id: r2
+  previous_round_report: outputs/experiments/hcv_v13/pilot/r1/reports/round_summary.json
+  model: gpt-5.6-terra
+  timeout: 180
+  max_tokens: 2048
+  image_max_side: 0
+tags: [hcv-v13, micu-slb, private-audit, stability-gate, pilot-only, no-freeze]

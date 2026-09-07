@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-micu-collect-pilot-r2-v1
+display_name:
+  en: HCV v13 Micu Direct-first pilot collection round 2
+  zh: HCV v13 Micu Direct-first 试采样第2轮
+domain: rag
+task: distill
+description: Independent 32-row, force-RAG HCV v13 trial collection; never training eligible.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  plan: outputs/experiments/hcv_v13/pilot/r2/public/collection_plan.jsonl
+  calibration: outputs/experiments/hcv_v13/calibration/direct_route_v2.json
+  output_dir: outputs/experiments/hcv_v13/pilot/r2
+  rag_api: http://127.0.0.1:8078
+  model: gpt-5.6-terra
+  max_tool_turns: 5
+  top_k: 3
+  timeout: 180
+  max_tokens: 2048
+tags: [hcv-v13, micu-slb, direct-first, pilot-only, independent-r2, no-freeze]

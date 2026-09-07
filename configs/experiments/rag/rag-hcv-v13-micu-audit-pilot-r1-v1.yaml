@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-micu-audit-pilot-r1-v1
+display_name:
+  en: HCV v13 Micu private audit pilot round 1
+  zh: HCV v13 Micu 私有审计试采样第1轮
+domain: rag
+task: audit
+description: >-
+  Pilot-only private Micu audit of exactly 32 HCV v13 trajectories. This
+  operation follows successful label-blind public validation and cannot collect,
+  freeze, train, or modify public student data.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  credential_profile: micu_slb
+  accepted: outputs/experiments/hcv_v13/pilot/r1/train/agent_sft.accepted.jsonl
+  public_validation: outputs/experiments/hcv_v13/pilot/r1/reports/public_validation.json
+  private_truth: outputs/experiments/hcv_v13/pilot/r1/private/truth_alignment.jsonl
+  output_dir: outputs/experiments/hcv_v13/pilot/r1
+  round_id: r1
+  model: gpt-5.6-terra
+  timeout: 180
+  max_tokens: 2048
+  image_max_side: 0
+tags: [hcv-v13, micu-slb, private-audit, pilot-only, no-freeze]

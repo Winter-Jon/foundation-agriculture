@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-v13-source-pilot-r2-v1
+display_name:
+  en: HCV v13 fresh image source preparation round 2
+  zh: HCV v13 第2轮新鲜图像候选源准备
+domain: rag
+task: plan
+description: >-
+  Local-only independent second HCV v13 pilot source. It excludes every r1
+  image hash in addition to the standing isolation ledger and forces RAG.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  output: outputs/experiments/hcv_v13/candidates/r2_source.jsonl
+  calibration_output: outputs/experiments/hcv_v13/calibration/direct_route_v2.json
+  report: outputs/experiments/hcv_v13/candidates/r2_source_report.json
+  classes: outputs/artifacts/datasets/m1-direct-current-hcv-v1/classes.jsonl
+  images_root: datasets/AgriNet-1K/all
+  exclude:
+    - outputs/artifacts/datasets/m1-direct-current-hcv-v1/isolation
+    - outputs/experiments/hcv_v13/candidates/r1_source.jsonl
+    - outputs/experiments/hcv_v13/candidates/r1_restart_source.jsonl
+  seed: hcv-v13-r2
+tags: [hcv-v13, source-preparation, pilot-only, independent-r2, force-rag, no-remote]

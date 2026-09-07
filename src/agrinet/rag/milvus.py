@@ -34,14 +34,22 @@ CANDIDATE_COMPARE_PREFIX = "Compare public agricultural candidate classes and th
 
 
 class MilvusSiglipBackend:
-    """Local SigLIP2 image retrieval backend for the AgriNet Milvus Lite index."""
+    """Local SigLIP2 retrieval using the open_agri_v3 display-name index."""
 
-    def __init__(self, db_path: Path, model_path: Path, device: str = "auto") -> None:
+    def __init__(
+        self,
+        db_path: Path,
+        model_path: Path,
+        device: str = "auto",
+        *,
+        class_collection: str = "open_agri_v3_classes",
+        image_collection: str = "open_agri_v3_images",
+    ) -> None:
         self.db_path = db_path
         self.model_path = model_path
         self.client = MilvusClient(uri=str(db_path))
-        self.class_collection = "agrinet_wiki_siglip2_classes"
-        self.image_collection = "agrinet_wiki_siglip2_images"
+        self.class_collection = class_collection
+        self.image_collection = image_collection
         class_description = self.client.describe_collection(self.class_collection)
         # pymilvus exposes fields directly for Lite but nests them under
         # ``schema`` in other client/server combinations. Support both so text
