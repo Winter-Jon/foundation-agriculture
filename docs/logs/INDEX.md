@@ -2,6 +2,7 @@
 
 ## Experiments
 
+- [2026-W37-0907-0913](experiments/2026-W37-0907-0913.md)
 - [2026-W36-0831-0906](experiments/2026-W36-0831-0906.md)
 - 2026-W35 - experiments/2026-W35-0824-0830.md
 - 2026-W34 - experiments/2026-W34-0817-0823.md

@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-07 17:18:45 CST
+Last updated: 2026-09-08 17:04:55 CST
 
 ## Repository state
 
@@ -22,6 +22,33 @@ normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
+### Classifier × HCV distillation — Scheme B grouped OOF is running
+
+The four-route research contract and offline preflight are documented in
+[classifier_distill.md](../rag/classifier_distill.md). The registered
+`rag-hcv-classifier-distill-preflight-v1` submit now checks the approved frozen
+registry, 107 Known / 104 Unknown roles, image and training provenance, historical
+exclusion identities, independent-image quotas, and paired-view budgets.
+57 focused tests passed (classifier boundary, request ledger, CLI, existing HCV
+plan/contract). The standalone request ledger persists intent before transport,
+retains raw responses/usage/latency, separates public/private budgets, deduplicates
+same-directory concurrent requests, and blocks replay after unknown delivery,
+invalid responses, truncation or event corruption. It is not wired to a live collector.
+The real local preflight verified 1,831 excluded dev/test SHA identities but
+returned exit 2 because `outputs/artifacts/hcv-classifier-distill/pilot-v1/` lacks
+`source.jsonl` and `exclusions.json`. Evidence:
+`outputs/artifacts/hcv-classifier-distill/pilot-v1/preflight/20260908T085127Z-315e2b9e/report.json`.
+
+The user selected Scheme B after the fresh-image capacity audit. Three grouped
+near-duplicate OOF classifier folds are now running on GPUs 1--3, with all
+three held-out prediction paths, conversion/audit tooling, and the 32-image
+source/readiness gates implemented. Fold-0 has reached epoch 4/50; folds 1
+and 2 each completed their first epoch. No teacher request has been sent and
+pilot training eligibility remains false. Next: wait for all managed folds to
+complete, evaluate each held-out fold, merge/audit predictions, then build and
+validate the 32-row source before starting the live Micu/RAG smoke. See the
+2026-W37 experiment record for volatile run IDs and evidence.
+
 ### Running — OpenAgri v3 Known-only ViT-L MAE pretraining
 
 The manifest-driven closed-set vision workflow uses 107 v3 Known classes: 142,726
@@ -33,6 +60,15 @@ Only the future formal MAE encoder may initialize the 50-epoch class-balanced
 classifier; selection is Known-dev macro-F1, with one Known-only final test.
 The formal MAE run has passed epoch 25 and is at epoch 39/100 with finite,
 decreasing reconstruction loss; the epoch-25 checkpoint is recoverability-only.
+
+### Running — OpenAgri v3 Known-only ViT-B MAE comparison
+
+The matched ViT-B/16 MAE comparison is active on GPUs 4--7 at
+`outputs/runs/vision/vision-openagri-v3-known-vitb-mae-v1/20260907T191004-fe65aa26-a01/`.
+It uses the same 107 Known classes, 142,726/547/545 train/dev/test split,
+dev/test SHA exclusion, class-balanced classifier protocol, and Known-dev
+Macro-F1 checkpoint selection criterion as the ViT-L route. The 20-step
+four-GPU smoke completed with reconstruction loss 1.09052.
 
 ### Active — HCV v13 Micu retry37 public-only pilot is running after bounded delivery repair
 
