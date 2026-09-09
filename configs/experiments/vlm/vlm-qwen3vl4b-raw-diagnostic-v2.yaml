@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: vlm-qwen3vl4b-raw-diagnostic-v2
+display_name: {en: Raw Qwen3-VL-4B v2 diagnostic, zh: 原始 Qwen3-VL-4B v2 执行诊断}
+domain: vlm
+task: raw_model_diagnostic
+description: One bounded image-only execution check for the original student; not evaluation, training, or distillation data.
+lifecycle: active
+components: {model: models/Qwen3-VL-4B-Instruct, runtime: runtime/local-a800}
+runtime_profile: runtime/local-a800
+inputs:
+  model: models/Qwen3-VL-4B-Instruct
+  image: datasets/AgriNet-1K/all/N04019/N04019_P04263.jpg
+outputs:
+  report: outputs/artifacts/micu-classifier-hcv-v2/student-diagnostic/raw-4b.json
+  output_dir: outputs/artifacts/micu-classifier-hcv-v2/smoke-v1/student-raw-4b
+  run_root: outputs/runs/vlm/vlm-qwen3vl4b-raw-diagnostic-v2/
+parameters:
+  script: scripts/vlm/diagnose_qwen3_vl4b_source_v2.py
+  single_image_script: scripts/vlm/diagnose_qwen3_vl4b_v2.py
+  source: outputs/artifacts/micu-classifier-hcv-v2/smoke-v1/source.jsonl
+  sft_runtime: venv_test
+  local_launch:
+    cuda_visible_devices: '1'
+    nproc_per_node: 1
+  cuda_visible_devices: '1'
+  device: cuda:0
+  max_new_tokens: 128
+  training_eligible: false
+tags: [qwen3-vl, raw, diagnostic, smoke, no-training]

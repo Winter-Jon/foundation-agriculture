@@ -436,6 +436,25 @@ def checkpoint_smoke_evaluation_command(config: dict) -> list[str]:
     return command
 
 
+def raw_source_diagnostic_command(config: dict) -> list[str]:
+    """Build the raw-4B, public-source-only smoke diagnostic command."""
+    parameters, inputs, outputs = config.get("parameters", {}), config.get("inputs", {}), config.get("outputs", {})
+    required = {
+        "script": parameters.get("script"), "model": inputs.get("model"),
+        "source": parameters.get("source"), "output_dir": outputs.get("output_dir"),
+        "device": parameters.get("device"),
+    }
+    missing = [key for key, value in required.items() if not isinstance(value, str) or not value]
+    if missing:
+        raise ConfigError("raw source diagnostic missing parameters: " + ", ".join(missing))
+    tokens = parameters.get("max_new_tokens", 128)
+    if not isinstance(tokens, int) or not 1 <= tokens <= 8192:
+        raise ConfigError("raw source diagnostic max_new_tokens must be in [1, 8192]")
+    return [str(sft_python(config)), required["script"], "--model", required["model"],
+            "--source", required["source"], "--output-dir", required["output_dir"],
+            "--device", required["device"], "--max-new-tokens", str(tokens)]
+
+
 @app.command("train")
 def train(experiment_id: str, dry_run: bool = typer.Option(False, "--dry-run")) -> None:
     """Run or preview ms-swift training from a registered explicit config."""
@@ -552,12 +571,18 @@ def submit(
             command = checkpoint_smoke_evaluation_command(config)
         except ConfigError as exc:
             typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    elif operation == "raw-source-diagnostic":
+        try:
+            command = raw_source_diagnostic_command(config)
+        except ConfigError as exc:
+            typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
     env = local_training_env(config) if operation in {
         "train", "manual-json-checkpoint-queue", "m1-direct-checkpoint-queue",
         "checkpoint-smoke-evaluation",
         "formal-direct-native", "formal-rag-native",
+        "raw-source-diagnostic",
     } else {"WANDB_MODE": "offline", "QWENVL_BBOX_FORMAT": "new"}
     if dry_run:
         launch = " ".join(
