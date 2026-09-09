@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-hcv-classifier-distill-preflight-v1
+display_name: {en: Classifier HCV offline readiness, zh: 分类器 HCV 离线预检}
+domain: rag
+task: classifier_distill_preflight
+description: Local contract and input readiness check; no teacher calls or training eligibility.
+lifecycle: active
+components: {runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+parameters:
+  contract: configs/sampling/hcv-classifier-distill-contract-v1.yaml
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  source: outputs/artifacts/hcv-classifier-distill/pilot-v1/source.jsonl
+  exclusions: outputs/artifacts/hcv-classifier-distill/pilot-v1/exclusions.json
+  output_root: outputs/artifacts/hcv-classifier-distill/pilot-v1/preflight
+  stage: smoke
+outputs:
+  run_root: outputs/runs/rag/rag-hcv-classifier-distill-preflight-v1/
+tags: [hcv, classifier, plan-review, offline, pilot-only]

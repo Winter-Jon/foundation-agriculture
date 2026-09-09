@@ -4,4 +4,6 @@ Use `.venv/bin/agrinet rag doctor` and `rag index check` for read-only checks. `
 
 The current DB is `outputs/milvus/agrinet_wiki_lite.db`; program outputs belong under `outputs/runs/rag/`, never under historical `slurm/`.
 
+Classifier-assisted HCV research uses the [four-route contract and offline preflight](classifier_distill.md). Run `.venv/bin/agrinet rag submit rag-hcv-classifier-distill-preflight-v1` for local input checks; this operation makes no teacher calls and cannot grant training eligibility.
+
 Start locally with `agrinet rag submit rag-serve-siglip2-milvus-local-v1 --operation serve --detach`. Stop with `agrinet rag stop RUN_DIR`; a requested stop finalizes the run as complete. Distillation uses `rag submit ... --operation distill` and performs GPG credential/proxy preflight before allocating a run.

@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-v2-smoke-v1
+display_name: {en: Micu classifier HCV v2 smoke, zh: Micu 分类器 HCV v2 真实冒烟}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Deterministic preflight and gated 32-image smoke orchestration; no training eligibility.
+lifecycle: active
+components: {teacher: micu_slb, student: qwen3-vl-4b-instruct, classifier: vitl, rag: agrinet-local}
+runtime_profile: runtime/local-rag
+parameters:
+  contract: configs/sampling/micu-classifier-hcv-v2/contract-v1.yaml
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  output_root: outputs/artifacts/micu-classifier-hcv-v2/smoke-v1
+  stage: smoke
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-v2-smoke-v1/
+tags: [hcv, classifier, micu, v2, smoke, gated]

@@ -72,14 +72,22 @@ def search(
 
 
 @app.command("serve")
-def serve(host: str = "127.0.0.1", port: int = 8077, device: str = "auto") -> None:
+def serve(
+    host: str = "127.0.0.1", port: int = 8077, device: str = "auto",
+    class_collection: str = "open_agri_v3_classes",
+    image_collection: str = "open_agri_v3_images",
+) -> None:
     """Serve the typed local retrieval service over HTTP."""
     import uvicorn
     from agrinet.rag.service import create_app
 
     root = repository_root()
     def factory() -> RetrievalService:
-        return RetrievalService(MilvusSiglipBackend(root / "outputs/milvus/agrinet_wiki_lite.db", root / "models/siglip2-so400m-patch16-naflex", device))
+        return RetrievalService(MilvusSiglipBackend(
+            root / "outputs/milvus/agrinet_wiki_lite.db",
+            root / "models/siglip2-so400m-patch16-naflex", device,
+            class_collection=class_collection, image_collection=image_collection,
+        ))
     uvicorn.run(create_app(factory), host=host, port=port)
 
 
@@ -118,7 +126,37 @@ def submit(
         config = resolve_config(spec)
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
-    if operation == "v13-source":
+    if operation == "distill" and spec.task == "classifier_distill_preflight":
+        operation = "classifier-distill-preflight"
+    if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
+        operation = "micu-classifier-hcv-v2"
+    if operation == "classifier-distill-preflight":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.classifier_distill"]
+        for key in ("contract", "dataset_root", "source", "exclusions", "output_root", "stage"):
+            if key in parameters:
+                command.extend(["--" + key.replace("_", "-"), str(parameters[key])])
+        child_env = {}
+    elif operation == "micu-classifier-hcv-v2":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_v2"]
+        for key in ("contract", "dataset_root", "output_root"):
+            if key in parameters:
+                command.extend(["--" + key.replace("_", "-"), str(parameters[key])])
+        child_env = {}
+    elif operation in {"micu-classifier-hcv-v2-collect", "micu-classifier-hcv-v2-derive"}:
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_v2_collect"]
+        for key in ("contract", "dataset_root", "output_root"):
+            if key in parameters:
+                command.extend(["--" + key.replace("_", "-"), str(parameters[key])])
+        if operation == "micu-classifier-hcv-v2-derive":
+            command.extend(["--phase", "derivations"])
+        try:
+            child_env = {**yunwu_environment(profile="micu_slb"), **local_proxy_environment()} if not dry_run else {}
+        except (CredentialError, NetworkConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "v13-source":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.research.hcv.v13_source"]
         bindings = (("output", "--output"), ("calibration_output", "--calibration-output"),
@@ -219,7 +257,7 @@ def submit(
         raise typer.Exit(2)
     elif operation == "serve":
         parameters = config.get("parameters", {})
-        command = [sys.executable, "-m", "agrinet.cli.app", "rag", "serve", "--host", str(parameters.get("host", "127.0.0.1")), "--port", str(parameters.get("port", 8077)), "--device", str(parameters.get("device", "auto"))]
+        command = [sys.executable, "-m", "agrinet.cli.app", "rag", "serve", "--host", str(parameters.get("host", "127.0.0.1")), "--port", str(parameters.get("port", 8077)), "--device", str(parameters.get("device", "auto")), "--class-collection", str(parameters.get("class_collection", "open_agri_v3_classes")), "--image-collection", str(parameters.get("image_collection", "open_agri_v3_images"))]
         child_env = {}
     else:
         typer.echo(f"error: unsupported rag operation: {operation}", err=True); raise typer.Exit(2)

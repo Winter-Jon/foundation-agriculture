@@ -6,6 +6,52 @@ from agrinet.common.credentials import CredentialError
 runner = CliRunner()
 
 
+def test_classifier_distill_preflight_is_default_offline_operation() -> None:
+    result = runner.invoke(app, ["rag", "submit",
+                                "rag-hcv-classifier-distill-preflight-v1", "--dry-run"])
+    assert result.exit_code == 0
+    assert "-m agrinet.rag.classifier_distill" in result.stdout
+    assert "--stage smoke" in result.stdout
+    assert "--exclusions" in result.stdout
+
+
+def test_micu_classifier_v2_collect_is_registered_and_dry_run_safe() -> None:
+    from typer.testing import CliRunner
+    from agrinet.cli.app import app
+    result = CliRunner().invoke(app, ["rag", "submit", "rag-micu-classifier-hcv-v2-smoke-v1",
+                                      "--operation", "micu-classifier-hcv-v2-collect", "--dry-run"])
+    assert result.exit_code == 0
+    assert "agrinet.rag.micu_classifier_hcv_v2_collect" in result.stdout
+
+
+def test_micu_classifier_v2_derivation_is_registered_and_dry_run_safe() -> None:
+    result = CliRunner().invoke(app, [
+        "rag", "submit", "rag-micu-classifier-hcv-v2-smoke-v1",
+        "--operation", "micu-classifier-hcv-v2-derive", "--dry-run",
+    ])
+    assert result.exit_code == 0
+    assert "agrinet.rag.micu_classifier_hcv_v2_collect" in result.stdout
+    assert "--phase derivations" in result.stdout
+
+
+def test_micu_classifier_hcv_v2_dry_run_is_registered() -> None:
+    result = runner.invoke(app, ["rag", "submit", "rag-micu-classifier-hcv-v2-smoke-v1", "--dry-run"])
+    assert result.exit_code == 0
+    assert "-m agrinet.rag.micu_classifier_hcv_v2" in result.stdout
+    assert "--output-root outputs/artifacts/micu-classifier-hcv-v2/smoke-v1" in result.stdout
+
+
+def test_raw_qwen_source_diagnostic_is_registered_with_venv_test() -> None:
+    result = runner.invoke(app, [
+        "vlm", "submit", "vlm-qwen3vl4b-raw-diagnostic-v2",
+        "--operation", "raw-source-diagnostic", "--dry-run",
+    ])
+    assert result.exit_code == 0
+    assert ".venv_test/bin/python" in result.stdout
+    assert "diagnose_qwen3_vl4b_source_v2.py" in result.stdout
+    assert "--source outputs/artifacts/micu-classifier-hcv-v2/smoke-v1/source.jsonl" in result.stdout
+
+
 def test_root_help_lists_domains() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0

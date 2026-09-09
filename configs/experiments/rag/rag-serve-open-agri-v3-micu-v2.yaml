@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-serve-open-agri-v3-micu-v2
+display_name: {en: OpenAgri v3 RAG service for Micu v2, zh: Micu v2 OpenAgri v3 本地检索服务}
+domain: rag
+task: serve
+description: Local SigLIP2 service bound to the verified OpenAgri v3 Milvus collections.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+inputs:
+  database: outputs/milvus/agrinet_wiki_lite.db
+  model: models/siglip2-so400m-patch16-naflex
+outputs: {}
+parameters:
+  host: 127.0.0.1
+  port: 8077
+  device: cuda
+  class_collection: open_agri_v3_classes
+  image_collection: open_agri_v3_images
+tags: [rag, milvus, open-agri-v3, micu-v2]

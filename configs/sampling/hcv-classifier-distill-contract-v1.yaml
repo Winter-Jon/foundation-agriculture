@@ -1,0 +1,74 @@
+schema_version: agrinet.hcv-classifier-distill/v1
+status: plan_review
+teacher:
+  service: micu_slb
+  model: gpt-5.6-terra
+  service_version: micu_slb-v1
+  model_version: gpt-5.6-terra
+  prompt_version: classifier-hcv-v1-draft
+  parameters_version: classifier-hcv-v1-draft
+dataset:
+  version: open_agri_v3
+  known_classes: 107
+  unknown_classes: 104
+  registry_sha256: 4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8
+  prediction_kinds: [fresh, out_of_fold]
+  oof_folds: 3
+  grouping: [image_group_id, source_group_id, near_duplicate_group_id]
+  formal_unknown_sft: false
+  final_test_selection: false
+candidates:
+  initial_top_k: 3
+  stored_top_k: 5
+  expansion_requires_event: true
+  retrieval_outside_top5: true
+  scores_are_known_probability: false
+  add_retrieval_and_classifier_scores: false
+routes:
+  A: candidate_judgment
+  B: real_tool_policy
+  C: disagreement_sampling_for_A_or_B
+  D: regenerate_under_direct_or_rag_student_visibility
+recommendation: A_with_C_analysis
+selected_live_route: null
+selected_live_stage: null
+views: [without_candidates, with_candidates]
+stages:
+  smoke: {independent_images: 32, per_cell: 4}
+  exploration: {independent_images: 160, target_per_pattern: 16}
+budgets:
+  rag_calls_per_trajectory: 5
+  micu_requests_per_trajectory: 7
+  private_audits_per_trajectory: 1
+patterns:
+  P1: evidence_supported_confirmation
+  P2: low_score_confirmation
+  P3: candidate_reranking
+  P4: high_score_correction
+  P5: discovery_outside_top5
+  P6: simulated_unknown
+  P7: source_conflict_both_directions
+  P8: retrieval_noise
+  P9: naming_and_granularity
+  P10: insufficient_evidence_open_only
+sampling:
+  ordinary_to_hard: [1, 1]
+  compare_equal_size_random: true
+  duplicate_padding: false
+  target_pattern_is_private: true
+  interventions_separate: true
+gates:
+  pilot_training_eligible: false
+  stable_rounds_required: 2
+  human_confirmation_required: true
+  independent_public_private_requests: true
+  private_outcomes: [accept, reject, human_review]
+  private_truth_teacher_repair: false
+  exclude: [rejected, retired, contacted, unknown_delivery]
+  ambiguous_delivery_auto_replay: false
+  actual_token_mask_check_required: true
+evaluation:
+  fixed_weight_controls: [hcv, classifier, candidate_names, candidate_names_scores, routing]
+  supervision_controls: [answer, evidence_answer, real_tool_trajectory]
+  metrics: [known_macro_f1, unknown_accuracy, unknown_to_known, correction_rate, regression_rate, direct_rag_change, calls, tokens, latency]
+  confidence_interval_unit: image_group_id
