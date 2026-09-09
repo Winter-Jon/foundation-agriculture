@@ -1,0 +1,35 @@
+schema_version: agrinet.experiment/v1
+id: vision-openagri-v3-known-vitb-mae-v1
+display_name: {en: OpenAgri v3 Known ViT-B MAE classifier, zh: OpenAgri v3 Known ViT-B MAE 分类器}
+domain: vision
+task: closed_set_classification
+description: Agricultural MAE ViT-B/16 pretraining with the same OpenAgri v3 Known-only classifier protocol as the ViT-L baseline.
+lifecycle: active
+components: {model: mae_vit_base_patch16_224, runtime: runtime/local-a800}
+runtime_profile: runtime/local-a800
+inputs:
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  artifact_root: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1
+  mae_encoder: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/mae-formal/encoder_last.pth.tar
+  classifier_checkpoint: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/classifier-formal/model_best.pth.tar
+outputs:
+  mae_smoke: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/mae-smoke
+  mae_formal: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/mae-formal
+  classifier_smoke: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/classifier-smoke
+  classifier_formal: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1/classifier-formal
+  model: outputs/artifacts/vision/openagri-v3-known-vitb-mae-v1
+  run_root: outputs/runs/vision/vision-openagri-v3-known-vitb-mae-v1/
+parameters:
+  smoke_steps: 20
+  mae_smoke_corpus_limit: 8192
+  mae_epochs: 100
+  mae_gpus: 4
+  cuda_visible_devices: "4,5,6,7"
+  mae_batch_size: 64
+  mae_checkpoint_interval: 25
+  classifier_epochs: 50
+  classifier_batch_size: 32
+  classifier_checkpoint_interval: 10
+  workers: 8
+  evaluation_split: test_known
+tags: [open-agri-v3, known-only, vit-base, mae, closed-set, vitl-comparison]

@@ -128,14 +128,23 @@ def _reduce(value: torch.Tensor, world: int) -> torch.Tensor:
     return value
 
 
-def _mae_model():
-    from vision.pretrain.model.mae import mae_vit_large_patch16_224
-    return mae_vit_large_patch16_224()
+_ARCHITECTURES = {
+    "mae_vit_base_patch16_224": "vit_base_patch16_224",
+    "mae_vit_large_patch16_224": "vit_large_patch16_224",
+}
+
+
+def _mae_model(architecture: str):
+    from vision.pretrain import model as mae_models
+
+    if architecture not in _ARCHITECTURES:
+        raise ValueError(f"unsupported MAE architecture: {architecture}")
+    return getattr(mae_models, architecture)()
 
 
 def _save_encoder(model: nn.Module, target: Path, epoch: int, args: argparse.Namespace) -> None:
     raw = model.module if isinstance(model, DistributedDataParallel) else model
-    torch.save({"arch": "mae_vit_large_patch16_224_encoder", "state_dict": raw.encoder_state_dict(), "epoch": epoch, "args": vars(args), "version": 1}, target)
+    torch.save({"arch": f"{args.architecture}_encoder", "state_dict": raw.encoder_state_dict(), "epoch": epoch, "args": vars(args), "version": 1}, target)
 
 
 def run_mae(args: argparse.Namespace) -> None:
@@ -146,7 +155,7 @@ def run_mae(args: argparse.Namespace) -> None:
     dataset = MAEDataset(root / "manifests" / "mae_train.jsonl", transform, args.corpus_limit)
     sampler = DistributedSampler(dataset, shuffle=True) if world > 1 else None
     loader = DataLoader(dataset, batch_size=args.batch_size, sampler=sampler, shuffle=sampler is None, num_workers=args.workers, pin_memory=True, drop_last=True)
-    model = _mae_model().to(device)
+    model = _mae_model(args.architecture).to(device)
     model = DistributedDataParallel(model, device_ids=[local]) if world > 1 else model
     base_lr = 1.5e-4 * (args.batch_size * world / 256)
     optimizer = torch.optim.AdamW(model.parameters(), lr=base_lr, betas=(0.9, 0.95), weight_decay=0.05)
@@ -180,9 +189,11 @@ def run_mae(args: argparse.Namespace) -> None:
     if world > 1: dist.destroy_process_group()
 
 
-def _classifier_model(num_classes: int, encoder_checkpoint: Path) -> nn.Module:
+def _classifier_model(num_classes: int, encoder_checkpoint: Path, architecture: str) -> nn.Module:
     import timm
-    model = timm.create_model("vit_large_patch16_224", pretrained=False, num_classes=num_classes)
+    if architecture not in _ARCHITECTURES:
+        raise ValueError(f"unsupported MAE architecture: {architecture}")
+    model = timm.create_model(_ARCHITECTURES[architecture], pretrained=False, num_classes=num_classes)
     payload = torch.load(encoder_checkpoint, map_location="cpu", weights_only=False)
     state = payload.get("state_dict", payload)
     missing, unexpected = model.load_state_dict(state, strict=False)
@@ -237,7 +248,7 @@ def run_classifier(args: argparse.Namespace) -> None:
     weights = Counter(row["label"] for row in train.rows); sampler = WeightedRandomSampler([1 / weights[row["label"]] for row in train.rows], num_samples=len(train), replacement=True)
     train_loader = DataLoader(train, batch_size=args.batch_size, sampler=sampler, num_workers=args.workers, pin_memory=True, drop_last=True, collate_fn=_collate)
     dev_loader = DataLoader(dev, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True, collate_fn=_collate)
-    model = _classifier_model(len(labels_meta), Path(args.encoder_checkpoint)).to(device)
+    model = _classifier_model(len(labels_meta), Path(args.encoder_checkpoint), args.architecture).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.05); scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda"); output = Path(args.output_dir); output.mkdir(parents=True, exist_ok=True)
     best = -1.0; history = []; step = 0
     for epoch in range(args.epochs):
@@ -250,7 +261,7 @@ def run_classifier(args: argparse.Namespace) -> None:
             if args.max_steps and step >= args.max_steps: break
         metrics = _evaluate(model, dev_loader, device, labels_meta); metrics.update({"epoch": epoch + 1, "step": step}); history.append(metrics); _write_json(output / "classifier_dev_metrics.json", history)
         if metrics["macro_f1"] > best:
-            best = metrics["macro_f1"]; torch.save({"arch": "vit_large_patch16_224", "state_dict": model.state_dict(), "label_map": labels_meta, "epoch": epoch + 1, "dev_metrics": metrics}, output / "model_best.pth.tar")
+            best = metrics["macro_f1"]; torch.save({"arch": _ARCHITECTURES[args.architecture], "state_dict": model.state_dict(), "label_map": labels_meta, "epoch": epoch + 1, "dev_metrics": metrics}, output / "model_best.pth.tar")
         if (epoch + 1) % args.checkpoint_interval == 0 or epoch + 1 == args.epochs: torch.save({"state_dict": model.state_dict(), "epoch": epoch + 1}, output / "checkpoint_last.pth.tar")
         if args.max_steps and step >= args.max_steps: break
     _write_json(output / "label_map.json", labels_meta)
@@ -260,7 +271,7 @@ def run_evaluate(args: argparse.Namespace) -> None:
     root = Path(args.artifact_root); labels_meta = json.loads((root / "label_map.json").read_text(encoding="utf-8")); device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     transform = transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
     dataset = ManifestDataset(root / "manifests" / f"{args.split}.jsonl", transform); loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=8, pin_memory=True, collate_fn=_collate)
-    payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False); import timm; model = timm.create_model("vit_large_patch16_224", pretrained=False, num_classes=len(labels_meta)); model.load_state_dict(payload["state_dict"]); model.to(device)
+    payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False); import timm; model = timm.create_model(payload["arch"], pretrained=False, num_classes=len(labels_meta)); model.load_state_dict(payload["state_dict"]); model.to(device)
     output = Path(args.output_dir); output.mkdir(parents=True, exist_ok=True); metrics = _evaluate(model, loader, device, labels_meta, output / f"predictions_{args.split}.jsonl"); _write_json(output / f"metrics_{args.split}.json", metrics)
 
 
@@ -270,6 +281,7 @@ def main() -> None:
     build = commands.add_parser("build-manifests"); build.add_argument("--dataset-root", type=Path, required=True); build.add_argument("--artifact-root", type=Path, required=True)
     for name in ("mae", "classifier"):
         child = commands.add_parser(name); child.add_argument("--artifact-root", type=Path, required=True); child.add_argument("--output-dir", type=Path, required=True); child.add_argument("--epochs", type=int, required=True); child.add_argument("--batch-size", type=int, required=True); child.add_argument("--workers", type=int, default=8); child.add_argument("--checkpoint-interval", type=int, default=25); child.add_argument("--max-steps", type=int); child.add_argument("--corpus-limit", type=int)
+        child.add_argument("--architecture", choices=tuple(_ARCHITECTURES), required=True)
         if name == "classifier": child.add_argument("--encoder-checkpoint", type=Path, required=True)
     evaluate = commands.add_parser("evaluate"); evaluate.add_argument("--artifact-root", type=Path, required=True); evaluate.add_argument("--output-dir", type=Path, required=True); evaluate.add_argument("--checkpoint", type=Path, required=True); evaluate.add_argument("--split", choices=("dev_known", "test_known"), default="test_known")
     args = parser.parse_args()

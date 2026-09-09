@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: vision-openagri-v3-known-vitl-oof-v2
+display_name: {en: OpenAgri v3 Known ViT-L grouped OOF, zh: OpenAgri v3 Known ViT-L 分组 OOF 分类器}
+domain: vision
+task: grouped_oof_classification
+description: Three-fold near-duplicate-group OOF classifier training; fold outputs are not training eligible until merged and audited.
+lifecycle: active
+components: {model: mae_vit_large_patch16_224, runtime: runtime/local-a800}
+runtime_profile: runtime/local-a800
+inputs:
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  artifact_root: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts
+  fold_manifests: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/manifests-attempt3
+  label_map: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/label_map.json
+  mae_encoder: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/mae-formal/encoder_last.pth.tar
+outputs:
+  run_root: outputs/runs/vision/vision-openagri-v3-known-vitl-oof-v2/
+parameters:
+  folds: 3
+  fold: 0
+  classifier_epochs: 50
+  classifier_batch_size: 32
+  classifier_checkpoint_interval: 10
+  workers: 8
+  cuda_visible_devices: '1'
+  mae_saw_related_unlabeled: unknown
+  training_eligible: false
+tags: [open-agri-v3, known-only, vit-large, grouped-oof, three-fold, no-training-eligibility]
