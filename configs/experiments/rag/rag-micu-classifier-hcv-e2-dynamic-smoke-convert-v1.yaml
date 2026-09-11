@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-dynamic-smoke-convert-v1
+display_name: {en: E2 dynamic smoke student conversion, zh: E2 动态路由学生转换预检}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Convert selected accept trajectories to Direct, Classifier, and RAG candidate views; never authorizes SFT.
+lifecycle: active
+components: {student: qwen3-vl-4b-instruct-original}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: convert
+  source: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json
+  routing_summary: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/collection/routing_summary.json
+  rewrite_summary: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/rewrite/rewrite_summary.json
+  output_root: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/student-candidates
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-dynamic-smoke-convert-v1/
+tags: [hcv, classifier, dynamic-routing, direct, rag, conversion, no-sft]

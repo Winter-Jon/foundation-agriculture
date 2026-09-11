@@ -1,0 +1,53 @@
+schema_version: agrinet.micu-classifier-hcv-e3-adjacent-classfold/v1
+status: designed_not_launched
+dataset:
+  version: open_agri_v3
+  known_classes: 107
+  unknown_classes: 104
+  class_split: datasets/AgriNet-1K/open_agri_v3/manifests/class_split.jsonl
+folds:
+  selection_order: [3, 5]
+  selected: 3
+  fallback_rule: use_5_only_if_no_balanced_3_fold_assignment_satisfies_all_bridges
+  held_out_sizes: [36, 36, 35]
+  training_sizes: [71, 71, 72]
+  class_disjoint: true
+  every_known_class_held_out_exactly_once: true
+  balance:
+    exact_domain_counts: true
+    train_candidate_image_count: secondary_objective
+adjacency:
+  meaning: frozen_RAG_visual_semantic_class_neighbour
+  source: outputs/milvus/wiki_similar_classes_siglip2_report.top12.json
+  source_sha256: a92a724a82d170cad97ba3b6b3c4a337650a20ce8f1382724488ccd4f8545676
+  model: models/siglip2-so400m-patch16-naflex
+  ranking: joint_text_image_equal_weight_top12_same_domain
+  canonical_projection: first_3_distinct_known_neighbours_in_frozen_rank_order
+  directed: true
+  symmetrized: false
+  minimum_training_neighbours_per_held_out_class: 1
+  no_manual_edges: true
+  frozen_before_teacher_collection: true
+classifier:
+  excludes_held_out_class_labels: true
+  excludes_held_out_class_images: true
+  label_spaces_per_fold: [71, 71, 72]
+retrieval:
+  registry_visibility: complete
+  known_and_unknown_classes_visible: 211
+  excludes_held_out_classes: false
+  top5_outside_classifier_candidates_allowed: true
+isolation:
+  teacher_never_receives_fold_membership: true
+  teacher_never_receives_held_out_class_list: true
+  private_truth_not_used_to_construct_graph: true
+  final_test_not_used_to_construct_or_select_folds: true
+execution:
+  launch_classifier_training: false
+  launch_teacher_collection: false
+  training_eligible: false
+  requires_separate_user_authorized_experiment: true
+artifacts:
+  root: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1
+  summary: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/folds.json
+  class_assignments: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/class_assignments.jsonl

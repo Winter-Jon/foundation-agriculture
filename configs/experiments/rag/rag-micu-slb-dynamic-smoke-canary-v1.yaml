@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-slb-dynamic-smoke-canary-v1
+display_name: {en: Micu SLB Sol dynamic-smoke gate, zh: Micu SLB Sol 动态路由冒烟门}
+domain: rag
+task: micu_slb_canary
+description: Fresh strict no-data Sol gate before E2 dynamic-route image collection.
+lifecycle: active
+components: {teacher: micu_slb, model: gpt-5.6-sol}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-slb-canary/v3-sol-dynamic-smoke
+  model: gpt-5.6-sol
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+outputs:
+  run_root: outputs/runs/rag/rag-micu-slb-dynamic-smoke-canary-v1/
+tags: [micu, slb, sol, canary, dynamic-routing, no-data, no-sft]

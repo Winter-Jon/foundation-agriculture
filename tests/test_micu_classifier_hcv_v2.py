@@ -24,8 +24,7 @@ def test_readiness_missing_pool_is_not_live_or_training_ready(tmp_path: Path) ->
     report = readiness(contract_path=CONTRACT, dataset_root=tmp_path)
     assert report["ready_for_live_collection"] is False
     assert report["training_eligible"] is False
-    assert any("missing source" in blocker for blocker in report["blockers"])
-    assert any("missing exclusions" in blocker for blocker in report["blockers"])
+    assert any("missing dataset metadata" in blocker for blocker in report["blockers"])
 
 
 def test_readiness_rejects_wrong_rag_collections(tmp_path: Path) -> None:

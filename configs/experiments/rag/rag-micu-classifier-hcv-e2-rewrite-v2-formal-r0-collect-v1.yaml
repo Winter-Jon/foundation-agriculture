@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-rewrite-v2-formal-r0-collect-v1
+display_name: {en: E2 rewrite-v2 formal 32-row R0 collection, zh: E2 rewrite-v2 正式 32 图 R0 采集}
+domain: rag
+task: micu_classifier_hcv_v2
+description: >-
+  Formal new-lineage 32-row E2 collection after E3 generalization verification
+  and rewrite-v2 pilot validation. Four workers, R0/R1/R2 recovery, no SFT.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v2-formal-v1/manifests/r0.json
+  source: docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-campaign-source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v2-formal-v1/rounds/r0
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v2-formal-r0-collect-v1/
+tags: [hcv, e2, rewrite-v2, formal, 32-row, delivery-recovery, r0, experimental, no-replay, no-sft]

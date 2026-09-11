@@ -44,7 +44,7 @@ def validate_contract(contract: dict) -> None:
         raise ValueError("contract must be a mapping")
     required = {
         "schema_version": "agrinet.hcv-classifier-distill/v1",
-        "teacher.service": "micu_slb", "teacher.model": "gpt-5.6-terra",
+        "teacher.service": "micu_slb",
         "dataset.version": "open_agri_v3",
         "dataset.known_classes": 107, "dataset.unknown_classes": 104,
         "dataset.registry_sha256": REGISTRY_SHA,
@@ -79,6 +79,8 @@ def validate_contract(contract: dict) -> None:
             actual = actual.get(key) if isinstance(actual, dict) else None
         if actual != expected or type(actual) is not type(expected):
             raise ValueError(f"contract mismatch: {dotted}")
+    if contract.get("teacher", {}).get("model") not in {"gpt-5.6-terra", "gpt-5.6-sol"}:
+        raise ValueError("unsupported Micu teacher model")
     for key in ("service_version", "model_version", "prompt_version", "parameters_version"):
         if not contract["teacher"].get(key):
             raise ValueError(f"missing teacher version: {key}")

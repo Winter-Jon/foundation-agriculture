@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-rewrite-v3-formal-r1-collect-v1
+display_name: {en: E2 image-bound rewrite-v3 formal R1 recovery, zh: E2 图像绑定 rewrite-v3 正式 R1 补采}
+domain: rag
+task: micu_classifier_hcv_v2
+description: >-
+  R1 delivery recovery for exactly three R0 unconfirmed parent scopes from the
+  fresh v3 campaign. Fresh ledgers/request IDs, no image replacement or SFT.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-formal-v1/manifests/r1.json
+  source: docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-campaign-source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-formal-v1/rounds/r1
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-formal-r1-collect-v1/
+tags: [hcv, e2, rewrite-v3, formal, delivery-recovery, r1, no-replay, no-sft]

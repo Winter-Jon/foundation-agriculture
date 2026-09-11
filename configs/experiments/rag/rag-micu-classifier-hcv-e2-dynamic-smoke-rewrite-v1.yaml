@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-dynamic-smoke-rewrite-v1
+display_name: {en: E2 dynamic smoke visual-reasoning rewrite, zh: E2 动态路由视觉推理重写预检}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Public-only four-section visual reasoning rewrite followed by isolated rewrite audit; no SFT.
+lifecycle: active
+components: {teacher: micu_slb, student: qwen3-vl-4b-instruct-original, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: rewrite
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  source: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json
+  routing_summary: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/collection/routing_summary.json
+  public_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  output_root: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/rewrite
+  timeout: 180
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-dynamic-smoke-rewrite-v1/
+tags: [hcv, dynamic-routing, visual-cot, candidate-comparison, public-rewrite, private-audit, no-sft]

@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v3-p1-r0-collect-v1
+display_name:
+  en: E2 prescreen-v3 P1-evidence lineage R0 collection
+  zh: E2 prescreen-v3 P1 质量证据谱系 R0 采集
+domain: rag
+task: micu_classifier_hcv_v2
+description: >-
+  Executes only the immutable R0 manifest for a new, all-prior-lineage-excluded
+  32-image P1-first source. The existing recovery admission is recorded
+  separately from the unchanged strict canary; R1/R2 can only be derived from
+  frozen predecessor summaries, and SFT is not authorized.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p1-v1/manifests/r0.json
+  source: docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-prescreen-v3-p1-source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p1-v1/rounds/r0
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v3-p1-r0-collect-v1/
+tags: [hcv, e2, rewrite-v3, prescreen-v3, p1-evidence, r0, delivery-recovery, no-sft]

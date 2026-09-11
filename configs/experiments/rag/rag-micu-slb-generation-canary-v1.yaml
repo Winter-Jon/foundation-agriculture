@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-slb-generation-canary-v1
+display_name: {en: Micu SLB generation canary, zh: Micu SLB 生成可用性探测}
+domain: rag
+task: micu_slb_canary
+description: Two rounds of ten no-data SLB generation probes before any future E2 retry-v2.
+lifecycle: active
+components: {teacher: micu_slb, model: gpt-5.6-terra}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-slb-canary/v1
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+outputs:
+  run_root: outputs/runs/rag/rag-micu-slb-generation-canary-v1/
+tags: [micu, slb, canary, no-data, no-sft]

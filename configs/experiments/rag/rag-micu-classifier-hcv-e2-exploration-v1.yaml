@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-exploration-v1
+display_name: {en: Micu classifier HCV E2 exploration, zh: Micu 分类器 HCV E2 数据工艺探索}
+domain: rag
+task: micu_classifier_hcv_v2
+description: 160-image E2 exploration with 80 targeted and 80 random independent controls.
+lifecycle: active
+components: {teacher: micu_slb, student: qwen3-vl-4b-instruct-original, classifier: vitl-oof-and-p6, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  contract: configs/sampling/micu-classifier-hcv-e2/contract-v1.yaml
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  output_root: outputs/artifacts/micu-classifier-hcv-e2/exploration-v1
+  stage: exploration
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-exploration-v1/
+tags: [hcv, classifier, micu, e2, exploration, no-sft, gated]

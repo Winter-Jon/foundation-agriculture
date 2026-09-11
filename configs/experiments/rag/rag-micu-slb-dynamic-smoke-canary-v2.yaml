@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-slb-dynamic-smoke-canary-v2
+display_name: {en: Micu SLB Sol dynamic-smoke gate v2, zh: Micu SLB Sol 动态路由冒烟门 v2}
+domain: rag
+task: micu_slb_canary
+description: New immutable no-data Sol gate for the frozen E2 dynamic-route source; v3 remains historical evidence.
+lifecycle: active
+components: {teacher: micu_slb, model: gpt-5.6-sol}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-slb-canary/v4-sol-dynamic-smoke
+  model: gpt-5.6-sol
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+outputs:
+  run_root: outputs/runs/rag/rag-micu-slb-dynamic-smoke-canary-v2/
+tags: [micu, slb, sol, canary, dynamic-routing, no-data, immutable-v4, no-sft]

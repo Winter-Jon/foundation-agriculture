@@ -96,9 +96,12 @@ def is_final_answer(content: Any) -> bool:
     return isinstance(content, str) and bool(FINAL_ANSWER_RE.fullmatch(content))
 
 
-def normalize_training_messages(messages: Any, *, tool_name: str, validate_arguments: Callable[[dict[str, Any]], list[str]], require_tool_calls: bool) -> list[dict[str, Any]]:
+def normalize_training_messages(messages: Any, *, tool_name: str | set[str], validate_arguments: Callable[[dict[str, Any]], list[str]], require_tool_calls: bool) -> list[dict[str, Any]]:
     if not isinstance(messages, list) or not messages:
         raise ValueError("messages must be a non-empty list")
+    allowed_names = {tool_name} if isinstance(tool_name, str) else set(tool_name)
+    if not allowed_names:
+        raise ValueError("at least one tool name is required")
     normalized: list[dict[str, Any]] = []
     pending_call = False
     for index, message in enumerate(messages):
@@ -109,12 +112,12 @@ def normalize_training_messages(messages: Any, *, tool_name: str, validate_argum
             role = "tool"
         if role == "tool_call":
             call = json_object(content, field="tool_call")
-            if call.get("name") != tool_name or not isinstance(call.get("arguments"), dict):
+            if call.get("name") not in allowed_names or not isinstance(call.get("arguments"), dict):
                 raise ValueError("tool_call has invalid name or arguments")
             errors = validate_arguments(call["arguments"])
             if errors:
                 raise ValueError(f"tool_call arguments invalid: {', '.join(errors)}")
-            content = json.dumps({"name": tool_name, "arguments": call["arguments"]}, ensure_ascii=False, separators=(",", ":"))
+            content = json.dumps({"name": call["name"], "arguments": call["arguments"]}, ensure_ascii=False, separators=(",", ":"))
             pending_call = True
         elif role == "tool":
             json_object(content, field="tool response")

@@ -41,16 +41,26 @@ def main() -> int:
     for path in sorted((args.artifact_root / "private").glob("**/audit.json")):
         audit_statuses[str(read_json(path).get("status") or "unknown")] += 1
     pattern_counts = Counter()
+    source_rows = 0
     source = args.artifact_root / "source.jsonl"
     if source.is_file():
         for line in source.read_text(encoding="utf-8").splitlines():
             if line.strip():
+                source_rows += 1
                 private = json.loads(line).get("private") or {}
                 pattern_counts[str(private.get("target_pattern") or "unknown")] += 1
     raw_student_path = args.artifact_root / "student-raw-4b" / "summary.json"
     legacy_student_path = args.artifact_root.parent / "student-diagnostic" / "raw-4b.json"
     raw_student = read_json(raw_student_path) if raw_student_path.is_file() else "not_recorded"
     legacy_student = read_json(legacy_student_path) if legacy_student_path.is_file() else "not_recorded"
+    parent_batch_status_counts = Counter(str(item.get("status") or "unknown")
+                                         for item in parent_batch.get("statuses") or [])
+    locally_closed_parent_count = sum(1 for item in parent_batch.get("statuses") or []
+                                      if item.get("status") == "closed")
+    referenced_closed_parent_count = sum(1 for item in parent_batch.get("statuses") or []
+                                         if item.get("status") == "closed_referenced")
+    closed_parent_count = locally_closed_parent_count + referenced_closed_parent_count
+    complete_parent_coverage = source_rows == 32 and closed_parent_count == source_rows
     summary = {
         "schema_version": "agrinet.micu-classifier-hcv-v2-report/v1",
         "training_eligible": False,
@@ -59,6 +69,12 @@ def main() -> int:
         "parent_trajectories": len(trajectories),
         "parent_statuses": dict(sorted(statuses.items())),
         "parent_batch_statuses": parent_batch.get("statuses") or [],
+        "parent_batch_status_counts": dict(sorted(parent_batch_status_counts.items())),
+        "source_rows": source_rows,
+        "closed_parent_count": closed_parent_count,
+        "locally_closed_parent_count": locally_closed_parent_count,
+        "referenced_closed_parent_count": referenced_closed_parent_count,
+        "complete_parent_coverage": complete_parent_coverage,
         "source_patterns": dict(sorted(pattern_counts.items())),
         "private_audit_statuses": dict(sorted(audit_statuses.items())),
         "g1_g2_groups": len(derivation.get("selected") or []),
@@ -68,7 +84,7 @@ def main() -> int:
         "global_rag_requests_reserved": count_events(args.artifact_root / "global_rag_events.jsonl"),
         "student_source_diagnostic": raw_student,
         "student_single_image_diagnostic": legacy_student,
-        "completion_ready": audit.get("ready") is True and len(parent_batch.get("statuses") or []) == 32,
+        "completion_ready": audit.get("ready") is True and complete_parent_coverage,
     }
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     args.output_json.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -76,7 +92,8 @@ def main() -> int:
              "## Status", "",
              f"- Training eligible: `{summary['training_eligible']}`",
              f"- Grouped OOF audit ready: `{summary['oof_audit_ready']}`",
-             f"- Parent trajectories recorded: `{summary['parent_trajectories']}`",
+             f"- Parent trajectories recorded: `{summary['parent_trajectories']}/{summary['source_rows']}`",
+             f"- Complete parent coverage: `{summary['complete_parent_coverage']}`",
              f"- G1/G2 groups recorded: `{summary['g1_g2_groups']}`", "",
              f"- Reserved Micu requests: `{summary['global_micu_requests_reserved']}/340`",
              f"- Reserved RAG calls: `{summary['global_rag_requests_reserved']}/200`",

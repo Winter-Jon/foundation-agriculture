@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-dynamic-smoke-source-v1
+display_name: {en: E2 dynamic smoke source freeze, zh: E2 动态路由冒烟来源冻结}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Freeze 32 isolated new images for dynamic routing; no teacher call.
+lifecycle: active
+components: {teacher: micu_slb, student: qwen3-vl-4b-instruct-original, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: freeze-source
+  pool: outputs/artifacts/micu-classifier-hcv-e2/prescreen/source-320.jsonl
+  prior_source: outputs/artifacts/micu-classifier-hcv-e2/exploration-v1/source.jsonl
+  output: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json
+  seed: micu-classifier-hcv-e2-dynamic-smoke-v1
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-dynamic-smoke-source-v1/
+tags: [hcv, classifier, dynamic-routing, source-freeze, no-sft]

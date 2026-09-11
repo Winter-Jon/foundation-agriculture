@@ -1,0 +1,27 @@
+{
+  "schema_version": "agrinet.micu-classifier-hcv-e2-retry-selection/v1",
+  "selection_reason": "user-authorized-sol-risk-exception-preflight",
+  "canary_evidence": "outputs/artifacts/micu-slb-canary/v2-sol/report.json",
+  "risk_exception": {
+    "id": "sol-canary-18-of-20",
+    "reason": "explicit user authorization after two-round Sol canary delivered 18/20; strict readiness gate remains failed"
+  },
+  "rows": [
+    {"scope":"parent","sample_id":"e2-0072332a4e48bbc11ba2","request_key":"generation-3","original_request_id":"54d550dc9cb34da58ee70adff7f6aef8"},
+    {"scope":"parent","sample_id":"e2-019184f761642be764a0","request_key":"generation-2","original_request_id":"0d631fe57099437ea1ca64d9b403822c"},
+    {"scope":"parent","sample_id":"e2-04cc53bb03530126fc1b","request_key":"generation-3","original_request_id":"3ff1b4e5591b437592dd292a6bd38930"},
+    {"scope":"parent","sample_id":"e2-09dbb0cd6d01af75961e","request_key":"generation-1","original_request_id":"93989f6b6e794c00898eb092c287d850"},
+    {"scope":"parent","sample_id":"e2-27b29715abfeaae8ba74","request_key":"generation-1","original_request_id":"4c6fb0db17e9478a8fa78a1abcc9fd0c"},
+    {"scope":"parent","sample_id":"e2-441f8dc7c405fb374dd0","request_key":"generation-1","original_request_id":"fa6b2996a99b4582b65d98bbf88f3726"},
+    {"scope":"parent","sample_id":"e2-4cf2ed4999a86b021f32","request_key":"generation-1","original_request_id":"1dcb3193ad5d4019a858b50025707ce9"},
+    {"scope":"parent","sample_id":"e2-550e1b1803050378f295","request_key":"generation-2","original_request_id":"ce95cb32f70a4abf8498655afaf92a3b"},
+    {"scope":"parent_audit","sample_id":"e2-05978ff6f8479b666ee7","request_key":"private-audit-1","original_request_id":"16b54dc5d37449cfb9da70b84111f27e"},
+    {"scope":"parent_audit","sample_id":"e2-0733d0d3e4817ec050dc","request_key":"private-audit-1","original_request_id":"f5186eacd49844cd82c4be47e6c53740"},
+    {"scope":"parent_audit","sample_id":"e2-1628bc07042ba968c848","request_key":"private-audit-1","original_request_id":"170772f3b793434faea9d6d80c4931ed"},
+    {"scope":"parent_audit","sample_id":"e2-a4e2aaf28e0454dcd882","request_key":"private-audit-1","original_request_id":"08b2b71e86b84ddf9ba5d0d662d3c24f"},
+    {"scope":"parent_audit","sample_id":"e2-bb26def77e8faf8f528d","request_key":"private-audit-1","original_request_id":"994239b680024a54a3865c1969f9b807"},
+    {"scope":"g1","sample_id":"e2-0a534f7ae4797317daa6","request_key":"g1-rewrite-1","original_request_id":"3a4b670362d344f39150f1d83d7f23cd"},
+    {"scope":"g1","sample_id":"e2-10dca473579a00f6b7fb","request_key":"g1-rewrite-1","original_request_id":"69748158f7444332b478327759d1a5a8"},
+    {"scope":"g2_audit","sample_id":"e2-0a534f7ae4797317daa6","request_key":"private-audit-1","original_request_id":"b21d2884cef44a3ab0e4cdc9d9653b64"}
+  ]
+}

@@ -1,0 +1,25 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v2-tenth-r2-collect-v1
+display_name: {en: E2 rebuilt prescreen-v2 tenth final-remaining R2 recovery, zh: E2 重建 prescreen-v2 第十批最后剩余来源 R2 交付恢复}
+domain: rag
+task: micu_classifier_hcv_v2
+description: >-
+  Executes the immutable tenth-lineage R2 replenishment manifest derived only
+  from frozen R1. It makes the second and final fresh attempts for one Direct
+  parent and one Direct audit-only scope; no third attempt or SFT is authorized.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-tenth-v1/manifests/r2.json
+  source: docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-tenth-source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-tenth-v1/rounds/r2
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v2-tenth-r2-collect-v1/
+tags: [hcv, e2, rewrite-v3, prescreen-v2, tenth-lineage, final-remaining, r2, delivery-recovery, final-attempt, no-sft]

@@ -27,6 +27,28 @@ index_app = typer.Typer(help="Build and inspect retrieval indexes.")
 app.add_typer(index_app, name="index")
 
 
+MICU_SLB_BASE_URL = "https://api-slb.micuapi.ai/v1"
+
+
+def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -> dict[str, str]:
+    """Load Micu credentials and apply an explicitly versioned endpoint choice.
+
+    The endpoint is operational configuration, not a credential.  Keeping it
+    in the experiment manifest makes a future collection reproducible without
+    serializing a key or mutating the user credential store.
+    """
+    if dry_run:
+        return {}
+    environment = {**yunwu_environment(profile="micu_slb"), **local_proxy_environment()}
+    configured = parameters.get("teacher_base_url")
+    if configured is None:
+        return environment
+    if not isinstance(configured, str) or configured.rstrip("/") != MICU_SLB_BASE_URL:
+        raise ConfigError("Micu E2 teacher_base_url must be the validated SLB v1 endpoint")
+    environment["YUNWU_API_BASE_URL"] = MICU_SLB_BASE_URL
+    return environment
+
+
 @app.command("doctor")
 def doctor() -> None:
     """Check the local RAG runtime without loading the embedding model."""
@@ -128,8 +150,15 @@ def submit(
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
     if operation == "distill" and spec.task == "classifier_distill_preflight":
         operation = "classifier-distill-preflight"
+    if operation == "distill" and spec.task == "micu_slb_canary":
+        operation = "micu-slb-canary"
     if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
-        operation = "micu-classifier-hcv-v2"
+        phase = str(config.get("parameters", {}).get("phase") or "")
+        operation = ("micu-classifier-hcv-e2-dynamic-rewrite-recovery" if phase.startswith("rewrite-recovery-")
+                     else "micu-classifier-hcv-e2-dynamic-recovery" if phase.startswith("recovery-")
+                     else "micu-classifier-hcv-e2-dynamic-smoke"
+                     if phase in {"freeze-source", "collect", "rewrite", "convert"}
+                     else "micu-classifier-hcv-v2")
     if operation == "classifier-distill-preflight":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.classifier_distill"]
@@ -153,8 +182,99 @@ def submit(
         if operation == "micu-classifier-hcv-v2-derive":
             command.extend(["--phase", "derivations"])
         try:
-            child_env = {**yunwu_environment(profile="micu_slb"), **local_proxy_environment()} if not dry_run else {}
-        except (CredentialError, NetworkConfigError) as exc:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "micu-classifier-hcv-e2-retry":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_e2_retry"]
+        bindings = (("contract", "--contract"), ("dataset_root", "--dataset-root"),
+                    ("source_root", "--source-root"), ("retry_sidecar", "--retry-sidecar"),
+                    ("output_root", "--output-root"), ("selection_manifest", "--selection-manifest"),
+                    ("teacher_model", "--teacher-model"), ("max_concurrency", "--max-concurrency"),
+                    ("risk_exception_id", "--risk-exception-id"))
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        if dry_run:
+            command.append("--dry-run")
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "micu-slb-canary":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.micu_slb_canary"]
+        for key, flag in (("output_root", "--output-root"), ("model", "--model"), ("rounds", "--rounds"),
+                          ("requests_per_round", "--requests-per-round"), ("timeout", "--timeout")):
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        try:
+            child_env = _micu_runtime_environment({"teacher_base_url": MICU_SLB_BASE_URL}, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "micu-classifier-hcv-e2-dynamic-smoke":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_e2_dynamic_smoke", str(parameters["phase"])]
+        bindings = (("pool", "--pool"), ("prior_source", "--prior-source"), ("source", "--source"),
+                    ("output", "--output"), ("output_root", "--output-root"), ("seed", "--seed"),
+                    ("rag_endpoint", "--rag-endpoint"), ("teacher_model", "--teacher-model"),
+                    ("timeout", "--timeout"), ("max_tokens", "--max-tokens"),
+                    ("routing_summary", "--routing-summary"), ("rewrite_summary", "--rewrite-summary"),
+                    ("canary_report", "--canary-report"), ("teacher_endpoint", "--teacher-endpoint"),
+                    ("public_registry", "--public-registry"))
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run) if parameters["phase"] in {"collect", "rewrite"} else {}
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "micu-classifier-hcv-e2-dynamic-recovery":
+        parameters = config.get("parameters", {})
+        phase_to_command = {"recovery-plan-r0": "plan-r0", "recovery-collect-round": "collect-round", "recovery-freeze-summary": "freeze-summary",
+                            "recovery-plan-replenishment": "plan-replenishment", "recovery-final-report": "final-report"}
+        phase = str(parameters.get("phase") or "")
+        if phase not in phase_to_command:
+            raise ConfigError("unknown dynamic recovery phase")
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_e2_dynamic_recovery", phase_to_command[phase]]
+        bindings = (("campaign_id", "--campaign-id"), ("source", "--source"),
+                    ("canary_report", "--canary-report"), ("teacher_endpoint", "--endpoint"),
+                    ("output", "--output"),
+                    ("manifest", "--manifest"), ("outcomes", "--outcomes"),
+                    ("rag_endpoint", "--rag-endpoint"), ("timeout", "--timeout"), ("max_tokens", "--max-tokens"),
+                    ("summary", "--summary"), ("round", "--round"),
+                    ("r0_summary", "--r0-summary"), ("r1_summary", "--r1-summary"),
+                    ("r2_summary", "--r2-summary"))
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        if "teacher_model" in parameters:
+            command.extend(["--teacher-model" if phase == "recovery-collect-round" else "--model",
+                            str(parameters["teacher_model"])])
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run) if phase == "recovery-collect-round" else {}
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "micu-classifier-hcv-e2-dynamic-rewrite-recovery":
+        parameters = config.get("parameters", {})
+        phase = str(parameters.get("phase") or "")
+        phase_to_command = {
+            "rewrite-recovery-collect-r0": "collect-r0",
+            "rewrite-recovery-collect-round": "collect-round",
+        }
+        if phase not in phase_to_command:
+            raise ConfigError("unknown dynamic rewrite recovery phase")
+        command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_e2_dynamic_recovery_rewrite", phase_to_command[phase]]
+        bindings = (("manifest", "--manifest"), ("source", "--source"),
+                    ("public_registry", "--public-registry"), ("output", "--output"),
+                    ("teacher_model", "--teacher-model"), ("timeout", "--timeout"))
+        for key, flag in bindings:
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
             typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
     elif operation == "v13-source":
         parameters = config.get("parameters", {})

@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-dynamic-smoke-collect-v1
+display_name: {en: E2 dynamic route 32-image smoke, zh: E2 三级动态路由 32 图冒烟}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Strictly gated Direct×3 → Classifier×2 → Classifier+RAG×1 collection; no SFT.
+lifecycle: active
+components: {teacher: micu_slb, student: qwen3-vl-4b-instruct-original, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: collect
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  teacher_endpoint: https://api-slb.micuapi.ai/v1
+  canary_report: outputs/artifacts/micu-slb-canary/v3-sol-dynamic-smoke/report.json
+  source: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json
+  output_root: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/collection
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-dynamic-smoke-collect-v1/
+tags: [hcv, classifier, dynamic-routing, direct-3, classifier-2, rag-1, strict-canary-gate, no-replay, no-sft]

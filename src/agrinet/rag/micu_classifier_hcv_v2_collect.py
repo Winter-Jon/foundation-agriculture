@@ -15,6 +15,7 @@ import fcntl
 import os
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,60 @@ from agrinet.rag.classifier_distill import validate_contract as validate_v1_cont
 from agrinet.rag.micu_classifier_hcv_v2 import _read_contract, local_rag_health, readiness
 from agrinet.research.hcv.collector import image_url_content
 from agrinet.research.hcv.collector import post_teacher_json
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read the fixed smoke source without silently accepting malformed rows."""
+    rows: list[dict[str, Any]] = []
+    for line_number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not raw.strip():
+            continue
+        value = json.loads(raw)
+        if not isinstance(value, dict):
+            raise ValueError(f"source row {line_number} must be a JSON object")
+        rows.append(value)
+    return rows
+
+
+def _has_public_intent(output_root: Path, sample_id: str) -> bool:
+    """Never replay a source image once any parent provider intent was persisted."""
+    events = Path(output_root) / "parent" / "public" / sample_id / "ledger" / "events.jsonl"
+    if not events.is_file():
+        return False
+    for raw in events.read_text(encoding="utf-8").splitlines():
+        if raw.strip() and json.loads(raw).get("event") == "intent":
+            return True
+    return False
+
+
+def _closed_local_parent(output_root: Path, source_row: dict[str, Any]) -> bool:
+    """Recognize an exact already-closed local parent during safe resume."""
+    path = Path(output_root) / "parent" / "public" / str(source_row["sample_id"]) / "trajectory.json"
+    if not path.is_file():
+        return False
+    try:
+        trajectory = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return (trajectory.get("status") == "closed"
+            and trajectory.get("sample_id") == source_row.get("sample_id")
+            and trajectory.get("image_sha256") == source_row.get("image_sha256"))
+
+
+def _closed_predecessor_parent(predecessor: Path | None, source_row: dict[str, Any]) -> bool:
+    """Accept only an exact, closed predecessor trajectory by reference."""
+    if predecessor is None:
+        return False
+    path = predecessor / "parent" / "public" / str(source_row["sample_id"]) / "trajectory.json"
+    if not path.is_file():
+        return False
+    try:
+        trajectory = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return (trajectory.get("status") == "closed"
+            and trajectory.get("sample_id") == source_row.get("sample_id")
+            and trajectory.get("image_sha256") == source_row.get("image_sha256"))
 
 
 class ProgressBudget:
@@ -83,7 +138,11 @@ def parse_teacher_action(response: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("teacher tool arguments are not JSON") from exc
         if function.get("name") not in {"agrinet_classifier_predict", "agrinet_classifier_expand", "agrinet_rag_search"} or not isinstance(arguments, dict):
             raise ValueError("teacher requested an unsupported tool")
-        return {"type": "tool", "name": function["name"], "arguments": arguments}
+        call_id = calls[0].get("id")
+        if not isinstance(call_id, str) or not call_id:
+            raise ValueError("teacher tool call lacks a tool_call_id")
+        return {"type": "tool", "name": function["name"], "arguments": arguments,
+                "tool_call_id": call_id}
     content = message.get("content")
     if not isinstance(content, str) or not content.strip():
         raise ValueError("teacher must return text or one tool call")
@@ -137,14 +196,14 @@ class ToolState:
         raise ValueError("unsupported v2 tool")
 
 
-def _ledger_contract() -> dict[str, Any]:
+def _ledger_contract(teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
     """Frozen ledger shape shared with the v1 durable request primitive."""
     # This is a transport-accounting contract, not the research/route contract.
     # It intentionally keeps the exact validator-compatible bounds.
     return {
         "schema_version": "agrinet.hcv-classifier-distill/v1",
-        "teacher": {"service": "micu_slb", "model": "gpt-5.6-terra",
-                    "service_version": "micu_slb-v1", "model_version": "gpt-5.6-terra",
+        "teacher": {"service": "micu_slb", "model": teacher_model,
+                    "service_version": "micu_slb-v1", "model_version": teacher_model,
                     "prompt_version": "classifier-hcv-v2-unified-router-v1",
                     "parameters_version": "classifier-hcv-v2-runtime-v1"},
         "dataset": {"version": "open_agri_v3", "known_classes": 107, "unknown_classes": 104,
@@ -175,8 +234,8 @@ def _ledger_contract() -> dict[str, Any]:
     }
 
 
-def _tool_schema() -> list[dict[str, Any]]:
-    return [{"type": "function", "function": {"name": "agrinet_classifier_predict",
+def _tool_schema(allowed_tools: set[str] | None = None) -> list[dict[str, Any]]:
+    tools = [{"type": "function", "function": {"name": "agrinet_classifier_predict",
              "description": "Obtain Top-3 classifier candidates for the current image.",
              "parameters": {"type": "object", "properties": {}, "additionalProperties": False}}},
             {"type": "function", "function": {"name": "agrinet_classifier_expand",
@@ -189,6 +248,7 @@ def _tool_schema() -> list[dict[str, Any]]:
                  "query": {"type": "string"}, "retrieval_type": {"enum": ["visual", "semantic"]},
                  "rationale": {"type": "string"}}, "required": ["query", "retrieval_type", "rationale"],
                             "additionalProperties": False}}}]
+    return [tool for tool in tools if allowed_tools is None or tool["function"]["name"] in allowed_tools]
 
 
 SYSTEM_PROMPT = """You are an agricultural visual diagnostician. Use only the image, user question, and actual tool results.
@@ -196,12 +256,18 @@ You may call one listed tool at a time when it would resolve uncertainty. Classi
 Compare visible support and counterevidence before choosing. You may retrieve a class outside classifier Top-5. Stop once public evidence supports a conclusion, or state INSUFFICIENT_EVIDENCE if it does not.
 For Option questions answer only a visible option letter or INSUFFICIENT_EVIDENCE; for Open questions answer a public class name or INSUFFICIENT_EVIDENCE."""
 
+PATTERN_GUIDE = """P1 evidence-based correct candidate confirmation; P2 low-confidence candidate confirmation; P3 candidate reranking; P4 high-confidence candidate correction; P5 discovery outside classifier Top-5; P6 rejection of an incomplete closed-set classifier with recovery allowed from full RAG; P7 classifier/retrieval evidence conflict; P8 noisy or non-discriminative retrieval; P9 naming, alias, life-stage, symptom/disease, or granularity control; P10 justified insufficient-evidence stopping."""
+
+
+_GLOBAL_MICU_LIMIT = 340
+_GLOBAL_RAG_LIMIT = 200
+
 
 class GlobalMicuBudget:
     """Atomic whole-goal generation accounting across independent trajectories."""
 
-    def __init__(self, path: Path, *, limit: int = 340) -> None:
-        self.path, self.limit = Path(path), limit
+    def __init__(self, path: Path, *, limit: int | None = None) -> None:
+        self.path, self.limit = Path(path), _GLOBAL_MICU_LIMIT if limit is None else limit
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def reserve(self, key: str) -> None:
@@ -227,8 +293,8 @@ class GlobalMicuBudget:
 class GlobalRagBudget(GlobalMicuBudget):
     """Atomic whole-goal local retrieval accounting across parent and G2."""
 
-    def __init__(self, path: Path, *, limit: int = 200) -> None:
-        super().__init__(path, limit=limit)
+    def __init__(self, path: Path, *, limit: int | None = None) -> None:
+        super().__init__(path, limit=_GLOBAL_RAG_LIMIT if limit is None else limit)
 
 
 def _stamp() -> str:
@@ -291,12 +357,47 @@ def public_sample(row: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def teacher_first_request(public: dict[str, Any], *, system_prompt: str, max_tokens: int) -> dict[str, Any]:
+def normalize_final_answer(*, source_row: dict[str, Any], final: str) -> dict[str, Any]:
+    """Create a stable student-side answer envelope without changing teacher text."""
+    if not isinstance(final, str) or not final.strip():
+        raise ValueError("final answer must be non-empty")
+    value = final.strip()
+    result: dict[str, Any] = {
+        "schema_version": "agrinet.micu-classifier-hcv-answer/v1",
+        "answer_mode": str(source_row.get("question_type") or ""),
+        "raw_answer": value,
+    }
+    if value == "INSUFFICIENT_EVIDENCE":
+        result["answer_status"] = "insufficient_evidence"
+        return result
+    if result["answer_mode"] == "open":
+        result.update({"answer_status": "answered", "selected_class_name": value})
+        return result
+    if result["answer_mode"] != "option":
+        raise ValueError("answer mode must be open or option")
+    label = value.upper()
+    options = source_row.get("public_options") or []
+    matches = [item for item in options if str(item.get("label") or "").upper() == label]
+    if len(matches) != 1:
+        raise ValueError("option final must be one visible option label")
+    selected = matches[0]
+    result.update({
+        "answer_status": "answered",
+        "selected_option": label,
+        "selected_class_name": selected.get("name"),
+        "selected_class_name_zh": selected.get("name_zh"),
+        "selected_class_code": selected.get("code"),
+    })
+    return result
+
+
+def teacher_first_request(public: dict[str, Any], *, system_prompt: str, max_tokens: int,
+                          teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
     if not 1 <= max_tokens <= 8192:
         raise ValueError("max_tokens must be within the v2 contract")
     image = Path(public["image_path"])
     return {
-        "model": "gpt-5.6-terra", "temperature": 0.0, "top_p": 1.0,
+        "model": teacher_model, "temperature": 0.0, "top_p": 1.0,
         "max_tokens": max_tokens,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -307,22 +408,55 @@ def teacher_first_request(public: dict[str, Any], *, system_prompt: str, max_tok
     }
 
 
+def _append_native_tool_exchange(messages: list[dict[str, Any]], raw: dict[str, Any],
+                                 action: dict[str, Any], tool: dict[str, Any]) -> None:
+    """Preserve the provider's native tool-call protocol for the next turn."""
+    try:
+        message = raw["choices"][0]["message"]
+        calls = message["tool_calls"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("tool action has no native assistant tool-call message") from exc
+    if not isinstance(calls, list) or len(calls) != 1 or action.get("tool_call_id") != calls[0].get("id"):
+        raise ValueError("native tool-call identity changed unexpectedly")
+    messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": calls})
+    messages.append({"role": "tool", "tool_call_id": action["tool_call_id"],
+                     "content": json.dumps(tool, ensure_ascii=False)})
+
+
+def _append_reconstructed_tool_exchange(messages: list[dict[str, Any]], action: dict[str, Any],
+                                        tool: dict[str, Any]) -> None:
+    """Rebuild an auditable native exchange from a stored public trace."""
+    call_id = action.get("tool_call_id")
+    if not isinstance(call_id, str) or not call_id:
+        raise ValueError("stored tool action lacks a tool_call_id")
+    messages.append({"role": "assistant", "content": None, "tool_calls": [{
+        "id": call_id, "type": "function",
+        "function": {"name": action.get("name"),
+                     "arguments": json.dumps(action.get("arguments"), ensure_ascii=False)},
+    }]})
+    messages.append({"role": "tool", "tool_call_id": call_id,
+                     "content": json.dumps(tool, ensure_ascii=False)})
+
+
 def classifier_tool_result(row: dict[str, Any], *, expand: bool = False) -> dict[str, Any]:
-    """Reveal stored OOF candidates only when the classifier tool is called."""
+    """Reveal stored audited candidates only when the classifier tool is called."""
     prediction = row.get("prediction")
-    if not isinstance(prediction, dict) or prediction.get("kind") != "out_of_fold":
-        raise ValueError("classifier tool requires an audited OOF prediction")
+    if not isinstance(prediction, dict) or prediction.get("kind") not in {"out_of_fold", "p6_class_holdout"}:
+        raise ValueError("classifier tool requires an audited OOF or P6 prediction")
     limit = 5 if expand else 3
     top5 = prediction.get("top5")
     if not isinstance(top5, list) or len(top5) != 5:
         raise ValueError("classifier tool requires stored Top-5")
+    reference = {
+        key: prediction[key] for key in ("kind", "checkpoint_sha256", "label_map_sha256",
+                                         "training_manifest_sha256", "p6_group")
+        if key in prediction
+    }
+    if prediction.get("kind") == "out_of_fold":
+        reference.update({"folds": prediction["folds"], "held_out_fold": prediction["held_out_fold"]})
     return {
         "tool": "agrinet_classifier_expand" if expand else "agrinet_classifier_predict",
-        "prediction_reference": {
-            "kind": "out_of_fold", "folds": prediction["folds"],
-            "held_out_fold": prediction["held_out_fold"],
-            "checkpoint_sha256": prediction["checkpoint_sha256"],
-        },
+        "prediction_reference": reference,
         "candidates": [{"rank": index, "name": item.get("name"), "name_zh": item.get("name_zh"),
                         "score": item["score"]}
                        for index, item in enumerate(top5[:limit], 1)],
@@ -357,35 +491,46 @@ def execute_rag(endpoint: str, public: dict[str, Any], arguments: dict[str, Any]
 
 def run_parent(*, source_row: dict[str, Any], output_root: Path, rag_endpoint: str,
                max_tokens: int = 8192, timeout: int = 180,
-               invoke_teacher: Any | None = None) -> dict[str, Any]:
+               invoke_teacher: Any | None = None, teacher_model: str = "gpt-5.6-terra",
+               temperature: float = 0.0, allowed_tools: set[str] | None = None,
+               campaign_root: Path | None = None, budget_key_prefix: str | None = None) -> dict[str, Any]:
     """Run one v2 public parent trajectory, retaining every request outcome."""
-    validate_v1_contract(_ledger_contract())
+    validate_v1_contract(_ledger_contract(teacher_model))
     public = public_sample(source_row)
     directory = Path(output_root) / "public" / public["sample_id"]
-    global_budget = GlobalMicuBudget(_goal_root(Path(output_root)) / "global_micu_events.jsonl")
-    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(),
+    budget_root = Path(campaign_root) if campaign_root is not None else _goal_root(Path(output_root))
+    global_budget = GlobalMicuBudget(budget_root / "global_micu_events.jsonl")
+    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(teacher_model),
                            image_group_id=source_row["image_group_id"], view="without_candidates")
-    initial = teacher_first_request(public, system_prompt=SYSTEM_PROMPT, max_tokens=max_tokens)
+    initial = teacher_first_request(public, system_prompt=SYSTEM_PROMPT, max_tokens=max_tokens, teacher_model=teacher_model)
     messages = initial["messages"]
     state = ToolState(image_sha256=public["image_sha256"])
     trace: list[dict[str, Any]] = []
     teacher = invoke_teacher or (lambda request: _invoke_micu(request, timeout=timeout))
     for turn in range(1, 8):
-        request = {"model": "gpt-5.6-terra", "temperature": 0.0, "top_p": 1.0,
-                   "max_tokens": max_tokens, "messages": messages, "tools": _tool_schema(),
-                   "tool_choice": "auto"}
-        global_budget.reserve(f"parent:{public['sample_id']}:generation:{turn}")
+        request = {"model": teacher_model, "temperature": temperature, "top_p": 1.0,
+                   "max_tokens": max_tokens, "messages": messages}
+        # A Direct rung must be a genuinely tool-free provider request, rather
+        # than an empty tools list with an ambiguous tool-choice directive.
+        if allowed_tools != set():
+            request.update({"tools": _tool_schema(allowed_tools), "tool_choice": "auto"})
+        prefix = budget_key_prefix or f"parent:{public['sample_id']}"
+        global_budget.reserve(f"{prefix}:generation:{turn}")
         raw = ledger.call("generation", f"generation-{turn}",
                           _generation_summary(sample=public, turn=turn, messages=messages),
                           lambda _summary: teacher(request))
         action = parse_teacher_action(raw)
+        if action["type"] == "tool" and allowed_tools is not None and action["name"] not in allowed_tools:
+            raise ValueError(f"tool {action['name']} is unavailable in this route")
         transition = state.act(action)
         trace.append({"time": _stamp(), "turn": turn, "action": action, "controller": transition})
         if action["type"] == "final":
+            normalized = normalize_final_answer(source_row=source_row, final=action["content"])
             result = {"schema_version": "agrinet.micu-classifier-hcv-v2-parent/v1",
                       "sample_id": public["sample_id"], "image_sha256": public["image_sha256"],
                       "status": "closed", "training_eligible": False,
-                      "final": action["content"], "trace": trace}
+                      "public_context": {key: public[key] for key in ("question", "question_type", "language", "task_domain", "public_options")},
+                      "final": action["content"], "normalized_final": normalized, "trace": trace}
             directory.mkdir(parents=True, exist_ok=True)
             (directory / "trajectory.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             return result
@@ -395,8 +540,8 @@ def run_parent(*, source_row: dict[str, Any], output_root: Path, rag_endpoint: s
             elif action["name"] == "agrinet_classifier_expand":
                 tool = classifier_tool_result(source_row, expand=True)
             else:
-                GlobalRagBudget(_goal_root(Path(output_root)) / "global_rag_events.jsonl").reserve(
-                    f"parent:{public['sample_id']}:rag:{turn}")
+                GlobalRagBudget(budget_root / "global_rag_events.jsonl").reserve(
+                    f"{prefix}:rag:{turn}")
                 tool = ledger.call("rag", f"rag-{turn}",
                                    {"operation": "rag", "sample_id": public["sample_id"],
                                     "turn": turn, "arguments": action["arguments"]},
@@ -405,24 +550,33 @@ def run_parent(*, source_row: dict[str, Any], output_root: Path, rag_endpoint: s
         else:
             tool = {"tool": "controller", "result": transition}
         trace.append({"time": _stamp(), "turn": turn, "tool": tool})
-        messages.append({"role": "assistant", "content": json.dumps(action, ensure_ascii=False)})
-        messages.append({"role": "tool", "content": json.dumps(tool, ensure_ascii=False)})
+        _append_native_tool_exchange(messages, raw, action, tool)
     raise ValueError("trajectory exhausted generation budget without final answer")
 
 
-def private_audit_payload(*, source_row: dict[str, Any], parent: dict[str, Any]) -> dict[str, Any]:
+def private_audit_payload(*, source_row: dict[str, Any], parent: dict[str, Any],
+                          teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
     """Build an isolated audit request; the result never returns to generation."""
     private = source_row.get("private")
     if not isinstance(private, dict) or not isinstance(private.get("truth_code"), str):
         raise ValueError("private audit needs a local truth sidecar")
     return {
-        "model": "gpt-5.6-terra", "temperature": 0.0, "top_p": 1.0, "max_tokens": 1024,
+        "model": teacher_model, "temperature": 0.0, "top_p": 1.0, "max_tokens": 1024,
         "messages": [{"role": "system", "content":
-                      "You are an isolated private auditor. Evaluate whether the public trajectory is supported by its image and public tool evidence. Return JSON only: decision is accept, reject, or human_review; reason is concise. Do not propose a corrected answer."},
+                      "You are an isolated private auditor. Evaluate whether the public trajectory is supported by its image and public tool evidence. Return JSON only with decision (accept, reject, or human_review), concise reason, and exactly one primary_pattern (P1 through P10) describing the dominant behavior actually observed. Do not propose a corrected answer. Pattern definitions: " + PATTERN_GUIDE},
                      {"role": "user", "content": [
                          {"type": "text", "text": json.dumps({
                              "image_sha256": source_row["image_sha256"],
                              "private_truth_code": private["truth_code"],
+                             "private_truth_name": private.get("truth_name"),
+                             "private_correct_option": private.get("correct_option"),
+                             "classifier_condition": {
+                                 "kind": (source_row.get("prediction") or {}).get("kind"),
+                                 "excluded_supervised_codes": (source_row.get("prediction") or {}).get("excluded_supervised_codes") or [],
+                                 "simulated_unknown": private.get("simulated_unknown"),
+                             },
+                             "public_question": source_row.get("question"),
+                             "public_options": source_row.get("public_options") or [],
                              "public_parent": parent,
                          }, ensure_ascii=False)},
                          image_url_content(Path(source_row["image_path"])),
@@ -442,18 +596,45 @@ def parse_private_audit(response: dict[str, Any]) -> dict[str, str]:
     reason = payload.get("reason")
     if not isinstance(reason, str) or not reason.strip():
         raise ValueError("private audit reason is missing")
-    return {"decision": payload["decision"], "reason": reason.strip()}
+    pattern = payload.get("primary_pattern")
+    if pattern is not None and pattern not in {f"P{i}" for i in range(1, 11)}:
+        raise ValueError("private audit primary pattern is invalid")
+    result = {"decision": payload["decision"], "reason": reason.strip()}
+    if pattern is not None:
+        result["primary_pattern"] = pattern
+    return result
 
 
-def g1_rewrite_payload(parent: dict[str, Any]) -> dict[str, Any]:
-    """G1 sees existing public facts and may only rewrite assistant prose."""
+def g1_rewrite_payload(parent: dict[str, Any], *, teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
+    """Ask Micu to complete a natural assistant response from the full public trace."""
     trace = parent.get("trace")
     if not isinstance(trace, list) or parent.get("status") != "closed":
         raise ValueError("G1 requires a closed parent trajectory")
-    return {"model": "gpt-5.6-terra", "temperature": 0.0, "top_p": 1.0, "max_tokens": 4096,
+    return {"model": teacher_model, "temperature": 0.0, "top_p": 1.0, "max_tokens": 4096,
             "messages": [{"role": "system", "content":
-                          "Rewrite only the assistant's public reasoning for clarity. Preserve every tool call, returned fact, order, conclusion, and uncertainty. Do not add evidence or tools."},
-                         {"role": "user", "content": json.dumps({"public_trace": trace, "final": parent.get("final")}, ensure_ascii=False)}]}
+                          "Complete one natural assistant response from the full public trajectory. Rewrite the reasoning as a coherent concise explanation suitable for a small vision-language model, then preserve the original final answer exactly. Use only facts in the supplied trajectory; do not add tools or evidence. Return JSON with assistant_reasoning and final."},
+                         {"role": "user", "content": json.dumps({
+                             "public_context": parent.get("public_context"),
+                             "public_trace": trace, "original_final": parent.get("final")},
+                             ensure_ascii=False)}],
+            "response_format": {"type": "json_object"}}
+
+
+def parse_g1_rewrite(response: dict[str, Any], *, original_final: str) -> dict[str, str]:
+    """Validate model-written reasoning while freezing the parent's conclusion."""
+    try:
+        content = response["choices"][0]["message"]["content"]
+        payload = json.loads(content) if isinstance(content, str) else content
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("G1 response is not JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("G1 response must be an object")
+    reasoning, final = payload.get("assistant_reasoning"), payload.get("final")
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        raise ValueError("G1 response lacks assistant reasoning")
+    if final != original_final:
+        raise ValueError("G1 may not change the parent final answer")
+    return {"assistant_reasoning": reasoning.strip(), "final": final}
 
 
 def _cell(row: dict[str, Any]) -> str:
@@ -469,39 +650,50 @@ def _private_audit_summary(source_row: dict[str, Any], parent: dict[str, Any]) -
 
 
 def run_private_audit(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: Path,
-                      scope: str = "parent", timeout: int = 180, invoke_teacher: Any | None = None) -> dict[str, Any]:
+                      scope: str = "parent", timeout: int = 180, invoke_teacher: Any | None = None,
+                      require_primary_pattern: bool = False, teacher_model: str = "gpt-5.6-terra",
+                      campaign_root: Path | None = None, budget_key_prefix: str | None = None) -> dict[str, Any]:
     """Run the one allowed isolated audit without exposing its outcome to generation."""
-    if scope not in {"parent", "g1", "g2"}:
+    if scope not in {"parent", "g1", "g2", "rewrite"}:
         raise ValueError("private audit scope is invalid")
     directory = Path(output_root) / "private" / source_row["sample_id"] / scope
-    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(),
+    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(teacher_model),
                            image_group_id=source_row["image_group_id"], view="without_candidates",
                            channel="private")
-    request = private_audit_payload(source_row=source_row, parent=parent)
+    request = private_audit_payload(source_row=source_row, parent=parent, teacher_model=teacher_model)
     teacher = invoke_teacher or (lambda payload: _invoke_micu(payload, timeout=timeout))
-    GlobalMicuBudget(_goal_root(Path(output_root)) / "global_micu_events.jsonl").reserve(
-        f"{scope}:{source_row['sample_id']}:private-audit:1")
+    budget_root = Path(campaign_root) if campaign_root is not None else _goal_root(Path(output_root))
+    GlobalMicuBudget(budget_root / "global_micu_events.jsonl").reserve(
+        f"{budget_key_prefix or f'{scope}:{source_row["sample_id"]}'}:private-audit:1")
     raw = ledger.call("audit", "private-audit-1", _private_audit_summary(source_row, parent),
                       lambda _summary: teacher(request))
     verdict = parse_private_audit(raw)
+    if require_primary_pattern and verdict.get("primary_pattern") not in {f"P{i}" for i in range(1, 11)}:
+        raise ValueError("E2 parent audit requires exactly one observed primary pattern")
     result = {"schema_version": "agrinet.micu-classifier-hcv-v2-private-audit/v1",
               "sample_id": source_row["sample_id"], "image_sha256": source_row["image_sha256"],
               "scope": scope, "status": verdict["decision"], "reason": verdict["reason"],
+              "primary_pattern": verdict.get("primary_pattern"),
               "training_eligible": False}
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "audit.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result
 
 
-def select_derivation_parents(*, source_rows: list[dict[str, Any]], output_root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Choose at most one accepted, prefix-capable parent per fixed cell."""
+def select_derivation_parents(*, source_rows: list[dict[str, Any]], output_root: Path,
+                              max_total: int = 8, max_per_pattern: int | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Choose one parent per cell for smoke, or capped observed patterns for E2."""
     selected: list[dict[str, Any]] = []; exclusions: list[dict[str, Any]] = []
-    grouped: dict[str, list[dict[str, Any]]] = {}
-    for row in source_rows:
-        grouped.setdefault(_cell(row), []).append(row)
-    for cell, rows in sorted(grouped.items()):
-        chosen = False
-        for row in sorted(rows, key=lambda item: str(item["sample_id"])):
+    pattern_counts: dict[str, int] = {}
+    cell_counts: dict[str, int] = {}
+    boundary_path = Path(output_root) / "public_boundary_exclusions.json"
+    boundary_payload = json.loads(boundary_path.read_text(encoding="utf-8")) if boundary_path.is_file() else {}
+    boundary_excluded = set(boundary_payload.get("sample_ids") or [])
+    for row in sorted(source_rows, key=lambda item: str(item["sample_id"])):
+            cell = _cell(row)
+            if row["sample_id"] in boundary_excluded:
+                exclusions.append({"sample_id": row["sample_id"], "cell": cell,
+                                   "reason": "public_boundary_excluded"}); continue
             base = Path(output_root) / "parent" / "public" / row["sample_id"]
             parent_path = base / "trajectory.json"
             audit_path = Path(output_root) / "private" / row["sample_id"] / "parent" / "audit.json"
@@ -510,17 +702,24 @@ def select_derivation_parents(*, source_rows: list[dict[str, Any]], output_root:
             parent, audit = json.loads(parent_path.read_text(encoding="utf-8")), json.loads(audit_path.read_text(encoding="utf-8"))
             if parent.get("status") != "closed" or audit.get("status") != "accept":
                 exclusions.append({"sample_id": row["sample_id"], "cell": cell, "reason": "parent_not_accepted"}); continue
+            pattern = audit.get("primary_pattern")
+            if max_per_pattern is not None and pattern not in {f"P{i}" for i in range(1, 11)}:
+                exclusions.append({"sample_id": row["sample_id"], "cell": cell, "reason": "missing_primary_pattern"}); continue
             try:
                 prefix = g2_prefix(parent)
             except ValueError:
                 exclusions.append({"sample_id": row["sample_id"], "cell": cell, "reason": "no_completed_tool_prefix"}); continue
-            if not chosen:
-                selected.append({"source_row": row, "parent": parent, "prefix": prefix, "cell": cell})
-                chosen = True
-            else:
-                exclusions.append({"sample_id": row["sample_id"], "cell": cell, "reason": "fixed_order_not_selected"})
-        if not chosen:
-            exclusions.append({"sample_id": None, "cell": cell, "reason": "no_eligible_parent_in_cell"})
+            if len(selected) >= max_total:
+                exclusions.append({"sample_id": row["sample_id"], "cell": cell, "primary_pattern": pattern, "reason": "global_derivation_cap"}); continue
+            if max_per_pattern is None and cell_counts.get(cell, 0) >= 1:
+                exclusions.append({"sample_id": row["sample_id"], "cell": cell, "reason": "fixed_order_not_selected"}); continue
+            if max_per_pattern is not None and pattern_counts.get(str(pattern), 0) >= max_per_pattern:
+                exclusions.append({"sample_id": row["sample_id"], "cell": cell, "primary_pattern": pattern, "reason": "pattern_derivation_cap"}); continue
+            selected.append({"source_row": row, "parent": parent, "prefix": prefix,
+                             "cell": cell, "primary_pattern": pattern})
+            cell_counts[cell] = cell_counts.get(cell, 0) + 1
+            if pattern is not None:
+                pattern_counts[str(pattern)] = pattern_counts.get(str(pattern), 0) + 1
     return selected, exclusions
 
 
@@ -555,8 +754,7 @@ def _prefix_messages(source_row: dict[str, Any], prefix: list[dict[str, Any]], *
         elif isinstance(event.get("tool"), dict):
             if pending is None:
                 raise ValueError("G2 prefix has tool result without action")
-            messages.append({"role": "assistant", "content": json.dumps(pending, ensure_ascii=False)})
-            messages.append({"role": "tool", "content": json.dumps(event["tool"], ensure_ascii=False)})
+            _append_reconstructed_tool_exchange(messages, pending, event["tool"])
             if pending.get("name") == "agrinet_rag_search":
                 state.rag.observe((event["tool"].get("raw_response") or {}).get("evidence") or [])
             pending = None
@@ -574,12 +772,12 @@ def _derivation_summary(*, kind: str, sample_id: str, image_sha256: str, payload
 
 
 def run_g1(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: Path, timeout: int = 180,
-           invoke_teacher: Any | None = None) -> dict[str, Any]:
+           invoke_teacher: Any | None = None, teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
     """One public expression rewrite with fixed parent facts and durable lineage."""
     directory = Path(output_root) / "derivations" / "g1" / source_row["sample_id"]
-    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(),
+    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(teacher_model),
                            image_group_id=source_row["image_group_id"], view="without_candidates")
-    request = g1_rewrite_payload(parent)
+    request = g1_rewrite_payload(parent, teacher_model=teacher_model)
     teacher = invoke_teacher or (lambda payload: _invoke_micu(payload, timeout=timeout))
     key = f"g1:{source_row['sample_id']}:generation:1"
     GlobalMicuBudget(_goal_root(Path(output_root)) / "global_micu_events.jsonl").reserve(key)
@@ -587,32 +785,33 @@ def run_g1(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: P
                       _derivation_summary(kind="g1_rewrite", sample_id=source_row["sample_id"],
                                           image_sha256=source_row["image_sha256"], payload={"parent": parent}),
                       lambda _summary: teacher(request))
-    action = parse_teacher_action(raw)
-    if action.get("type") != "final":
-        raise ValueError("G1 may only return rewritten assistant prose")
+    rewrite = parse_g1_rewrite(raw, original_final=str(parent["final"]))
     result = {"schema_version": "agrinet.micu-classifier-hcv-v2-g1/v1", "sample_id": source_row["sample_id"],
               "parent_sample_id": source_row["sample_id"], "status": "closed",
-              "trace": parent["trace"], "final": action["content"],
-              "rewritten_final": action["content"], "training_eligible": False}
+              "public_context": parent.get("public_context"), "trace": parent["trace"],
+              "assistant_reasoning": rewrite["assistant_reasoning"], "final": rewrite["final"],
+              "normalized_final": normalize_final_answer(source_row=source_row, final=rewrite["final"]),
+              "training_eligible": False}
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "derivation.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result
 
 
 def run_g2(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: Path, rag_endpoint: str,
-           max_tokens: int = 8192, timeout: int = 180, invoke_teacher: Any | None = None) -> dict[str, Any]:
+           max_tokens: int = 8192, timeout: int = 180, invoke_teacher: Any | None = None,
+           teacher_model: str = "gpt-5.6-terra") -> dict[str, Any]:
     """Continue from the fixed prefix; every new tool result is executed afresh."""
     prefix = g2_prefix(parent)
     public = public_sample(source_row)
     messages, state = _prefix_messages(source_row, prefix, max_tokens=max_tokens)
     directory = Path(output_root) / "derivations" / "g2" / public["sample_id"]
-    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(),
+    ledger = RequestLedger(directory / "ledger", contract=_ledger_contract(teacher_model),
                            image_group_id=source_row["image_group_id"], view="without_candidates")
     teacher = invoke_teacher or (lambda payload: _invoke_micu(payload, timeout=timeout))
     trace: list[dict[str, Any]] = []
     while state.generations < state.max_generations:
         turn = state.generations + 1
-        request = {"model": "gpt-5.6-terra", "temperature": 0.0, "top_p": 1.0,
+        request = {"model": teacher_model, "temperature": 0.0, "top_p": 1.0,
                    "max_tokens": max_tokens, "messages": messages, "tools": _tool_schema(),
                    "tool_choice": "auto"}
         key = f"g2:{public['sample_id']}:generation:{turn}"
@@ -624,10 +823,13 @@ def run_g2(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: P
         transition = state.act(action)
         trace.append({"time": _stamp(), "turn": turn, "action": action, "controller": transition})
         if action["type"] == "final":
+            normalized = normalize_final_answer(source_row=source_row, final=action["content"])
             result = {"schema_version": "agrinet.micu-classifier-hcv-v2-g2/v1",
                       "sample_id": public["sample_id"], "parent_sample_id": public["sample_id"],
                       "status": "closed", "prefix": prefix, "continuation": trace, "trace": prefix + trace,
-                      "final": action["content"], "training_eligible": False}
+                      "public_context": {key: public[key] for key in ("question", "question_type", "language", "task_domain", "public_options")},
+                      "final": action["content"], "normalized_final": normalized,
+                      "training_eligible": False}
             directory.mkdir(parents=True, exist_ok=True)
             (directory / "derivation.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             return result
@@ -647,29 +849,57 @@ def run_g2(*, source_row: dict[str, Any], parent: dict[str, Any], output_root: P
         else:
             tool = {"tool": "controller", "result": transition}
         trace.append({"time": _stamp(), "turn": turn, "tool": tool})
-        messages.append({"role": "assistant", "content": json.dumps(action, ensure_ascii=False)})
-        messages.append({"role": "tool", "content": json.dumps(tool, ensure_ascii=False)})
+        _append_native_tool_exchange(messages, raw, action, tool)
     raise ValueError("G2 exhausted inherited generation budget without final answer")
 
 
 def run_derivation_batch(*, source_rows: list[dict[str, Any]], output_root: Path, rag_endpoint: str,
-                         max_tokens: int = 8192, timeout: int = 180) -> dict[str, Any]:
+                         max_tokens: int = 8192, timeout: int = 180,
+                         max_images: int = 8, max_per_pattern: int | None = None,
+                         require_primary_pattern: bool = False, max_concurrency: int = 1) -> dict[str, Any]:
     """Audit closed parents, then make one fixed-order G1/G2 pair per eligible cell."""
     root = Path(output_root)
     statuses: list[dict[str, Any]] = []
     by_id = {str(row["sample_id"]): row for row in source_rows}
+    boundary_path = root / "public_boundary_exclusions.json"
+    boundary_payload = json.loads(boundary_path.read_text(encoding="utf-8")) if boundary_path.is_file() else {}
+    boundary_excluded = set(boundary_payload.get("sample_ids") or [])
+    pending_audits: list[tuple[str, dict[str, Any], dict[str, Any]]] = []
     for sample_id, row in sorted(by_id.items()):
+        if sample_id in boundary_excluded:
+            statuses.append({"sample_id": sample_id, "stage": "parent_audit",
+                             "status": "skipped", "reason": "public_boundary_excluded"})
+            continue
         parent_path = root / "parent" / "public" / sample_id / "trajectory.json"
         if not parent_path.is_file():
             statuses.append({"sample_id": sample_id, "stage": "parent_audit", "status": "skipped", "reason": "parent_not_closed"})
             continue
         parent = json.loads(parent_path.read_text(encoding="utf-8"))
+        existing_audit = root / "private" / sample_id / "parent" / "audit.json"
+        if existing_audit.is_file():
+            audit = json.loads(existing_audit.read_text(encoding="utf-8"))
+            if (audit.get("sample_id") == sample_id and audit.get("scope") == "parent"
+                    and audit.get("status") in {"accept", "reject", "human_review"}):
+                statuses.append({"sample_id": sample_id, "stage": "parent_audit",
+                                 "status": audit["status"], "referenced": True})
+                continue
+        pending_audits.append((sample_id, row, parent))
+
+    def audit_one(item: tuple[str, dict[str, Any], dict[str, Any]]) -> dict[str, Any]:
+        sample_id, row, parent = item
         try:
-            audit = run_private_audit(source_row=row, parent=parent, output_root=root, scope="parent", timeout=timeout)
-            statuses.append({"sample_id": sample_id, "stage": "parent_audit", "status": audit["status"]})
+            audit = run_private_audit(source_row=row, parent=parent, output_root=root, scope="parent",
+                                      timeout=timeout, require_primary_pattern=require_primary_pattern)
+            return {"sample_id": sample_id, "stage": "parent_audit", "status": audit["status"]}
         except (DeliveryUnresolved, RuntimeError, ValueError) as exc:
-            statuses.append({"sample_id": sample_id, "stage": "parent_audit", "status": "not_completed", "reason": type(exc).__name__})
-    selected, exclusions = select_derivation_parents(source_rows=source_rows, output_root=root)
+            return {"sample_id": sample_id, "stage": "parent_audit", "status": "not_completed",
+                    "reason": type(exc).__name__}
+
+    with ThreadPoolExecutor(max_workers=max_concurrency) as pool:
+        statuses.extend(pool.map(audit_one, pending_audits))
+    selected, exclusions = select_derivation_parents(
+        source_rows=source_rows, output_root=root, max_total=max_images,
+        max_per_pattern=max_per_pattern)
     for item in selected:
         row, parent, cell = item["source_row"], item["parent"], item["cell"]
         sample_id = row["sample_id"]
@@ -684,7 +914,8 @@ def run_derivation_batch(*, source_rows: list[dict[str, Any]], output_root: Path
                 statuses.append({"sample_id": sample_id, "cell": cell, "stage": stage,
                                  "status": "not_completed", "reason": type(exc).__name__})
     result = {"schema_version": "agrinet.micu-classifier-hcv-v2-derivation-batch/v1",
-              "selected": [{"sample_id": item["source_row"]["sample_id"], "cell": item["cell"]} for item in selected],
+              "selected": [{"sample_id": item["source_row"]["sample_id"], "cell": item["cell"],
+                            "primary_pattern": item.get("primary_pattern")} for item in selected],
               "selection_exclusions": exclusions, "statuses": statuses, "training_eligible": False}
     destination = root / "derivations" / "summary.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -693,14 +924,17 @@ def run_derivation_batch(*, source_rows: list[dict[str, Any]], output_root: Path
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _GLOBAL_MICU_LIMIT, _GLOBAL_RAG_LIMIT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--contract", type=Path, required=True)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--limit", type=int, default=32)
+    parser.add_argument("--limit", type=int)
     parser.add_argument("--phase", choices=("parent", "derivations"), default="parent")
     args = parser.parse_args(argv)
     contract = _read_contract(args.contract)
+    _GLOBAL_MICU_LIMIT = int(contract["budgets"]["total_micu"])
+    _GLOBAL_RAG_LIMIT = int(contract["budgets"]["rag_total"])
     report = readiness(contract_path=args.contract, dataset_root=args.dataset_root,
                        rag_health=local_rag_health(str(contract["retrieval"]["endpoint"])))
     if not report.get("ready_for_live_collection"):
@@ -708,35 +942,65 @@ def main(argv: list[str] | None = None) -> int:
     root = args.contract.parents[3]
     source = root / contract["data"]["source"]
     rows = _read_jsonl(source)
-    if args.limit != 32 or len(rows) != 32:
-        raise ValueError("v2 smoke collection requires the complete 32-row source")
+    expected_rows = int(contract["data"]["independent_images"])
+    limit = expected_rows if args.limit is None else args.limit
+    if limit != expected_rows or len(rows) != expected_rows:
+        raise ValueError(f"collection requires the complete {expected_rows}-row source")
     if args.phase == "derivations":
+        exploration = str(contract["data"].get("stage") or "smoke") == "exploration"
         result = run_derivation_batch(source_rows=rows, output_root=args.output_root,
                                       rag_endpoint=str(contract["retrieval"]["endpoint"]),
                                       max_tokens=int(contract["runtime"]["micu_max_output_tokens"]),
-                                      timeout=int(contract["runtime"]["micu_timeout_seconds"]))
+                                      timeout=int(contract["runtime"]["micu_timeout_seconds"]),
+                                      max_images=int(contract["routing"]["g1_g2_max_images"]),
+                                      max_per_pattern=2 if exploration else None,
+                                      require_primary_pattern=exploration,
+                                      max_concurrency=int(contract["runtime"].get("micu_max_concurrency", 1)))
         print(json.dumps({"selected": len(result["selected"]), "statuses": len(result["statuses"])}, ensure_ascii=False))
         return 0
     output = args.output_root / "parent"
+    predecessor_value = contract.get("data", {}).get("predecessor")
+    predecessor = root / predecessor_value if isinstance(predecessor_value, str) and predecessor_value else None
     statuses: list[dict[str, Any]] = []
-    consecutive_failures: tuple[str, int] = ("", 0)
+    pending_rows: list[dict[str, Any]] = []
     for row in rows:
+        if _closed_local_parent(args.output_root, row):
+            statuses.append({"sample_id": row["sample_id"], "status": "closed_existing",
+                             "reason": "closed_local_trajectory"})
+            continue
+        if _closed_predecessor_parent(predecessor, row):
+            statuses.append({"sample_id": row["sample_id"], "status": "closed_referenced",
+                             "reason": "closed_predecessor_trajectory"})
+            continue
+        if _has_public_intent(args.output_root, str(row["sample_id"])):
+            statuses.append({"sample_id": row["sample_id"], "status": "unresolved_not_replayed",
+                             "reason": "existing_public_intent"})
+            continue
+        pending_rows.append(row)
+
+    def collect_one(row: dict[str, Any]) -> dict[str, Any]:
         try:
             result = run_parent(source_row=row, output_root=output,
                                 rag_endpoint=str(contract["retrieval"]["endpoint"]),
                                 max_tokens=int(contract["runtime"]["micu_max_output_tokens"]),
                                 timeout=int(contract["runtime"]["micu_timeout_seconds"]))
-            statuses.append({"sample_id": row["sample_id"], "status": result["status"]})
-            consecutive_failures = ("", 0)
+            return {"sample_id": row["sample_id"], "status": result["status"]}
         except (DeliveryUnresolved, RuntimeError, ValueError) as exc:
-            reason = type(exc).__name__
-            count = consecutive_failures[1] + 1 if consecutive_failures[0] == reason else 1
-            consecutive_failures = (reason, count)
-            statuses.append({"sample_id": row["sample_id"], "status": "not_closed", "reason": reason})
-            if count >= 2:
-                statuses.append({"sample_id": None, "status": "batch_stopped",
-                                 "reason": f"systemic_{reason}"})
-                break
+            return {"sample_id": row["sample_id"], "status": "not_closed",
+                    "reason": type(exc).__name__}
+
+    concurrency = int(contract["runtime"].get("micu_max_concurrency", 1))
+    for start in range(0, len(pending_rows), concurrency):
+        batch = pending_rows[start:start + concurrency]
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            results = list(pool.map(collect_one, batch))
+        statuses.extend(results)
+        failures = [item.get("reason") for item in results if item["status"] == "not_closed"]
+        if (len(failures) >= 2 and len(set(failures)) == 1
+                and failures[0] != "DeliveryUnresolved"):
+            statuses.append({"sample_id": None, "status": "batch_stopped",
+                             "reason": f"systemic_{failures[0]}"})
+            break
     summary = {"schema_version": "agrinet.micu-classifier-hcv-v2-parent-batch/v1",
                "rows": len(rows), "statuses": statuses, "training_eligible": False}
     output.mkdir(parents=True, exist_ok=True)

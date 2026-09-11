@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-dynamic-recovery-r0-collect-v1
+display_name: {en: E2 dynamic delivery recovery R0 collection, zh: E2 动态交付恢复 R0 采集}
+domain: rag
+task: micu_classifier_hcv_v2
+description: Experimental four-worker R0 collection with delivery-pending stop and no automatic replay.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/dynamic-recovery-v1/manifests/r0.json
+  source: outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/dynamic-recovery-v1/rounds/r0
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-dynamic-recovery-r0-collect-v1/
+tags: [hcv, dynamic-routing, delivery-recovery, r0, experimental, no-replay, no-sft]

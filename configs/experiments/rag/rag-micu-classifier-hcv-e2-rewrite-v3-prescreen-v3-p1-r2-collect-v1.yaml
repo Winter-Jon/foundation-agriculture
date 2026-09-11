@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v3-p1-r2-collect-v1
+display_name:
+  en: E2 prescreen-v3 P1-evidence lineage R2 final delivery recovery
+  zh: E2 prescreen-v3 P1 质量证据谱系 R2 最终交付恢复
+domain: rag
+task: micu_classifier_hcv_v2
+description: >-
+  Executes only the immutable R2 manifest frozen from R1. It makes the second
+  and final fresh attempt for three parent and six audit-only delivery scopes.
+  Any unresolved scope after this round is a reported delivery shortfall; no
+  third request, source substitution, automatic replay, or SFT is authorized.
+lifecycle: active
+components: {teacher: micu_slb, classifier: vitl-oof, rag: agrinet-local-full}
+runtime_profile: runtime/local-rag
+parameters:
+  phase: recovery-collect-round
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  manifest: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p1-v1/manifests/r2.json
+  source: docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-prescreen-v3-p1-source.json
+  output: outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p1-v1/rounds/r2
+  rag_endpoint: http://127.0.0.1:8077
+  timeout: 180
+  max_tokens: 8192
+outputs:
+  run_root: outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v3-p1-r2-collect-v1/
+tags: [hcv, e2, rewrite-v3, prescreen-v3, p1-evidence, r2, final-attempt, delivery-recovery, no-sft]
