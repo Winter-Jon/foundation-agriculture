@@ -42,9 +42,12 @@ def _command(config: dict, operation: str) -> list[str]:
         return command
     if operation in {"classifier-smoke", "classifier-train"}:
         output_key = "classifier_formal" if operation == "classifier-train" else "classifier_smoke"
-        command = base + ["classifier", "--artifact-root", str(artifact), "--output-dir", str(root / config["outputs"][output_key]), "--encoder-checkpoint", str(root / inputs["mae_encoder"]), "--architecture", str(config["components"]["model"]), "--epochs", str(params["classifier_epochs"] if operation == "classifier-train" else 1), "--batch-size", str(params["classifier_batch_size"]), "--workers", str(params["workers"]), "--checkpoint-interval", str(params["classifier_checkpoint_interval"])]
+        command = base + ["classifier", "--artifact-root", str(artifact), "--output-dir", str(root / config["outputs"][output_key]), "--encoder-checkpoint", str(root / inputs["mae_encoder"]), "--architecture", str(config["components"]["model"]), "--epochs", str(params["classifier_epochs"] if operation == "classifier-train" else 1), "--batch-size", str(params["classifier_batch_size"]), "--workers", str(params["workers"]), "--checkpoint-interval", str(params["classifier_checkpoint_interval"]), "--learning-rate", str(params.get("classifier_learning_rate", 5e-5))]
         if operation == "classifier-smoke": command += ["--max-steps", str(params["smoke_steps"])]
-        return command
+        classifier_gpus = int(params.get("classifier_gpus", 1))
+        if classifier_gpus == 1:
+            return command
+        return [str(Path(sys.executable).with_name("torchrun")), "--standalone", "--nproc-per-node", str(classifier_gpus), *command[1:]]
     if operation == "oof-classifier":
         fold = int(params.get("fold", 0))
         if fold not in (0, 1, 2):
@@ -61,6 +64,26 @@ def _command(config: dict, operation: str) -> list[str]:
         return base + ["evaluate", "--artifact-root", str(artifact_root),
                        "--output-dir", str(artifact_root / "classifier"),
                        "--checkpoint", str(checkpoint), "--split", "dev_known"]
+    if operation == "p6-classifier":
+        root = repository_root() / inputs["artifact_root"]
+        command = base + ["classifier", "--artifact-root", str(root), "--output-dir", str(root / "classifier"),
+                          "--encoder-checkpoint", str(repository_root() / inputs["mae_encoder"]),
+                          "--architecture", str(config["components"]["model"]),
+                          "--epochs", str(params["classifier_epochs"]), "--batch-size", str(params["classifier_batch_size"]),
+                          "--workers", str(params["workers"]), "--checkpoint-interval", str(params["classifier_checkpoint_interval"])]
+        return command
+    if operation == "p6-evaluate-holdout":
+        root = repository_root() / inputs["artifact_root"]
+        checkpoint = root / "classifier" / "model_best.pth.tar"
+        return base + ["evaluate", "--artifact-root", str(root), "--output-dir", str(root / "classifier"),
+                       "--checkpoint", str(checkpoint), "--manifest", str(root / "manifests/holdout_train_candidate.jsonl"),
+                       "--split", "dev_known", "--score-only"]
+    if operation == "e3-evaluate-test-known":
+        if config.get("task") != "e3_adjacent_class_holdout_classification":
+            raise ConfigError("e3 test evaluation is only valid for E3 class-fold experiments")
+        checkpoint = artifact / "classifier" / "model_best.pth.tar"
+        return base + ["evaluate", "--artifact-root", str(artifact), "--output-dir", str(artifact / "classifier"),
+                       "--checkpoint", str(checkpoint), "--split", "test_known"]
     if operation == "evaluate": return base + ["evaluate", "--artifact-root", str(artifact), "--output-dir", str(root / config["outputs"]["classifier_formal"]), "--checkpoint", str(root / inputs["classifier_checkpoint"]), "--split", "test_known"]
     raise ConfigError(f"unsupported vision operation: {operation}")
 

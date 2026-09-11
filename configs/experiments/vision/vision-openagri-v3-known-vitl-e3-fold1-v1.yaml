@@ -1,0 +1,28 @@
+schema_version: agrinet.experiment/v1
+id: vision-openagri-v3-known-vitl-e3-fold1-v1
+display_name: {en: OpenAgri v3 E3 adjacent class-fold classifier 1, zh: OpenAgri v3 E3 邻接类别折分类器 1}
+domain: vision
+task: e3_adjacent_class_holdout_classification
+description: Two-A800 classifier for E3 fold 1; labels exclude its frozen held-out classes and RAG remains full registry.
+lifecycle: active
+components: {model: mae_vit_large_patch16_224, runtime: runtime/local-a800}
+runtime_profile: runtime/local-a800
+inputs:
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  artifact_root: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1
+  mae_encoder: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/mae-formal/encoder_last.pth.tar
+outputs:
+  classifier_smoke: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier-smoke
+  classifier_formal: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier
+  run_root: outputs/runs/vision/vision-openagri-v3-known-vitl-e3-fold1-v1/
+parameters:
+  smoke_steps: 20
+  classifier_gpus: 2
+  classifier_epochs: 50
+  classifier_batch_size: 32
+  classifier_learning_rate: 5.0e-5
+  classifier_checkpoint_interval: 10
+  workers: 8
+  cuda_visible_devices: '3,4'
+  training_eligible: false
+tags: [open-agri-v3, e3, adjacent-classfold, fold1, vit-large, two-gpu, no-teacher, no-sft]

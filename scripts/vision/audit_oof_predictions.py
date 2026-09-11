@@ -37,6 +37,11 @@ def main() -> int:
     source_rows = 0
     for fold in range(3):
         held = read(args.manifest_root / f"fold-{fold}/manifests/dev_known.jsonl")
+        checkpoint = args.manifest_root / f"fold-{fold}" / "classifier" / "model_best.pth.tar"
+        label_map = args.manifest_root / f"fold-{fold}" / "label_map.json"
+        fold_checkpoint_sha256 = sha256(checkpoint) if checkpoint.is_file() else None
+        fold_label_map_sha256 = sha256(label_map) if label_map.is_file() else None
+        fold_training_cache: dict[str, tuple[bool, dict[str, set[str]]]] = {}
         source_rows += len(held)
         for row in held:
             fold_groups.setdefault(row["near_duplicate_group_id"], set()).add(fold)
@@ -50,18 +55,25 @@ def main() -> int:
                     provenance.get("kind") != "out_of_fold"):
                 errors.append(f"wrong OOF provenance: {row['image_sha256']}")
             train_path = Path(provenance.get("training_manifest", ""))
-            if not train_path.is_file() or sha256(train_path) != provenance.get("training_manifest_sha256"):
+            train_key = str(train_path)
+            if train_key not in fold_training_cache:
+                if not train_path.is_file() or sha256(train_path) != provenance.get("training_manifest_sha256"):
+                    fold_training_cache[train_key] = (False, {})
+                else:
+                    training = read(train_path)
+                    fold_training_cache[train_key] = (
+                        True,
+                        {key: {item[key] for item in training}
+                         for key in ("image_sha256", "source_group_id", "near_duplicate_group_id")},
+                    )
+            training_valid, identities = fold_training_cache[train_key]
+            if not training_valid:
                 errors.append(f"training manifest provenance mismatch: {row['image_sha256']}")
-            else:
-                training = read(train_path)
-                identities = {key: {item[key] for item in training} for key in ("image_sha256", "source_group_id", "near_duplicate_group_id")}
-                if any(row[key] in identities[key] for key in identities):
-                    errors.append(f"training overlap: {row['image_sha256']}")
-            checkpoint = args.manifest_root / f"fold-{fold}" / "classifier" / "model_best.pth.tar"
-            label_map = args.manifest_root / f"fold-{fold}" / "label_map.json"
-            if not checkpoint.is_file() or provenance.get("checkpoint_sha256") != sha256(checkpoint):
+            elif any(row[key] in identities[key] for key in identities):
+                errors.append(f"training overlap: {row['image_sha256']}")
+            if fold_checkpoint_sha256 is None or provenance.get("checkpoint_sha256") != fold_checkpoint_sha256:
                 errors.append(f"checkpoint provenance mismatch: {row['image_sha256']}")
-            if not label_map.is_file() or provenance.get("label_map_sha256") != sha256(label_map):
+            if fold_label_map_sha256 is None or provenance.get("label_map_sha256") != fold_label_map_sha256:
                 errors.append(f"label-map provenance mismatch: {row['image_sha256']}")
             top5 = provenance.get("top5")
             if (not isinstance(top5, list) or len(top5) != 5 or

@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: vision-openagri-v3-known-vitl-p6-group0-v1
+display_name: {en: OpenAgri v3 P6 classifier holdout group 0, zh: P6 类别留出分类器第0组}
+domain: vision
+task: p6_holdout_classification
+description: 99-class classifier excluding the frozen group-0 Known classes; RAG remains full registry.
+lifecycle: active
+components: {model: mae_vit_large_patch16_224, runtime: runtime/local-a800}
+runtime_profile: runtime/local-a800
+inputs:
+  dataset_root: datasets/AgriNet-1K/open_agri_v3
+  artifact_root: outputs/artifacts/vision/openagri-v3-known-vitl-p6-holdout-v1/group-0
+  mae_encoder: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/mae-formal/encoder_last.pth.tar
+outputs: {run_root: outputs/runs/vision/vision-openagri-v3-known-vitl-p6-group0-v1/}
+parameters: {classifier_epochs: 50, classifier_batch_size: 32, classifier_checkpoint_interval: 10, workers: 8, cuda_visible_devices: '1', training_eligible: false}
+tags: [open-agri-v3, p6, holdout, group0, no-training-eligibility]
