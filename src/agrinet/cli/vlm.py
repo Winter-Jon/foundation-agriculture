@@ -450,9 +450,17 @@ def raw_source_diagnostic_command(config: dict) -> list[str]:
     tokens = parameters.get("max_new_tokens", 128)
     if not isinstance(tokens, int) or not 1 <= tokens <= 8192:
         raise ConfigError("raw source diagnostic max_new_tokens must be in [1, 8192]")
-    return [str(sft_python(config)), required["script"], "--model", required["model"],
-            "--source", required["source"], "--output-dir", required["output_dir"],
-            "--device", required["device"], "--max-new-tokens", str(tokens)]
+    command = [str(sft_python(config)), required["script"], "--model", required["model"],
+               "--source", required["source"], "--output-dir", required["output_dir"],
+               "--device", required["device"], "--max-new-tokens", str(tokens)]
+    for key, flag in (("expected_rows", "--expected-rows"), ("shard_index", "--shard-index"),
+                      ("shard_count", "--shard-count")):
+        value = parameters.get(key)
+        if value is not None:
+            if not isinstance(value, int) or value < 0:
+                raise ConfigError(f"raw source diagnostic {key} must be a non-negative integer")
+            command.extend([flag, str(value)])
+    return command
 
 
 @app.command("train")

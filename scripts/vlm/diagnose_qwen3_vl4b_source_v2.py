@@ -18,12 +18,12 @@ from PIL import Image
 from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 
 
-def read_source(path: Path) -> list[dict]:
+def read_source(path: Path, expected_rows: int | None = None) -> list[dict]:
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if len(rows) != 32:
-        raise ValueError("v2 raw diagnostic requires exactly 32 smoke-source rows")
+    if expected_rows is not None and len(rows) != expected_rows:
+        raise ValueError(f"raw diagnostic expected {expected_rows} rows, found {len(rows)}")
     required = ("sample_id", "image_path", "image_sha256", "question")
-    if len({str(row.get("sample_id") or "") for row in rows}) != 32:
+    if len({str(row.get("sample_id") or "") for row in rows}) != len(rows):
         raise ValueError("source has non-unique sample identities")
     if any(not isinstance(row.get(key), str) or not row[key] for row in rows for key in required):
         raise ValueError("source has incomplete public diagnostic fields")
@@ -55,10 +55,16 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--max-new-tokens", type=int, default=128)
+    parser.add_argument("--expected-rows", type=int)
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--shard-count", type=int, default=1)
     args = parser.parse_args()
     if not 1 <= args.max_new_tokens <= 8192:
         raise ValueError("max-new-tokens must be in [1, 8192]")
-    rows = read_source(args.source)
+    if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
+        raise ValueError("invalid shard index/count")
+    source_rows = read_source(args.source, args.expected_rows)
+    rows = [row for index, row in enumerate(source_rows) if index % args.shard_count == args.shard_index]
     if not args.model.is_dir():
         raise FileNotFoundError(args.model)
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -122,11 +128,13 @@ def main() -> int:
     summary = {"schema_version": "agrinet.qwen3-vl4b-source-diagnostic-summary/v1",
                "source": str(args.source), "model": str(args.model), "device": args.device,
                "load_seconds": load_seconds, "elapsed_seconds": round(time.perf_counter() - started, 3),
-               "rows_expected": 32, "rows_recorded": len(recorded), "statuses": dict(sorted(states.items())),
+               "rows_expected": len(rows), "source_rows": len(source_rows),
+               "shard_index": args.shard_index, "shard_count": args.shard_count,
+               "rows_recorded": len(recorded), "statuses": dict(sorted(states.items())),
                "training_eligible": False}
     (args.output_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False))
-    return 0 if len(recorded) == 32 else 2
+    return 0 if len(recorded) == len(rows) else 2
 
 
 if __name__ == "__main__":
