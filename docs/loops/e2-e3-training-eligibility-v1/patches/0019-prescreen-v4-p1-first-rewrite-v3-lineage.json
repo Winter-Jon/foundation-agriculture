@@ -1,0 +1,30 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0019-prescreen-v4-p1-first-rewrite-v3-lineage",
+  "created_at": "2026-09-11T12:04:32+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "8a46bc68c9663d4bacf01300a5763afe0704a2f9ddcb39dca3ac4d6d8712739e",
+  "purpose": "Authorize one future-only image-bound v3 E2 lineage from the remaining independently audited prescreen-v4 identities after the P6-first collection closed 31/32 on one terminal quality rejection.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "predecessor_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v4-p6-v1/reports/collection-final.json",
+    "predecessor_result": "R0 closed 66 parent and 66 private parent-audit scopes; R1/R2 were zero-request closures; collection was 31 selected and one terminal quality rejection with no delivery or tool shortfall.",
+    "pool": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v4/source-80.jsonl",
+    "pool_sha256": "d95a18cea14b2ec9cc2bd76fddff35d5fc8c6133ad4eaf22d41edad36505176e",
+    "availability_audit": "After excluding every source bound by the v4 P6-first source and that source itself on image/source/near-duplicate identities, 48 candidates remain: six per fixed cell, all mutually unique on the same three keys.",
+    "quality_attribution": "The v4 P6-first shortfall is a confirmed quality rejection, not delivery-recovery work; it is excluded and cannot be replayed."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from the remaining prescreen-v4 pool after all-prior three-key exclusion, ordered by deterministic lower-pattern-first selection.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "No threshold is relaxed: 32 unique collection winners, four rows per fixed cell, accepted image-bound rewrite, accepted independent private rewrite audit, and conversion gate are mandatory. SFT remains separately unauthorized."
+}

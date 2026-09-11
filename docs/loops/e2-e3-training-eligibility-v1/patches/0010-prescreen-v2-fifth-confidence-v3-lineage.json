@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0010-prescreen-v2-fifth-confidence-v3-lineage",
+  "created_at": "2026-09-11T15:55:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "7cdd9e5cfe2d27ef7ccd2d0ff46e76035d5f20dd337f011f39da886e5a5f3580",
+  "purpose": "Authorize a fifth future-only 32-image image-bound v3 E2 lineage using deterministic higher-OOF-confidence selection from the remaining rebuilt prescreen-v2 pool.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "fourth_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-fourth-source.json",
+    "fourth_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-fourth-v1/reports/collection-final.json",
+    "fourth_result": "31 selected and one confirmed collection quality reject; all 124 R0 parent/audit outcomes were delivered and R1/R2 were explicit zero-request closures.",
+    "read_only_selection_audit": "Across the first four rebuilt-pool collection lineages P1 selected 108/112 (96.4%). The remaining pool has no P1 rows and offers four per cell with OOF top-1 confidence 0.882-0.936.",
+    "remaining_pool": "192 candidates, 24 per fixed cell, after excluding ten source lineages under image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Select four fresh identities per cell by descending numerical OOF top-1 score, then stable sample ID; exclude all ten preceding source lineages on image/source/near-duplicate identity.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "The selection ordering is a future-only sampling policy, not a change to the 32-row/four-per-cell qualification. Confirmed quality rejections remain terminal and SFT remains separately unauthorized."
+}

@@ -1,0 +1,68 @@
+{
+  "folds": [
+    {
+      "best_disease_macro_f1": 0.9789261817932129,
+      "best_epoch": 46,
+      "best_macro_f1": 0.9341971278190613,
+      "best_pest_macro_f1": 0.8408495187759399,
+      "checkpoint": "outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/classifier/model_best.pth.tar",
+      "checkpoint_sha256": "7a3820cbac31436fe6a7ca74ddb5139d4250d74d7c170ea8cfca5d4294f53a86",
+      "epochs": 50,
+      "fold": 0,
+      "held_out_class_count": 36,
+      "held_out_image_count": 47174,
+      "held_out_isolation_verified": true,
+      "label_map_sha256": "d7cc9496171785ed05f5e66dc6e10dcad089874f57d30a1d63180aa6e9f58246",
+      "rag_training_neighbour_witnesses_verified": 36,
+      "test_known_balanced_accuracy": 0.8725361824035645,
+      "test_known_macro_f1": 0.8694329261779785,
+      "training_label_count": 71
+    },
+    {
+      "best_disease_macro_f1": 0.9596531391143799,
+      "best_epoch": 9,
+      "best_macro_f1": 0.9352164268493652,
+      "best_pest_macro_f1": 0.8842179775238037,
+      "checkpoint": "outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier/model_best.pth.tar",
+      "checkpoint_sha256": "59d627db18c859bf3961ad98bc71db8ba8c6d1ccdb669445437f373c003984ab",
+      "epochs": 50,
+      "fold": 1,
+      "held_out_class_count": 36,
+      "held_out_image_count": 48057,
+      "held_out_isolation_verified": true,
+      "label_map_sha256": "6f0981eb73fe80261ebdb8a09991b77cce7ab7fec3863e773793a3ed365b0354",
+      "rag_training_neighbour_witnesses_verified": 36,
+      "test_known_balanced_accuracy": 0.9070030450820923,
+      "test_known_macro_f1": 0.9081634879112244,
+      "training_label_count": 71
+    },
+    {
+      "best_disease_macro_f1": 0.9752886295318604,
+      "best_epoch": 7,
+      "best_macro_f1": 0.9601230621337891,
+      "best_pest_macro_f1": 0.9297919869422913,
+      "checkpoint": "outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/classifier/model_best.pth.tar",
+      "checkpoint_sha256": "56fe5cb1fb2cb64266d89fb5c35c26331e76d481e4f4a08a41654fdded242742",
+      "epochs": 50,
+      "fold": 2,
+      "held_out_class_count": 35,
+      "held_out_image_count": 47495,
+      "held_out_isolation_verified": true,
+      "label_map_sha256": "408f66e471ccb109b3fbe1ee1000f51b96fe6d35e128bbebc64fbd15ac06e992",
+      "rag_training_neighbour_witnesses_verified": 35,
+      "test_known_balanced_accuracy": 0.8778061866760254,
+      "test_known_macro_f1": 0.8813846707344055,
+      "training_label_count": 72
+    }
+  ],
+  "generalization_evidence_complete": true,
+  "mean_best_metrics": {
+    "best_disease_macro_f1": 0.971289316813151,
+    "best_macro_f1": 0.9431788722674052,
+    "best_pest_macro_f1": 0.8849531610806783
+  },
+  "schema_version": "agrinet.e2-e3-training-eligibility-e3-aggregate/v1",
+  "sft_may_start": false,
+  "teacher_collection_authorized": false,
+  "training_eligible": false
+}

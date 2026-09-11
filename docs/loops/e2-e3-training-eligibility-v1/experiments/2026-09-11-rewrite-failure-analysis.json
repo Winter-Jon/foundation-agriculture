@@ -1,0 +1,32 @@
+{
+  "conclusion": "prompt_validator_contract_mismatch",
+  "error_counts": {
+    "direct_rewrite_mentions_tool": 15,
+    "rewrite_comparisons_under_three": 24,
+    "rewrite_observations_under_three": 24
+  },
+  "errors_by_route": {
+    "classifier": {
+      "rewrite_comparisons_under_three": 4,
+      "rewrite_observations_under_three": 4
+    },
+    "direct": {
+      "direct_rewrite_mentions_tool": 15,
+      "rewrite_comparisons_under_three": 19,
+      "rewrite_observations_under_three": 19
+    },
+    "rag": {
+      "rewrite_comparisons_under_three": 1,
+      "rewrite_observations_under_three": 1
+    }
+  },
+  "provider_retry_authorized": false,
+  "rewrite_files": 24,
+  "route_counts": {
+    "classifier": 4,
+    "direct": 19,
+    "rag": 1
+  },
+  "schema_version": "agrinet.e2-e3-training-eligibility-rewrite-analysis/v1",
+  "training_eligible": false
+}

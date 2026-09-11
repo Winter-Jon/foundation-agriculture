@@ -1,0 +1,30 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0009-prescreen-v2-fourth-v3-lineage",
+  "created_at": "2026-09-11T15:40:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "57ab5bb63986fb5e97be1f26569c557dc5e89247351f1a1d9991edba91d19419",
+  "purpose": "Authorize a fourth future-only 32-image image-bound v3 E2 lineage from the remaining rebuilt prescreen-v2 pool after the third lineage closed with insufficient collection winners.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "third_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-third-source.json",
+    "third_lineage_source_sha256": "add5a2d098688bd437fb41d1ea88c4376f59573b7100b8aeb6206d5169993fd7",
+    "collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-third-v1/reports/collection-final.json",
+    "result": "After R0/R1/R2 delivery closure, 29 groups were selected and three were confirmed collection quality rejects (two open-zh-disease and one option-en-disease).",
+    "phase_barrier_decision": "No rewrite was submitted because a campaign with fewer than 32 selected collection winners cannot satisfy the immutable exact-32 conversion qualification.",
+    "remaining_pool": "224 candidates, 28 per fixed cell, after excluding nine source lineages under image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from prescreen-v2, excluding all nine preceding source lineages under image/source/near-duplicate identities.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "Only a 32-winner collection can enter the rewrite phase. Confirmed collection or rewrite quality rejections remain terminal, and SFT remains separately unauthorized."
+}

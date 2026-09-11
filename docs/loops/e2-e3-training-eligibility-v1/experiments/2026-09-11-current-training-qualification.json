@@ -1,0 +1,15 @@
+{
+  "accepted_rows": 0,
+  "cell_counts": {},
+  "conversion_gate": "outputs/artifacts/micu-classifier-hcv-e2/dynamic-recovery-v1/reports/conversion-gate-after-rewrite.json",
+  "conversion_gate_sha256": "d828dd341950ad4bf51dd31e66fa58a4b591b96f315435938a3ade31a4e961a9",
+  "errors": [
+    "requires_exactly_32_unique_converted_rows",
+    "requires_four_rows_in_each_fixed_cell"
+  ],
+  "schema_version": "agrinet.e2-e3-training-eligibility-qualification/v1",
+  "sft_may_start": false,
+  "source": "outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json",
+  "source_sha256": "4240c0e79b3a97ace9ca9a3bd9006907b9d5418f40b50cedab344afd7c2bb67f",
+  "training_eligible": false
+}

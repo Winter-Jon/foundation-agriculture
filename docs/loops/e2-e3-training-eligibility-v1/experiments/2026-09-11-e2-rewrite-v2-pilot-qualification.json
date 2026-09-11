@@ -1,0 +1,18 @@
+{
+  "accepted_rows": 2,
+  "cell_counts": {
+    "open-en-pest": 1,
+    "option-en-pest": 1
+  },
+  "conversion_gate": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v2-pilot-v1/reports/conversion-gate.json",
+  "conversion_gate_sha256": "5a49c814c396a13112c71ab3d5f7bda1f5928287d5b8b8595eb0c5d864152337",
+  "errors": [
+    "requires_exactly_32_unique_converted_rows",
+    "requires_four_rows_in_each_fixed_cell"
+  ],
+  "schema_version": "agrinet.e2-e3-training-eligibility-qualification/v1",
+  "sft_may_start": false,
+  "source": "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-pilot-source.json",
+  "source_sha256": "685b6c4ca103ef470fa36f52fdc42b837158e6e5a764c50e82e80a42875ef1f5",
+  "training_eligible": false
+}

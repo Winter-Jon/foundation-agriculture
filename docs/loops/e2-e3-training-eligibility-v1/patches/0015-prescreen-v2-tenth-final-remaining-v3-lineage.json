@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0015-prescreen-v2-tenth-final-remaining-v3-lineage",
+  "created_at": "2026-09-11T09:53:43+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "f082ca27b950262aedb8a19e89d70391d1eb551cab500cee2e305938fa75b3e1",
+  "purpose": "Authorize the tenth and final future-only 32-image image-bound v3 E2 lineage from the fully audited remaining prescreen-v2 identities after ninth-lineage collection closed below the exact-32 barrier.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "ninth_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-ninth-source.json",
+    "ninth_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-ninth-v1/reports/collection-final.json",
+    "ninth_result": "R0/R1/R2 closed with 24 selected, six quality rejections, one local tool shortfall, and one terminal delivery shortfall after the same Classifier parent exhausted two fresh recovery attempts.",
+    "rejection_attribution": "Quality rejections exhausted confirmed routes; the local tool shortfall is separately reported; the delivery shortfall has exhausted its two-attempt recovery allowance. None is replayable.",
+    "remaining_pool": "Exactly 32 candidates remain after image/source/near-duplicate exclusion across all fourteen preceding E2 source lineages: four per fixed cell, P5=23 and P6=9."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze all and only the 32 remaining fresh identities, exactly four per fixed cell, under image/source/near-duplicate exclusion of all fourteen preceding source lineages; retain deterministic lower-pattern ordering for provenance.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "This final future-only sampling arm does not relax the exact 32-row/four-per-cell requirement. Confirmed quality rejects, delivery shortfalls, and tool shortfalls remain terminal for their source groups; SFT remains separately unauthorized."
+}

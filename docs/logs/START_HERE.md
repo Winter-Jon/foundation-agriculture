@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-08 17:04:55 CST
+Last updated: 2026-09-11 12:30:00 CST
 
 ## Repository state
 
@@ -22,32 +22,241 @@ normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
-### Classifier × HCV distillation — Scheme B grouped OOF is running
+### Current — E2 image-bound rewrite-v3: P1-first lineage reaches formal training eligibility
 
-The four-route research contract and offline preflight are documented in
-[classifier_distill.md](../rag/classifier_distill.md). The registered
-`rag-hcv-classifier-distill-preflight-v1` submit now checks the approved frozen
-registry, 107 Known / 104 Unknown roles, image and training provenance, historical
-exclusion identities, independent-image quotas, and paired-view budgets.
-57 focused tests passed (classifier boundary, request ledger, CLI, existing HCV
-plan/contract). The standalone request ledger persists intent before transport,
-retains raw responses/usage/latency, separates public/private budgets, deduplicates
-same-directory concurrent requests, and blocks replay after unknown delivery,
-invalid responses, truncation or event corruption. It is not wired to a live collector.
-The real local preflight verified 1,831 excluded dev/test SHA identities but
-returned exit 2 because `outputs/artifacts/hcv-classifier-distill/pilot-v1/` lacks
-`source.jsonl` and `exclusions.json`. Evidence:
-`outputs/artifacts/hcv-classifier-distill/pilot-v1/preflight/20260908T085127Z-315e2b9e/report.json`.
+The independently isolated `prescreen-v4` P1-first lineage has now closed
+collection and image-bound rewrite-v3 R0/R1/R2. Collection selected all 32
+groups; rewrite and independent private rewrite audit accepted all 32 groups;
+the conversion gate has exactly 32 unique rows, four per fixed cell. The
+formal qualification records `training_eligible=true` with no errors.
 
-The user selected Scheme B after the fresh-image capacity audit. Three grouped
-near-duplicate OOF classifier folds are now running on GPUs 1--3, with all
-three held-out prediction paths, conversion/audit tooling, and the 32-image
-source/readiness gates implemented. Fold-0 has reached epoch 4/50; folds 1
-and 2 each completed their first epoch. No teacher request has been sent and
-pilot training eligibility remains false. Next: wait for all managed folds to
-complete, evaluate each held-out fold, merge/audit predictions, then build and
-validate the 32-row source before starting the live Micu/RAG smoke. See the
-2026-W37 experiment record for volatile run IDs and evidence.
+This is a data-quality qualification, not permission to train: the immutable
+loop locks still set `sft_may_start=false`, and no SFT has been launched.
+Historical strict-canary evidence, contracts, old ledgers, and request IDs are
+unchanged. See
+`docs/loops/e2-e3-training-eligibility-v1/conclusions/2026-09-11-e2-prescreen-v4-p1-training-eligibility-true-sft-not-started.md`.
+
+### Historical — E2 image-bound rewrite-v3: v4 P6-first collection closes below the 32-winner barrier
+
+The independently isolated `prescreen-v4` P6-first collection is now closed.
+Its one managed R0 completed all 66 parent and 66 private parent-audit scopes;
+R1/R2 were zero-request closures because there were no unresolved deliveries.
+The final result is 31 selected groups and one terminal quality rejection, so
+it cannot enter rewrite, conversion, qualification, or SFT. This is a quality
+shortfall, not a provider-delivery shortfall: no rejected image may be replayed
+or replaced within the frozen campaign. `training_eligible=false` and
+`sft_may_start=false` remain mandatory. See
+`docs/loops/e2-e3-training-eligibility-v1/conclusions/2026-09-11-e2-prescreen-v4-p6-collection-closed-one-quality-shortfall.md`.
+
+### Historical — E2 image-bound rewrite-v3: P6-first rewrite phase closed below qualification
+
+The P6-first `prescreen-v3` lineage cleared collection exactly: 32 selected
+winners, no delivery/tool/quality shortfall, and formal R0/R1/R2 closure. Its
+image-bound rewrite-v3 phase then closed at 28 accepted rows and four terminal
+quality rejections. Conversion and qualification remain below the immutable
+32-row/four-per-cell bar; training eligibility and SFT permission are false.
+
+The four rewrite failures are confirmed quality outcomes, not delivery retry
+work. A future-only collection engine fix now recomputes route contract on
+audit-only recovery; frozen historical results remain unchanged. The next safe
+action is a new all-prior-lineage-excluded OOF pool, followed by a separate
+future-only patch and source only if the pool audit succeeds. See
+`docs/loops/e2-e3-training-eligibility-v1/conclusions/2026-09-11-e2-prescreen-v3-p6-collection-rewrite-closed-qualification-false.md`.
+
+### Historical — E2 image-bound rewrite-v3: seventh lower-pattern collection
+
+Six rebuilt-pool lineages are closed. The most recent sixth stable-order
+collection had fully delivered R0 (86 parent plus 86 audit outcomes) and empty
+R1/R2 closures, but only 27 selected winners and five confirmed quality
+rejections. It does not enter rewrite. Read-only sampling confirms these are
+quality failures, not delivery uncertainty. The first six rebuilt-pool lineages
+give directional (not contractual) evidence that frozen candidate pattern is
+more useful than OOF top-1 confidence.
+
+Patch `0012-prescreen-v2-seventh-lower-pattern-v3-lineage` has passed
+contract-lock validation. It freezes a new identity-isolated 32-row source with
+four rows per fixed cell, selected by ascending candidate pattern then sample
+ID. Its only active R0 is
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v2-seventh-r0-collect-v1/20260911T083654-5fc04488-a01`
+(PID 2026400 at last verification). Check its volatile managed status before
+relying on it; do not duplicate it. R1/R2 must derive exclusively from frozen
+summaries. Training eligibility and SFT permission remain false.
+
+### Historical — E2 image-bound rewrite-v3: prior independent source audit
+
+The fresh 32-row completion lineage has closed all collection and image-bound
+rewrite-v3 R0/R1/R2 barriers. Collection ended with 18 selected winners and 14
+confirmed quality rejections; all terminal delivery uncertainty was resolved.
+The image-bound rewrite phase produced 16 accepted conversion candidates and
+two confirmed quality rejections. Its qualification artifact at
+`docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-completion-qualification.json`
+proves the result remains below the immutable 32-row/four-per-cell standard.
+The planner now resolves selected parents from immutable R0/R1/R2 collection
+summaries, covering recovery-round winners without replay. Historical strict
+canary results and contracts remain unchanged. Training eligibility and SFT
+permission remain false. The next action is a read-only availability audit for
+another fully identity-isolated source; do not reuse this lineage. That audit is
+now complete: the frozen 320-row prescreen pool has only 24 unused candidates,
+exactly three per fixed cell, after six-lineage image/source/near-duplicate
+exclusion. It cannot yield another 32-row/four-per-cell source. A future
+campaign required a newly built identity-audited pool and an append-only
+provenance patch; this is now available as `prescreen-v2`. Its 320 rows have
+zero three-key identity overlap with all six old lineages and 40 candidates per
+cell. Patch 0006 binds its future-only provenance, and its 32-row v3 R0
+collection is live at
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-rewrite-v3-prescreen-v2-r0-collect-v1/20260911T060417-5fc04488-a01`
+(PID 1965244 at last verification). Check that volatile run before relying on
+it; SFT remains forbidden.
+
+### Micu × classifier × HCV E2 exploration — engineering/data-process loop complete; E3 classifier training running
+
+Three P6 class-holdout classifiers completed 50 epochs and full holdout scoring.
+Each uses 99 training classes and excludes one disjoint eight-class group; no
+held-out truth appears in its label map or Top-5. The original-weight Qwen and
+complete local AgriNet RAG pre-screens both completed 320/320 rows.
+
+The frozen E2 source at `outputs/artifacts/micu-classifier-hcv-e2/exploration-v1/source.jsonl`
+contains 160 independent images: 80 targeted plus 80 random, eight fixed cells x 20,
+and 40 P6 rows covering 16 of 24 held-out classes. Both collection runs are terminal
+with exit 0: the parent batch is at
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-exploration-v1/20260910T121119-5fc04488-a01`
+and the isolated audit/derivation batch is at
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-exploration-v1/20260910T152225-5fc04488-a01`.
+The final audit is `outputs/artifacts/micu-classifier-hcv-e2/exploration-v1/audit/final.{json,md}`:
+it reports engineering completion (`completion_ready=true`) but no quality-qualified
+corpus (`training_eligible=false`): 87 closed parents, 26 completed audits, and only
+1/3 closed G1/G2 derivations. Upstream delivery instability produced 130 retry-pending
+records; they are preserved in `audit/retry_pending.jsonl`, must use new request IDs
+in a separately versioned attempt, and are never automatically replayed. One public
+boundary incident is quarantined with no retry. SFT remains forbidden.
+
+The user-authorized retry-v1 is terminal with exit 0 at
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-retry-v1/20260910T173325-5fc04488-a01`.
+It processed all 130 retry-pending sidecar rows (67 parent, 60 parent-audit,
+2 G1, 1 G2-audit) into the separate root
+`outputs/artifacts/micu-classifier-hcv-e2/retry-v1`; the one quarantined public-boundary
+row remained absent. The retry audit at
+`outputs/artifacts/micu-classifier-hcv-e2/retry-v1/audit/final.{json,md}` verifies
+scope coverage, 151 unique new request IDs, zero overlap with original IDs, and no
+unresolved retry intent. It also confirms that delivery remains the limiter: 39 delivered,
+28 invalid, and 84 unknown-delivery results; only 4/67 parent retries closed, while
+G1 and G2-audit retries did not complete. Thus retry terminal accounting is complete,
+but no quality-qualified corpus exists and `training_eligible=false`; SFT remains forbidden.
+Further provider retries require a new explicit, separately versioned authorization.
+See the 2026-W37 experiment record.
+
+Micu endpoint comparison now selects the SLB path for future E2 attempts:
+`https://api-slb.micuapi.ai/v1`. With the same `micu_slb` credential, the main
+path `https://www.micuapi.ai/v1` returned HTTP 403 on all three `/models` probes,
+while SLB returned HTTP 200 on all three and exposed `gpt-5.6-terra`. The registered
+E2 experiment configs now carry this endpoint explicitly and the RAG CLI validates
+and injects it at runtime without writing credentials. SLB's minimal chat probes
+still returned service-side HTTP 500 or timed out, so endpoint selection fixes the
+authenticated route but does not remove the upstream generation reliability risk.
+
+The no-data SLB generation canary is terminal and blocks ordinary E2 retry-v2:
+`outputs/runs/rag/rag-micu-slb-generation-canary-v1/20260910T185853-5fc04488-a01`
+ended with exit 2, meaning the configured reliability gate failed rather than an
+implementation error. Its first independent 10-request round has 1 valid delivery
+and 9 `unknown_delivery` outcomes; all 10 new request IDs have terminal ledger
+results, no second round was sent, and `generation_ready_for_e2_retry_v2=false` in
+`outputs/artifacts/micu-slb-canary/v1/report.json`. Do not create E2 retry-v2
+until the provider generation service is repaired and a fresh no-data canary passes.
+
+`gpt-5.6-sol` improves over terra but still fails the same two-round gate. Its
+separate SLB canary at
+`outputs/runs/rag/rag-micu-slb-generation-canary-v2/20260910T191434-5fc04488-a01`
+completed 20 independent no-data requests: round 1 passed 10/10, round 2 passed
+8/10 with two `unknown_delivery` outcomes. All 20 new request IDs have terminal
+results, yet `generation_ready_for_e2_retry_v2=false` in
+`outputs/artifacts/micu-slb-canary/v2-sol/report.json`. The user explicitly
+authorized one narrow risk exception: a separately versioned `gpt-5.6-sol`
+retry-v2 preflight may be designed and, only after its own dry-run contract check,
+run at concurrency one for at most 16 selected retry scopes. It must use new
+request IDs and a new ledger, retain `training_eligible=false`, make no automatic
+replays, and end with an independent audit. This exception neither clears the
+canary gate nor authorizes a full retry or SFT.
+
+That authorized Sol retry-v2 preflight is now terminal: managed run
+`outputs/runs/rag/rag-micu-classifier-hcv-e2-retry-v2-sol-preflight-v1/20260910T193706-5fc04488-a01`
+exited 0 after its 16 frozen scopes. The independent final audit is
+`outputs/artifacts/micu-classifier-hcv-e2/retry-v2-sol-preflight/audit/final.{json,md}`.
+It proves exact selected-scope accounting (8 parent, 5 parent-audit, 2 G1, and
+1 G2-audit), 37 unique new intents with terminal results, and zero overlap with
+the 16 referenced original IDs. Delivery was 34 `delivered` and 3
+`unknown_delivery`; no unknown request was automatically replayed. Six parents
+closed, five private parent audits completed (3 accept, 2 reject), one G1 closed,
+and the G2 audit accepted. This is only an engineering preflight: two parent and
+one G1 scopes remain not completed, so `training_eligible=false`, `sft_started=false`,
+and no expansion or further retry is authorized automatically.
+
+### Active — E2 dynamic-route 32-image smoke, gated at fresh Sol canary
+
+The next E2 goal has frozen a new 32-image source at
+`outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json`: eight
+Open/Option × EN/ZH × disease/pest cells x four independent images, with zero
+image/source/near-duplicate-group overlap against exploration E2 and P1--P4
+target coverage of eight each. The remaining isolated prescreen images contain
+no random arm because exploration consumed that arm; the source records this
+shortfall explicitly and must be reported as a targeted routing smoke, not a
+random-sampling comparison.
+
+The staged collection is implemented but cannot begin until a fresh no-data Sol
+canary passes two serial 10/10 rounds. It fixes Direct x3 (temperature 0.5, no
+tools), Classifier x2 (temperature 0.2), then Classifier+RAG x1 (temperature
+0.2). Private audit selects only one earliest successful route per image; SFT
+remains forbidden. The credential was subsequently unlocked and the fresh strict
+gate ran at `outputs/runs/rag/rag-micu-slb-dynamic-smoke-canary-v1/20260910T215832-5fc04488-a01`.
+It failed closed in round 1: 9/10 valid `READY` deliveries and one
+`unknown_delivery`; its report is
+`outputs/artifacts/micu-slb-canary/v3-sol-dynamic-smoke/report.json`. Therefore
+round 2 and all 32 image requests remain absent. The source/controller are
+verified engineering artifacts only; no SFT, freeze, or scale-up is authorized
+until a fresh canary independently passes both 10/10 rounds.
+
+A new immutable v4 Sol canary was run after the offline contract work. It also
+failed in round 1, now at 8/10 strict `READY` deliveries with two terminal
+`DeliveryUnresolved` outcomes; round 2 was not sent. Its report is
+`outputs/artifacts/micu-slb-canary/v4-sol-dynamic-smoke/report.json` and sets
+`generation_ready_for_dynamic_smoke=false`. The separate v2 collection root is
+absent, so no dynamic-route image request or SFT has begun.
+
+Separately, an experimental delivery-recovery campaign used v4 only as a
+SHA-bound 8/10 recovery admission; it did not alter that strict historical
+failure. Its R0 collection completed under a new root with 175 logical scopes
+all confirmed delivered, so the immutable R1 and R2 replenishment manifests
+were empty. The final 32-group accounting is 24 `selected`, 7
+`quality_rejected`, 1 `tool_shortfall`, and zero `delivery_shortfall`. Evidence:
+`outputs/artifacts/micu-classifier-hcv-e2/dynamic-recovery-v1/reports/collection-final.json`.
+The separately authorized rewrite recovery is now also terminal. Its R0 had 23
+confirmed deliveries that failed the public rewrite contract and one
+`unknown_delivery`; immutable R1 replenished only that one logical rewrite scope
+with a new request ID, resolving delivery but again ending in quality rejection.
+R2 was an empty frozen boundary. The final rewrite accounting is therefore 24
+`quality_rejected`, zero accepted, zero delivery shortfall, and zero tool
+shortfall; no rewrite audit was eligible to run. Its conservative conversion gate
+admits zero student candidates (`training_eligible=false`, `sft_may_start=false`).
+Evidence: `outputs/artifacts/micu-classifier-hcv-e2/dynamic-recovery-v1/rewrite/reports/final.json`
+and `reports/conversion-gate-after-rewrite.json`. This remains an experiment
+result, not a revision to the strict canary contract or an authorization for SFT
+or scale-up.
+
+The controller now additionally rejects a nominal route that did not genuinely
+use its required tools, records the exact passed canary SHA, and requires an
+isolated public visual-reasoning rewrite plus rewrite audit before conversion.
+The final training form is a fixed four-section CoT (observations, nearby-class
+comparison, evidence, uncertainty), constrained to 1,400 English or 900 Chinese
+characters and converted to native Hermes tool roles. These are offline-tested
+contracts only; the failed v3 canary remains a hard pre-image-request blocker.
+
+The separate E3 category-fold contract remains frozen at
+`configs/sampling/micu-classifier-hcv-e3-classfold/contract-v1.yaml`: frozen RAG
+adjacency makes three class-disjoint folds feasible (36/36/35), every held-out
+class has a training-side neighbour, classifier labels exclude held-out classes,
+and RAG keeps the full registry. Three 2×A800 classifier runs (one per fold)
+passed their 20-step DDP smoke gate and are running their 50-epoch formal phase
+on GPUs 1--6. They reuse the completed formal ViT-L MAE encoder, report only
+in-label-space Known-dev metrics, and do not start teacher collection or SFT.
 
 ### Running — OpenAgri v3 Known-only ViT-L MAE pretraining
 

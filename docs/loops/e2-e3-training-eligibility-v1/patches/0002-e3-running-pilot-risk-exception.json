@@ -1,0 +1,23 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0002-e3-running-pilot-risk-exception",
+  "created_at": "2026-09-11T09:30:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "2a108be234678ba3fce200215c725f62f40bc5142a36e42b6235d59c9e1b3865",
+  "purpose": "User-authorized, independent 8-cell x 1 E2 sampling validation while formal E3 training remains volatile.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "scope": {
+    "campaign": "new E2 pilot only",
+    "source": "eight fresh and historically isolated image groups, one per fixed cell",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true
+  },
+  "e3_state": "running; this exception is evidence-only and is not an E3 completion claim",
+  "canary_state": "historical strict canary remains false and is neither overridden nor passed",
+  "qualification_limit": "This eight-row pilot cannot satisfy the immutable 32-row training qualification and cannot start SFT."
+}

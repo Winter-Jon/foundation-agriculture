@@ -1,0 +1,30 @@
+{
+  "all_formal_training_verified": false,
+  "folds": [
+    {
+      "exit_code": null,
+      "fold": 0,
+      "pid": 1822113,
+      "status": "running",
+      "status_path": "outputs/runs/vision/vision-openagri-v3-known-vitl-e3-fold0-v1/20260910T235014-5fc04488-a01/status.json"
+    },
+    {
+      "exit_code": null,
+      "fold": 1,
+      "pid": 1822101,
+      "status": "running",
+      "status_path": "outputs/runs/vision/vision-openagri-v3-known-vitl-e3-fold1-v1/20260910T235014-5fc04488-a01/status.json"
+    },
+    {
+      "exit_code": null,
+      "fold": 2,
+      "pid": 1822102,
+      "status": "running",
+      "status_path": "outputs/runs/vision/vision-openagri-v3-known-vitl-e3-fold2-v1/20260910T235014-5fc04488-a01/status.json"
+    }
+  ],
+  "next_phase": "monitor-e3",
+  "schema_version": "agrinet.e2-e3-training-eligibility-e3-status/v1",
+  "sft_may_start": false,
+  "teacher_collection_authorized": false
+}

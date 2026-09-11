@@ -1,0 +1,32 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0007-prescreen-v2-second-v3-lineage",
+  "created_at": "2026-09-11T14:40:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "4692c4492daa91ad8ad6cb508200b9403cc31408ac9999e207d47697efb95858",
+  "purpose": "Authorize a second future-only 32-image image-bound v3 E2 lineage from the remaining rebuilt prescreen-v2 pool after the first such lineage closed at 30 accepted rows.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "first_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-source.json",
+    "first_lineage_source_sha256": "51fa0a60b3d1b1990c47e0918e637c2d85e440d074a3425957d131fe889f2d5c",
+    "rewrite_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-v1/rewrite/reports/final.json",
+    "conversion_gate": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-v1/reports/conversion-gate.json",
+    "qualification": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-qualification.json",
+    "result": "30 accepted rows; open-en-disease and open-zh-pest have three rows each; all other fixed cells have four.",
+    "sample_validation": "One accepted item from each fixed cell passed image SHA, closed-rewrite, private-audit, and option-letter checks (8/8).",
+    "remaining_pool": "288 candidates, 36 per fixed cell, after excluding the first prescreen-v2 campaign on image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from prescreen-v2, excluding all seven earlier source lineages including the first prescreen-v2 campaign.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "Only a unique collection winner with a closed image-bound rewrite, independent private-audit acceptance, and conversion-gate admission can count. Confirmed rejects and the preceding campaign identities remain excluded. SFT remains separately unauthorized."
+}

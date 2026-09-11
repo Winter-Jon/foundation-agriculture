@@ -1,0 +1,26 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0001-rewrite-structure-v2",
+  "created_at": "2026-09-11T01:20:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": null,
+  "purpose": "Define an offline-validated future rewrite schema that makes the public observation and comparison obligations machine-verifiable.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "future_only_changes": {
+    "rewrite_schema": "Structured JSON with reasoning and final plus separately enumerable visual_observations and candidate_comparisons.",
+    "direct_route_boundary": "Direct rewrites may refer only to visible image/question evidence and must not name classifier, retrieval, RAG, scores, or ranks.",
+    "validation": "Require at least three independent observations and three candidate-comparison entries before rendering the four-section student-visible reasoning.",
+    "fixed_final": "The final answer remains byte-identical to the closed public parent."
+  },
+  "offline_acceptance": [
+    "Historical failure analysis is reproduced without provider calls.",
+    "Schema/parser/validator tests cover Direct and tool-using routes, English and Chinese, Option answer projection, private-boundary rejection, and fixed-final preservation.",
+    "No historical rejected rewrite is converted or relabelled accepted by this patch."
+  ],
+  "provider_policy": "After E3 aggregation and offline acceptance, only a separately authorized 8-cell x 1 new-lineage pilot may use provider calls; R0/R1/R2 recovery and independent rewrite audit remain mandatory."
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0013-prescreen-v2-eighth-lower-pattern-v3-lineage",
+  "created_at": "2026-09-11T16:58:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "be3ce1d0f0b3954dfc07afef309701473aaf1e6e19631eaa3d58c971b612629d",
+  "purpose": "Authorize an eighth future-only 32-image image-bound v3 E2 lineage using deterministic lower candidate-pattern ordering from the remaining rebuilt prescreen-v2 pool.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "seventh_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-seventh-source.json",
+    "seventh_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-seventh-v1/reports/collection-final.json",
+    "seventh_result": "R0 had 87 delivered parent and 87 delivered audit outcomes; R1/R2 were explicit zero-request closures; collection closed at 31 selected and one confirmed quality rejection.",
+    "rejection_attribution": "The rejected open-en disease P3 item was a healthy potato leaf whose classifier top-1 was healthy soybean leaf. Direct, classifier, and RAG routes were all confirmed quality rejects; this is not a delivery replay candidate.",
+    "remaining_pool": "96 candidates, 12 per fixed cell, after excluding thirteen preceding source lineages under image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Select four fresh identities per fixed cell by ascending frozen candidate pattern (P3 before P4/P5/P6), then sample ID; exclude all thirteen preceding source lineages under image/source/near-duplicate identities.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "This future-only sampling arm does not relax the exact 32-row/four-per-cell requirement. Confirmed quality rejections remain terminal and SFT remains separately unauthorized."
+}

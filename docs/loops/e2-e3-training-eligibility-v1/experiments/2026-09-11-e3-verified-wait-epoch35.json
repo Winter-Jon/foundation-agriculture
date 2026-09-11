@@ -1,0 +1,14 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-verified-wait/v1",
+  "observed_at": "2026-09-11T01:52:36+08:00",
+  "reason": "All three E3 formal runs remain live and have not reached the 50-epoch terminal evaluation barrier.",
+  "folds": [
+    {"fold": 0, "status": "running", "pid": 1822113, "epoch": 35, "latest_macro_f1": 0.924869},
+    {"fold": 1, "status": "running", "pid": 1822101, "epoch": 35, "latest_macro_f1": 0.895064},
+    {"fold": 2, "status": "running", "pid": 1822102, "epoch": 35, "latest_macro_f1": 0.951045}
+  ],
+  "next_action": "After all three successful terminal status records: evaluate each best checkpoint once on test_known, then aggregate E3 evidence.",
+  "terminal_aggregate_allowed": false,
+  "e2_provider_pilot_allowed": false,
+  "sft_may_start": false
+}

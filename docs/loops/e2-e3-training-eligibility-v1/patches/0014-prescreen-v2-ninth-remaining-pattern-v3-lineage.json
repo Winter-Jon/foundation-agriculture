@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0014-prescreen-v2-ninth-remaining-pattern-v3-lineage",
+  "created_at": "2026-09-11T09:23:03+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "31758c3725ec9163a924f9e4cf7786b3f4dc33ecd91e04772d44d353978af97a",
+  "purpose": "Authorize a ninth future-only 32-image image-bound v3 E2 lineage from the audited remaining prescreen-v2 pool after the eighth lineage closed below the exact-32 barrier.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "eighth_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-eighth-source.json",
+    "eighth_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-eighth-v1/reports/collection-final.json",
+    "eighth_result": "R0 had 77 delivered parents and 77 delivered audits plus one unknown-delivery parent; R1 recovered exactly that scope with fresh parent and audit delivery; R2 was an explicit zero-request closure; collection closed at 26 selected and six confirmed quality rejections.",
+    "rejection_attribution": "All six final rejects exhausted confirmed route attempts with zero unresolved scopes. They are terminal quality findings and are not delivery-replay candidates.",
+    "remaining_pool": "64 candidates, eight per fixed cell, remain after read-only image/source/near-duplicate exclusion across all thirteen preceding E2 source lineages; frozen pattern counts are P4=20, P5=35, P6=9."
+  },
+  "future_only_changes": {
+    "source_selection": "Select exactly four fresh identities per fixed cell by ascending frozen candidate pattern (P4 before P5/P6), then sample ID; exclude all thirteen preceding source lineages under image/source/near-duplicate identity.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "This future-only sampling arm does not relax the exact 32-row/four-per-cell requirement. Confirmed quality rejections remain terminal and SFT remains separately unauthorized."
+}

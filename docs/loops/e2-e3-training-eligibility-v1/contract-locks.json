@@ -1,0 +1,24 @@
+{
+  "contracts": [
+    {
+      "name": "e2-exploration",
+      "path": "configs/sampling/micu-classifier-hcv-e2/contract-v1.yaml",
+      "sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850"
+    },
+    {
+      "name": "e3-adjacent-classfold",
+      "path": "configs/sampling/micu-classifier-hcv-e3-classfold/contract-v1.yaml",
+      "sha256": "e040bd8155845dfd7295bdaa69430e955feb269908b2dfd8e85a1afa556fef7a"
+    }
+  ],
+  "created_at": "2026-09-10T17:20:20.965586+00:00",
+  "invariants": {
+    "automatic_replay_allowed": false,
+    "contracts_are_read_only": true,
+    "rows_per_fixed_cell_required": 4,
+    "sft_may_start": false,
+    "strict_canary_history_is_read_only": true,
+    "training_rows_required": 32
+  },
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-locks/v1"
+}

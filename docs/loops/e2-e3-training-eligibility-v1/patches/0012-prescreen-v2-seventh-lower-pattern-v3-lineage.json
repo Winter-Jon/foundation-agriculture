@@ -1,0 +1,30 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0012-prescreen-v2-seventh-lower-pattern-v3-lineage",
+  "created_at": "2026-09-11T16:36:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "a1e9b3c6d59a8eaef096c5bb2d58a806dee98ef26f79aa6bdc0a7a2e610f9352",
+  "purpose": "Authorize a seventh future-only 32-image image-bound v3 E2 lineage using deterministic lower candidate-pattern ordering from the remaining rebuilt prescreen-v2 pool.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "sixth_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-sixth-source.json",
+    "sixth_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-sixth-v1/reports/collection-final.json",
+    "sixth_result": "R0 had 86 delivered parent and 86 delivered audit outcomes; R1/R2 were explicit zero-request closures; collection closed at 27 selected and five confirmed quality rejections.",
+    "read_only_sampling_validation": "The five rejections were confirmed quality findings rather than provider-delivery uncertainty; classifier-led answers conflicted with visible evidence/private truth, including one image/label life-stage mismatch.",
+    "pattern_observation": "Across six closed rebuilt-pool collection lineages, accepted/total was P2 18/19, P3 8/11, P4 10/13, P5 5/6, P6 30/31. This is directional small-sample evidence, not a new quality contract.",
+    "remaining_pool": "128 candidates, 16 per fixed cell, after excluding twelve preceding source lineages under image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Select four fresh identities per fixed cell by ascending frozen candidate pattern (P2 before P3/P4/P5/P6), then sample ID; exclude all twelve preceding source lineages under image/source/near-duplicate identities.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "This future-only sampling arm does not relax the exact 32-row/four-per-cell requirement. Confirmed quality rejections remain terminal and SFT remains separately unauthorized."
+}

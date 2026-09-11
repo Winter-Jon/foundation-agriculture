@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0006-rebuilt-oof-prescreen-v2-lineage",
+  "created_at": "2026-09-11T13:00:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "d0f73d8b0e8567425d05029cdd1f14b45e424d4eb14d03cb9f2ec0118bbef798",
+  "purpose": "Authorize one future-only image-bound v3 lineage from a rebuilt OOF prescreen pool after the original 320-row pool was identity-exhausted.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "completion_qualification": "experiments/2026-09-11-e2-rewrite-v3-completion-qualification.json",
+    "completion_result": "16 unique accepted conversion rows; no terminal collection delivery shortfall; strict 32-row qualification false.",
+    "old_pool_exhaustion": "The old 320-row pool has 24 unused identities, exactly three per fixed cell, after six-lineage exclusion.",
+    "new_pool": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v2/source-320.jsonl",
+    "new_pool_isolation": "320 unique image/source/near-duplicate identities, zero overlap with dynamic smoke, exploration, v2 pilot, v2 formal, v3 formal, and v3 completion sources; 40 rows per fixed cell."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four identities per fixed cell from prescreen-v2 only after all six prior lineages are excluded.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "pool_provenance": "OOF v2 predictions plus canonical registry and frozen 107-class label-map evidence."
+  },
+  "qualification": "New rows may count only after unique collection winner, closed image-bound rewrite, independent private audit accept, and conversion gate. Existing confirmed quality outcomes are never replayed. SFT remains separately unauthorized."
+}

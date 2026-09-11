@@ -1,0 +1,30 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0017-prescreen-v3-p6-first-v3-lineage",
+  "created_at": "2026-09-11T11:00:41+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "74fc7048094d1844ded70b77f4593b10a9e02d32c470ad32efa85833f5960d82",
+  "purpose": "Authorize one future-only image-bound v3 E2 class-holdout-focused lineage from the uncontacted remainder of the independently audited prescreen-v3 pool.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "predecessor_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v3-p1-source.json",
+    "predecessor_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p1-v1/reports/collection-final.json",
+    "predecessor_result": "R0/R1/R2 resolved all delivery uncertainty but closed at 24 selected and eight confirmed quality rejections, below the immutable collection barrier.",
+    "lineage_integrity_fix": "The future recovery engine rechecks route contract status on audit-only recovery; focused E2/E3 tests cover this fix. Frozen predecessor ledgers and reports are not modified.",
+    "remaining_pool": "48 uncontacted three-key-independent prescreen-v3 candidates remain: exactly six per fixed cell; each cell has three P6 candidates and at least one P1 candidate.",
+    "quality_attribution": "In ten closed prescreen-v2 collections P6 had 39 selected and one confirmed quality rejection, while P1 had 108 selected and four confirmed quality rejections. This is directional candidate-selection evidence, not an acceptance-rule change."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from the 48 uncontacted prescreen-v3 candidates, excluding all prior E2 sources under image/source/near-duplicate identity. Select three P6 class-holdout candidates then one P1 lower-pattern fallback per cell, deterministically.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "The exact 32 unique collection winner and four-per-fixed-cell barrier remains unchanged. Only accepted image-bound rewrites with accepted independent private audits may enter conversion. Quality rejects and R2 delivery shortfalls are terminal. SFT remains separately unauthorized."
+}

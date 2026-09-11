@@ -1,0 +1,34 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0018-prescreen-v4-p6-first-rewrite-v3-lineage",
+  "created_at": "2026-09-11T11:34:37+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "2b4a28424f0851421b5b714dd397b7568fe7e9c82b1bf5aaf7be428477ca7b51",
+  "purpose": "Authorize one future-only image-bound v3 E2 lineage from a new all-prior-lineage-excluded OOF pool after P6-first collection passed but rewrite conversion closed below the immutable qualification bar.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "predecessor_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p6-v1/reports/collection-final.json",
+    "predecessor_rewrite_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p6-v1/rewrite/reports/final.json",
+    "predecessor_qualification": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v3-p6-qualification.json",
+    "predecessor_result": "Collection was 32 selected with no shortfall, but rewrite final was 28 accepted and four terminal quality rejections; conversion qualification is false.",
+    "pool": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v4/source-80.jsonl",
+    "pool_sha256": "d95a18cea14b2ec9cc2bd76fddff35d5fc8c6133ad4eaf22d41edad36505176e",
+    "pool_summary": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v4/summary.json",
+    "pool_summary_sha256": "95c625eee29e40bc4ced347d719402e65dd924dceb2bd2ea11d4745fa7aed461",
+    "pool_isolation": "80 readable images, 10 per fixed cell, with zero image/source/near-duplicate overlap against every previous E2 source lineage.",
+    "quality_attribution": "The previous P6-first rewrite failures are terminal quality outcomes and excluded from this pool. P6-first selection remains directional sampling evidence only; audit and conversion requirements are unchanged."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from prescreen-v4 only, after three-key exclusion of all prior E2 sources. Select three P6 class-holdout candidates and one P1 fallback per cell deterministically.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "No threshold is relaxed: 32 unique collection winners, four rows per fixed cell, accepted image-bound rewrite, accepted independent private rewrite audit, and conversion gate are mandatory. SFT remains separately unauthorized."
+}

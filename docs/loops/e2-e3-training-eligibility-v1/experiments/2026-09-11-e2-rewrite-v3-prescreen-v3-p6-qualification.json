@@ -1,0 +1,24 @@
+{
+  "accepted_rows": 28,
+  "cell_counts": {
+    "open-en-disease": 3,
+    "open-en-pest": 4,
+    "open-zh-disease": 3,
+    "open-zh-pest": 4,
+    "option-en-disease": 4,
+    "option-en-pest": 2,
+    "option-zh-disease": 4,
+    "option-zh-pest": 4
+  },
+  "conversion_gate": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v3-p6-v1/reports/conversion-gate.json",
+  "conversion_gate_sha256": "ebd85b17446e9fd9b7e9d9488cbef6be9aa019cb3d9e471aa4357e0f82ed7649",
+  "errors": [
+    "requires_exactly_32_unique_converted_rows",
+    "requires_four_rows_in_each_fixed_cell"
+  ],
+  "schema_version": "agrinet.e2-e3-training-eligibility-qualification/v1",
+  "sft_may_start": false,
+  "source": "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v3-prescreen-v3-p6-source.json",
+  "source_sha256": "9f6096aea70b8c423f39ad29fba8cd2369eada30490e670299010b6a8ab9b031",
+  "training_eligible": false
+}

@@ -1,0 +1,33 @@
+{
+  "automatic_replay_allowed": false,
+  "cell_counts": {
+    "open-en-disease": 1,
+    "open-en-pest": 1,
+    "open-zh-disease": 1,
+    "open-zh-pest": 1,
+    "option-en-disease": 1,
+    "option-en-pest": 1,
+    "option-zh-disease": 1,
+    "option-zh-pest": 1
+  },
+  "contract_patch": "docs/loops/e2-e3-training-eligibility-v1/patches/0001-rewrite-structure-v2.json",
+  "contract_patch_sha256": "2a108be234678ba3fce200215c725f62f40bc5142a36e42b6235d59c9e1b3865",
+  "e3_aggregate": null,
+  "e3_aggregate_sha256": null,
+  "e3_generalization_evidence_complete": false,
+  "new_lineage_required": true,
+  "provider_request_authorized": true,
+  "risk_exception_patch": "docs/loops/e2-e3-training-eligibility-v1/patches/0002-e3-running-pilot-risk-exception.json",
+  "risk_exception_patch_sha256": "b6378e717a6af5b5bc77ff44ddfc8b055563002c8b3f2ec6dc0d5731123ace3b",
+  "rounds": [
+    "R0",
+    "R1",
+    "R2"
+  ],
+  "schema_version": "agrinet.e2-e3-training-eligibility-pilot-preflight/v1",
+  "sft_may_start": false,
+  "source": "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-pilot-source.json",
+  "source_sha256": "685b6c4ca103ef470fa36f52fdc42b837158e6e5a764c50e82e80a42875ef1f5",
+  "strict_canary_overridden": false,
+  "training_eligible": false
+}

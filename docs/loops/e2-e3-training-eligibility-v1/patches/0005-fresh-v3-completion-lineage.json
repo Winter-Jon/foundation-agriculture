@@ -1,0 +1,26 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0005-fresh-v3-completion-lineage",
+  "created_at": "2026-09-11T12:20:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "b540682461e4d94ee222c413ecd995eed51f64dd77dad4023ba40c4f1370c1db",
+  "purpose": "Authorize a second fresh image-bound v3 32-row lineage after the first v3 campaign demonstrates 20 accepted rows but cannot replay its quality rejections.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "v3_formal_qualification": "experiments/2026-09-11-e2-rewrite-v3-formal-qualification.json",
+    "v3_result": "20 accepted conversion rows, no terminal delivery shortfall, and strict qualification still false.",
+    "remaining_pool": "56 identity-isolated candidates remain after excluding all previous E2 lineages, seven per fixed cell."
+  },
+  "future_only_changes": {
+    "source_selection": "Deterministically choose four fresh P1-P4 candidates per cell before P5 when candidates remain, while retaining the original fixed cell balance.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true
+  },
+  "qualification": "New rows may count only after unique collection winner, closed image-bound rewrite, independent private audit accept, and conversion gate. Existing confirmed quality outcomes are never replayed. SFT remains separately unauthorized."
+}

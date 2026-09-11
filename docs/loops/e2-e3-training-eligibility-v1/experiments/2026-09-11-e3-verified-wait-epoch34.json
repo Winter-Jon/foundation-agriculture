@@ -1,0 +1,13 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-verified-wait/v1",
+  "observed_at": "2026-09-11T01:50:29+08:00",
+  "reason": "Three formal E3 folds are the live prerequisite for terminal evaluation and aggregate.",
+  "folds": [
+    {"fold": 0, "status": "running", "pid": 1822113, "epoch": 34, "latest_macro_f1": 0.922919},
+    {"fold": 1, "status": "running", "pid": 1822101, "epoch": 34, "latest_macro_f1": 0.90281},
+    {"fold": 2, "status": "running", "pid": 1822102, "epoch": 34, "latest_macro_f1": 0.945112}
+  ],
+  "terminal_aggregate_allowed": false,
+  "e2_provider_pilot_allowed": false,
+  "sft_may_start": false
+}

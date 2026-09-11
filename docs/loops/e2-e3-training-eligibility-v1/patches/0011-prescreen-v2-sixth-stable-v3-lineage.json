@@ -1,0 +1,29 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0011-prescreen-v2-sixth-stable-v3-lineage",
+  "created_at": "2026-09-11T16:15:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "820588b2b7f4d2c072e1c2c8d47861b407421c4f797d397452e0be2df707ee6f",
+  "purpose": "Authorize a sixth future-only 32-image image-bound v3 E2 lineage using deterministic stable identifier ordering from the remaining rebuilt prescreen-v2 pool.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "fifth_lineage_source": "experiments/2026-09-11-e2-rewrite-v3-prescreen-v2-fifth-source.json",
+    "fifth_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-fifth-v1/reports/collection-final.json",
+    "fifth_result": "80 parent and 80 audit outcomes were delivered in R0; R1/R2 were explicit zero-request closures; collection closed at 29 selected and three confirmed quality rejects.",
+    "negative_sampling_result": "Descending OOF top-1 confidence did not improve collection qualification: one reject had score 0.918, so confidence is not treated as a sufficient collection-quality proxy.",
+    "remaining_pool": "160 candidates, 20 per fixed cell, after excluding eleven source lineages under image/source/near-duplicate identity."
+  },
+  "future_only_changes": {
+    "source_selection": "Select four fresh identities per fixed cell by stable sample ID order, excluding all eleven preceding source lineages under image/source/near-duplicate identities.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "This future-only sampling arm does not relax the exact 32-row/four-per-cell requirement. Confirmed quality rejections remain terminal and SFT remains separately unauthorized."
+}

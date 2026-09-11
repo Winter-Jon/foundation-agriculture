@@ -1,0 +1,2862 @@
+{
+  "automatic_replay_allowed": false,
+  "cell_counts": {
+    "open-en-disease": 4,
+    "open-en-pest": 4,
+    "open-zh-disease": 4,
+    "open-zh-pest": 4,
+    "option-en-disease": 4,
+    "option-en-pest": 4,
+    "option-zh-disease": 4,
+    "option-zh-pest": 4
+  },
+  "prior_source_sha256": {
+    "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-campaign-source.json": "f411e8744cb1578a8219ec2c7d925866155b6ceb99743a5cbbec12a0d6ccb09f",
+    "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-pilot-source.json": "685b6c4ca103ef470fa36f52fdc42b837158e6e5a764c50e82e80a42875ef1f5",
+    "outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json": "4240c0e79b3a97ace9ca9a3bd9006907b9d5418f40b50cedab344afd7c2bb67f",
+    "outputs/artifacts/micu-classifier-hcv-e2/exploration-v1/source.jsonl": "b3f64909cad527842f576bdddaec1035f954581d1d32e5ce2b16e1a034a8962d"
+  },
+  "prior_sources": [
+    "outputs/artifacts/micu-classifier-hcv-e2/dynamic-smoke-v1/source.json",
+    "outputs/artifacts/micu-classifier-hcv-e2/exploration-v1/source.jsonl",
+    "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-pilot-source.json",
+    "docs/loops/e2-e3-training-eligibility-v1/experiments/2026-09-11-e2-rewrite-v2-campaign-source.json"
+  ],
+  "rows": [
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:46c705e283eaf689b29176f888073556b61e8b0693b9317762f6fc44797d2a55",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04128/N04128_P04989.jpg",
+      "image_sha256": "46c705e283eaf689b29176f888073556b61e8b0693b9317762f6fc44797d2a55",
+      "language": "en",
+      "near_duplicate_group_id": "phash:37eec47bd6bdc65d068394e29539a4b0205888ef82e1c41523be0c333203783a",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "46c705e283eaf689b29176f888073556b61e8b0693b9317762f6fc44797d2a55",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04112",
+            "name": "tomato bacterial spot",
+            "name_zh": "番茄斑点病",
+            "score": 0.48999273777008057
+          },
+          {
+            "code": "N04128",
+            "name": "tomato yellow leaf curl disease",
+            "name_zh": "番茄黄化曲叶病毒病",
+            "score": 0.34246549010276794
+          },
+          {
+            "code": "N04126",
+            "name": "tomato target spot",
+            "name_zh": "番茄靶斑病",
+            "score": 0.007601360324770212
+          },
+          {
+            "code": "N04125",
+            "name": "tomato two-spotted spider mite infestation",
+            "name_zh": "番茄二斑叶螨病",
+            "score": 0.004488690290600061
+          },
+          {
+            "code": "N04032",
+            "name": "cherry powdery mildew",
+            "name_zh": "樱桃白粉病",
+            "score": 0.004324399400502443
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N04128",
+        "truth_name": "tomato yellow leaf curl disease"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-46c705e283eaf689b291",
+      "source_group_id": "source:ecf94824e1f1fd96ee5ae91a4d7092f94d1f1050431841b5c3e69aa178f5514a",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:55c97f4d102565dc9156b5708aa58a5677f4770b52ff02c2f78fc6bcf9652548",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04044/N04044_P00043.jpg",
+      "image_sha256": "55c97f4d102565dc9156b5708aa58a5677f4770b52ff02c2f78fc6bcf9652548",
+      "language": "en",
+      "near_duplicate_group_id": "phash:d6afa8af2b43c0413c2cfb4cc97b05d80e772f74430018029da4dc991273db5a",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "55c97f4d102565dc9156b5708aa58a5677f4770b52ff02c2f78fc6bcf9652548",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04045",
+            "name": "corn ear rot",
+            "name_zh": "玉米穗腐病",
+            "score": 0.9221660494804382
+          },
+          {
+            "code": "N04034",
+            "name": "citrus black spot",
+            "name_zh": "柑橘黑斑病",
+            "score": 0.002035084180533886
+          },
+          {
+            "code": "N05058",
+            "name": "slug",
+            "name_zh": "蛞蝓",
+            "score": 0.0019221182446926832
+          },
+          {
+            "code": "N04051",
+            "name": "southern corn leaf blight (cochliobolus heterostrophus)",
+            "name_zh": "玉米小斑病",
+            "score": 0.001790094655007124
+          },
+          {
+            "code": "N04005",
+            "name": "apple fruit scab",
+            "name_zh": "苹果果实黑星病",
+            "score": 0.00165348662994802
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P5",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P5",
+        "truth_code": "N04044",
+        "truth_name": "corn common smut ustilago maydis"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-55c97f4d102565dc9156",
+      "source_group_id": "source:4125706c472e06c49b47abe3c5a880c387b93d412ef2c74ba482784ff834aefd",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:63455fb427bddd84d4e820076510b668ac3de3da7297a17cbd9a5dcca9e18da3",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04003/N04003_P02871.jpg",
+      "image_sha256": "63455fb427bddd84d4e820076510b668ac3de3da7297a17cbd9a5dcca9e18da3",
+      "language": "en",
+      "near_duplicate_group_id": "phash:43fc0aff766cc1488b037ec479d48b54fc6b30f5260f15146d9d52b38e178252",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "63455fb427bddd84d4e820076510b668ac3de3da7297a17cbd9a5dcca9e18da3",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04006",
+            "name": "apple leaf healthy",
+            "name_zh": "苹果健康叶片",
+            "score": 0.7108092308044434
+          },
+          {
+            "code": "N04003",
+            "name": "apple frog eye leaf spot",
+            "name_zh": "苹果蛙眼叶斑病",
+            "score": 0.17352823913097382
+          },
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.0024274562019854784
+          },
+          {
+            "code": "N05021",
+            "name": "empoasca fabae",
+            "name_zh": "甘薯叶蝉",
+            "score": 0.002120319055393338
+          },
+          {
+            "code": "N05038",
+            "name": "mecopoda elongata",
+            "name_zh": "长腿蚂蚁",
+            "score": 0.0018422292778268456
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N04003",
+        "truth_name": "apple frog eye leaf spot"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-63455fb427bddd84d4e8",
+      "source_group_id": "source:de71d50a5ad147a9a92cc1e347b2b9feb6cc4eb1be39ae37ba9d537c2d4373ce",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:90e68f357f63a81a3d941bf0665631c73e3aed04b8eb10f343a71862541ae95d",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04100/N04100_P00050.jpg",
+      "image_sha256": "90e68f357f63a81a3d941bf0665631c73e3aed04b8eb10f343a71862541ae95d",
+      "language": "en",
+      "near_duplicate_group_id": "phash:db530e7e27acd4e6bf29033ed3653a31e4dde50fdb6cd0b6bbe13acd792cd405",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "90e68f357f63a81a3d941bf0665631c73e3aed04b8eb10f343a71862541ae95d",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.5946534276008606
+          },
+          {
+            "code": "N05066",
+            "name": "tetranychus urticae",
+            "name_zh": "二斑叶螨",
+            "score": 0.0319707952439785
+          },
+          {
+            "code": "N04108",
+            "name": "sunflower healthy leaf",
+            "name_zh": "向日葵健康叶片",
+            "score": 0.02758757397532463
+          },
+          {
+            "code": "N04104",
+            "name": "strawberry leaf spot",
+            "name_zh": "草莓叶斑病",
+            "score": 0.024923700839281082
+          },
+          {
+            "code": "N04100",
+            "name": "strawberry fusarium wilt",
+            "name_zh": "草莓枯萎病",
+            "score": 0.02023501694202423
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04100",
+        "truth_name": "strawberry fusarium wilt"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-90e68f357f63a81a3d94",
+      "source_group_id": "source:10105629b3567fff40d32f5001e617cc7c70b727eb0d220ff4a60d1d614a4bae",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:8bc853416e2e92438b2452d96d3f1f637791b61e98e77345282c33fd0c7174d8",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05041/N05041_P00117.jpg",
+      "image_sha256": "8bc853416e2e92438b2452d96d3f1f637791b61e98e77345282c33fd0c7174d8",
+      "language": "en",
+      "near_duplicate_group_id": "phash:1f82c32c7ef9a5d0c06eb2e78a3fa313833ec9f94d05ddb80137f6033c3767cf",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "8bc853416e2e92438b2452d96d3f1f637791b61e98e77345282c33fd0c7174d8",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05041",
+            "name": "myzus persicae",
+            "name_zh": "桃蚜",
+            "score": 0.4349176287651062
+          },
+          {
+            "code": "N05009",
+            "name": "brevicoryne brassicae",
+            "name_zh": "甘蓝蚜",
+            "score": 0.38829538226127625
+          },
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.014822532422840595
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.006372626405209303
+          },
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.0035704828333109617
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N05041",
+        "truth_name": "myzus persicae"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-8bc853416e2e92438b24",
+      "source_group_id": "source:e601e5fae670d8db3f9c299d9614d5606e7683df16d8c818b5e200656cad961a",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:9a9c16ef5e397ce68b0c776546d894f65f5bb1716d943d68fb63e208caf219f0",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05029/N05029_P00704.jpg",
+      "image_sha256": "9a9c16ef5e397ce68b0c776546d894f65f5bb1716d943d68fb63e208caf219f0",
+      "language": "en",
+      "near_duplicate_group_id": "phash:d8c99936fa006c1fa3bb1386cd1441c577b137a92166e7d77948a621ef0db130",
+      "prediction": {
+        "checkpoint_sha256": "8df04adb5419a576433f71fedd213196bda77b15749180b0b8cff032be83b134",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 2,
+        "image_sha256": "9a9c16ef5e397ce68b0c776546d894f65f5bb1716d943d68fb63e208caf219f0",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05032",
+            "name": "icerya purchasi",
+            "name_zh": "吹棉蚧",
+            "score": 0.4456688463687897
+          },
+          {
+            "code": "N05009",
+            "name": "brevicoryne brassicae",
+            "name_zh": "甘蓝蚜",
+            "score": 0.08003298938274384
+          },
+          {
+            "code": "N04073",
+            "name": "pepper anthracnose",
+            "name_zh": "辣椒炭疽病",
+            "score": 0.062133125960826874
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.034003615379333496
+          },
+          {
+            "code": "N04122",
+            "name": "tomato pseudomonas syringae pv tomato",
+            "name_zh": "番茄细菌性斑点病",
+            "score": 0.03189603611826897
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl",
+        "training_manifest_sha256": "c22dccdece98a76c667a4d17b2ea13bc7b44218a4b91ae5c56d801a3476fe2ad"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N05029",
+        "truth_name": "helicoverpa armigera larva"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-9a9c16ef5e397ce68b0c",
+      "source_group_id": "source:387056f2c2303be15b751acb999463370cdc41f50817c4f0a52ad7c637ff78ab",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:9e037483d54050fb4880d8694f07a2c141d0e111d292b0570eb98eb05925a0b0",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05029/N05029_P01088.jpg",
+      "image_sha256": "9e037483d54050fb4880d8694f07a2c141d0e111d292b0570eb98eb05925a0b0",
+      "language": "en",
+      "near_duplicate_group_id": "phash:0491735fc2e08eaa1d98b46c051b96689c92e066fd4af5168eecb78c96b14dae",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "9e037483d54050fb4880d8694f07a2c141d0e111d292b0570eb98eb05925a0b0",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.9177395105361938
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.0020981866400688887
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.0017645214684307575
+          },
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.0013894306030124426
+          },
+          {
+            "code": "N05020",
+            "name": "cydia pomonella larva",
+            "name_zh": "果实蠹蛾幼虫",
+            "score": 0.0013469840632751584
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N05029",
+        "truth_name": "helicoverpa armigera larva"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-9e037483d54050fb4880",
+      "source_group_id": "source:775d7c6b55933fb736f8a7bd2f4b5dfe915975416af35872fd5f90d7fb0618fd",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:a26e9dc145bf0601affedd72320fd15243981e8d6f300cd025d605407093e7f1",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05022/N05022_P00761.jpg",
+      "image_sha256": "a26e9dc145bf0601affedd72320fd15243981e8d6f300cd025d605407093e7f1",
+      "language": "en",
+      "near_duplicate_group_id": "phash:aeee7d81bfa84640ede9ded65d7a46da23a6e135699d7f49135e7a92156c5764",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "a26e9dc145bf0601affedd72320fd15243981e8d6f300cd025d605407093e7f1",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05062",
+            "name": "spodoptera exigua",
+            "name_zh": "甜菜夜蛾",
+            "score": 0.5718879699707031
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.12268098443746567
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.07252299040555954
+          },
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.05166485905647278
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.04201366379857063
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N05022",
+        "truth_name": "etiella zinckenella"
+      },
+      "public_options": [],
+      "question": "Identify the disease or pest shown in the image.",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-a26e9dc145bf0601affe",
+      "source_group_id": "source:31d6258fb316112c393c2830b69e33fbb12116a87cb97aafc7a0d8eb4d85919b",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:6e9d13613833879d63253de8377f56c00766c132aa827d8b46ff1b91089b9357",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04068/N04068_P01322.jpg",
+      "image_sha256": "6e9d13613833879d63253de8377f56c00766c132aa827d8b46ff1b91089b9357",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:00081f49a8261f6fab8826a70e76f527011ff606d783669d67a84666cf3d4795",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "6e9d13613833879d63253de8377f56c00766c132aa827d8b46ff1b91089b9357",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04068",
+            "name": "peach bacterial spot",
+            "name_zh": "桃树细菌性穿孔病",
+            "score": 0.9012311100959778
+          },
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.0014595530228689313
+          },
+          {
+            "code": "N04112",
+            "name": "tomato bacterial spot",
+            "name_zh": "番茄斑点病",
+            "score": 0.001445525442250073
+          },
+          {
+            "code": "N04125",
+            "name": "tomato two-spotted spider mite infestation",
+            "name_zh": "番茄二斑叶螨病",
+            "score": 0.001270788605324924
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.0012650389689952135
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N04068",
+        "truth_name": "桃树细菌性穿孔病"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-6e9d13613833879d6325",
+      "source_group_id": "source:a57ead4682b7a08e6b35d542f6f96334d1897629b3b150f10bd8fb6239ba95c9",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:771ff4fdcadcaa42389be70541afc0ec0da69eecd936fdae737672338a089b8d",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04128/N04128_P01723.jpg",
+      "image_sha256": "771ff4fdcadcaa42389be70541afc0ec0da69eecd936fdae737672338a089b8d",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:4c6ff559fa68a0f5db4e005a289782bfde7aca75ecf621cea55b1a61b0f4ff49",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "771ff4fdcadcaa42389be70541afc0ec0da69eecd936fdae737672338a089b8d",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04125",
+            "name": "tomato two-spotted spider mite infestation",
+            "name_zh": "番茄二斑叶螨病",
+            "score": 0.6342432498931885
+          },
+          {
+            "code": "N04128",
+            "name": "tomato yellow leaf curl disease",
+            "name_zh": "番茄黄化曲叶病毒病",
+            "score": 0.1873832792043686
+          },
+          {
+            "code": "N04126",
+            "name": "tomato target spot",
+            "name_zh": "番茄靶斑病",
+            "score": 0.006320965941995382
+          },
+          {
+            "code": "N05042",
+            "name": "nephotettix cincticeps",
+            "name_zh": "绿飞虱",
+            "score": 0.0026386925019323826
+          },
+          {
+            "code": "N05008",
+            "name": "bactrocera dorsalis",
+            "name_zh": "东方果实蝇",
+            "score": 0.002629178576171398
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N04128",
+        "truth_name": "番茄黄化曲叶病毒病"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-771ff4fdcadcaa42389b",
+      "source_group_id": "source:564e7ea4f411eb9ab7b97bae23ac042f1e2fcb5affd38085b3dfa22cd6870cc2",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:7eae6b9f5f687301d1fc7ed8d795caf4585f53fbff2164113b1d4de82c6fb141",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04006/N04006_P01967.jpg",
+      "image_sha256": "7eae6b9f5f687301d1fc7ed8d795caf4585f53fbff2164113b1d4de82c6fb141",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:713d22f91c9e09562907dbae505a90774e6264818ad7c00b89b3e40a56c707a6",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "7eae6b9f5f687301d1fc7ed8d795caf4585f53fbff2164113b1d4de82c6fb141",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05066",
+            "name": "tetranychus urticae",
+            "name_zh": "二斑叶螨",
+            "score": 0.33720123767852783
+          },
+          {
+            "code": "N04003",
+            "name": "apple frog eye leaf spot",
+            "name_zh": "苹果蛙眼叶斑病",
+            "score": 0.09272255748510361
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.07328515499830246
+          },
+          {
+            "code": "N05041",
+            "name": "myzus persicae",
+            "name_zh": "桃蚜",
+            "score": 0.0638994351029396
+          },
+          {
+            "code": "N04006",
+            "name": "apple leaf healthy",
+            "name_zh": "苹果健康叶片",
+            "score": 0.0466129295527935
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04006",
+        "truth_name": "苹果健康叶片"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-7eae6b9f5f687301d1fc",
+      "source_group_id": "source:594bce44e7c30a1f046fd147c69e3760d5b3ac68bfade63b6a9e987db3cbd3f0",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:a0fde96d65d731187d8325b300cd56d13e5fcc5b06655d48434aaa4cd16b55f9",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04042/N04042_P00016.jpg",
+      "image_sha256": "a0fde96d65d731187d8325b300cd56d13e5fcc5b06655d48434aaa4cd16b55f9",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:89623052820b8e53b28f631fdd4d0cde930a3289956efd9afe7c3d4c3756c3bb",
+      "prediction": {
+        "checkpoint_sha256": "8df04adb5419a576433f71fedd213196bda77b15749180b0b8cff032be83b134",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 2,
+        "image_sha256": "a0fde96d65d731187d8325b300cd56d13e5fcc5b06655d48434aaa4cd16b55f9",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04051",
+            "name": "southern corn leaf blight (cochliobolus heterostrophus)",
+            "name_zh": "玉米小斑病",
+            "score": 0.8787725567817688
+          },
+          {
+            "code": "N04040",
+            "name": "corn pests nibble",
+            "name_zh": "玉米害虫啃食",
+            "score": 0.004295981023460627
+          },
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.0040559787303209305
+          },
+          {
+            "code": "N04042",
+            "name": "corn gray leaf spot (cercospora leaf spot)",
+            "name_zh": "玉米灰斑病",
+            "score": 0.0032458414789289236
+          },
+          {
+            "code": "N04034",
+            "name": "citrus black spot",
+            "name_zh": "柑橘黑斑病",
+            "score": 0.001756913959980011
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl",
+        "training_manifest_sha256": "c22dccdece98a76c667a4d17b2ea13bc7b44218a4b91ae5c56d801a3476fe2ad"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04042",
+        "truth_name": "玉米灰斑病"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-a0fde96d65d731187d83",
+      "source_group_id": "source:5f36f8e24869a0e35d54fd99c8208a23ecfc498c21a1dd214ad371ac15d2e742",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:4c6b6721bf6ffbb7f119a9ddd16a37ddac0f636fdfc54c3103c2872020a4dbc7",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05036/N05036_P00718.jpg",
+      "image_sha256": "4c6b6721bf6ffbb7f119a9ddd16a37ddac0f636fdfc54c3103c2872020a4dbc7",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:89f76c8d539503c46d5d46a9e6194a4901b5c47b44eabb72d37fd802d7408f90",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "4c6b6721bf6ffbb7f119a9ddd16a37ddac0f636fdfc54c3103c2872020a4dbc7",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.730756402015686
+          },
+          {
+            "code": "N05040",
+            "name": "mythimna separata",
+            "name_zh": "稻苞虫",
+            "score": 0.09991025924682617
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.007216850761324167
+          },
+          {
+            "code": "N05062",
+            "name": "spodoptera exigua",
+            "name_zh": "甜菜夜蛾",
+            "score": 0.00712516438215971
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.00457131490111351
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N05036",
+        "truth_name": "甘蓝夜蛾"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-4c6b6721bf6ffbb7f119",
+      "source_group_id": "source:090740c6d2302b6074c5e2862fa2b6b0b628748b6f3b3ca8c60bcb6bd2d565b6",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:4d59522c4f1669809e4b7b65d041baee50a1a15eec63352b0e691774962cbc6c",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05046/N05046_P02524.jpg",
+      "image_sha256": "4d59522c4f1669809e4b7b65d041baee50a1a15eec63352b0e691774962cbc6c",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:dfeb26165b28add3e655afe933009873d5823df5e90b0353f6cd5d29ba9afc10",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "4d59522c4f1669809e4b7b65d041baee50a1a15eec63352b0e691774962cbc6c",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05046",
+            "name": "otiorhynchus ovatus",
+            "name_zh": "苹果根象甲",
+            "score": 0.9289519786834717
+          },
+          {
+            "code": "N05054",
+            "name": "scarabaeid grub",
+            "name_zh": "蛴螬",
+            "score": 0.0022655159700661898
+          },
+          {
+            "code": "N05018",
+            "name": "cosmopolites sordidus",
+            "name_zh": "香蕉象甲",
+            "score": 0.0016978168860077858
+          },
+          {
+            "code": "N05060",
+            "name": "sogatella furcifera",
+            "name_zh": "白背飞虱",
+            "score": 0.0010862728813663125
+          },
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.0009085086057893932
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N05046",
+        "truth_name": "苹果根象甲"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-4d59522c4f1669809e4b",
+      "source_group_id": "source:7de57b1b77f1b9a38b39e543313c597c3423897068a3b199628bc863a5913556",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:585cda425b053c6dacb7bf33bff45ed3750de2ab538d4748abbd978879694fdb",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05020/N05020_P00371.jpg",
+      "image_sha256": "585cda425b053c6dacb7bf33bff45ed3750de2ab538d4748abbd978879694fdb",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:468a20a4f782d30e561a4d41cb3088bb10337d504058d61539911db21226107c",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "585cda425b053c6dacb7bf33bff45ed3750de2ab538d4748abbd978879694fdb",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05041",
+            "name": "myzus persicae",
+            "name_zh": "桃蚜",
+            "score": 0.5923492908477783
+          },
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.11546095460653305
+          },
+          {
+            "code": "N04120",
+            "name": "tomato leaf mold",
+            "name_zh": "番茄叶霉病",
+            "score": 0.021026356145739555
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.020141182467341423
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.012760922312736511
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P5",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P5",
+        "truth_code": "N05020",
+        "truth_name": "果实蠹蛾幼虫"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-585cda425b053c6dacb7",
+      "source_group_id": "source:678206556a3dfa13e9c667dd321e081624faa40821a887555c9f1a3132ff961b",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:71963e8365416c5e09eaa1426ec4d4b104c2c81636015dd459374f8e5aad4acd",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05064/N05064_P00700.jpg",
+      "image_sha256": "71963e8365416c5e09eaa1426ec4d4b104c2c81636015dd459374f8e5aad4acd",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:fceb5cbc7ef8caf13d762c30cba276201d2a2d0cc8274f32804c60c10c376cd4",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "71963e8365416c5e09eaa1426ec4d4b104c2c81636015dd459374f8e5aad4acd",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05021",
+            "name": "empoasca fabae",
+            "name_zh": "甘薯叶蝉",
+            "score": 0.2946235239505768
+          },
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.2111310064792633
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.10023969411849976
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.09172305464744568
+          },
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.035068079829216
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": null,
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N05064",
+        "truth_name": "草地贪夜蛾幼虫"
+      },
+      "public_options": [],
+      "question": "请识别图像中的病害或害虫。",
+      "question_type": "open",
+      "sample_id": "e2-prescreen-71963e8365416c5e09ea",
+      "source_group_id": "source:f04fdd075820da5fe35d467a80e0b0657bc0c20fe347b79496422d05581d8ba1",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:591f1156211bbdfc045410b4c49eb34e59c44a06af2cf9aae447803e387a4919",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04064/N04064_P01164.jpg",
+      "image_sha256": "591f1156211bbdfc045410b4c49eb34e59c44a06af2cf9aae447803e387a4919",
+      "language": "en",
+      "near_duplicate_group_id": "phash:9126fcc5cdbf59b0e5e7afcda0f460038e31e6a1d8fbdf3c4f225f7a2daa6c0a",
+      "prediction": {
+        "checkpoint_sha256": "8df04adb5419a576433f71fedd213196bda77b15749180b0b8cff032be83b134",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 2,
+        "image_sha256": "591f1156211bbdfc045410b4c49eb34e59c44a06af2cf9aae447803e387a4919",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04064",
+            "name": "grape esca",
+            "name_zh": "葡萄黑麻病",
+            "score": 0.8881823420524597
+          },
+          {
+            "code": "N04063",
+            "name": "grape black rot",
+            "name_zh": "葡萄黑腐病",
+            "score": 0.0027171119581907988
+          },
+          {
+            "code": "N04111",
+            "name": "tomato early blight",
+            "name_zh": "番茄早疫病",
+            "score": 0.00237312656827271
+          },
+          {
+            "code": "N04007",
+            "name": "apple leaf scab",
+            "name_zh": "苹果叶片黑星病",
+            "score": 0.0018538099247962236
+          },
+          {
+            "code": "N04034",
+            "name": "citrus black spot",
+            "name_zh": "柑橘黑斑病",
+            "score": 0.001833846908994019
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl",
+        "training_manifest_sha256": "c22dccdece98a76c667a4d17b2ea13bc7b44218a4b91ae5c56d801a3476fe2ad"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": "C",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N04064",
+        "truth_name": "grape esca"
+      },
+      "public_options": [
+        {
+          "code": "N04111",
+          "label": "A",
+          "name": "tomato early blight",
+          "name_zh": "番茄早疫病"
+        },
+        {
+          "code": "N04063",
+          "label": "B",
+          "name": "grape black rot",
+          "name_zh": "葡萄黑腐病"
+        },
+        {
+          "code": "N04064",
+          "label": "C",
+          "name": "grape esca",
+          "name_zh": "葡萄黑麻病"
+        },
+        {
+          "code": "N04007",
+          "label": "D",
+          "name": "apple leaf scab",
+          "name_zh": "苹果叶片黑星病"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: tomato early blight; B: grape black rot; C: grape esca; D: apple leaf scab",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-591f1156211bbdfc0454",
+      "source_group_id": "source:7f2b84c395055e21273481c9a896763ad2c17f416938268422d46a879b33aaec",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:7fab65e66bab8be5506517c3a21c62fce80ae6bcca420efe7a21a4a11ef0f007",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04005/N04005_P00084.jpg",
+      "image_sha256": "7fab65e66bab8be5506517c3a21c62fce80ae6bcca420efe7a21a4a11ef0f007",
+      "language": "en",
+      "near_duplicate_group_id": "phash:07c6a38f930ec88b401e5a99ee95ca7880e827fd74b8ee575c8a989553111ca6",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "7fab65e66bab8be5506517c3a21c62fce80ae6bcca420efe7a21a4a11ef0f007",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04011",
+            "name": "apple anthracnose",
+            "name_zh": "苹果炭疽病",
+            "score": 0.563829779624939
+          },
+          {
+            "code": "N05020",
+            "name": "cydia pomonella larva",
+            "name_zh": "果实蠹蛾幼虫",
+            "score": 0.07188301533460617
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.07025395333766937
+          },
+          {
+            "code": "N04005",
+            "name": "apple fruit scab",
+            "name_zh": "苹果果实黑星病",
+            "score": 0.04030727967619896
+          },
+          {
+            "code": "N05008",
+            "name": "bactrocera dorsalis",
+            "name_zh": "东方果实蝇",
+            "score": 0.027135735377669334
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": "D",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04005",
+        "truth_name": "apple fruit scab"
+      },
+      "public_options": [
+        {
+          "code": "N04073",
+          "label": "A",
+          "name": "pepper anthracnose",
+          "name_zh": "辣椒炭疽病"
+        },
+        {
+          "code": "N04011",
+          "label": "B",
+          "name": "apple anthracnose",
+          "name_zh": "苹果炭疽病"
+        },
+        {
+          "code": "N04053",
+          "label": "C",
+          "name": "fig leaf blight",
+          "name_zh": "无花果叶枯病"
+        },
+        {
+          "code": "N04005",
+          "label": "D",
+          "name": "apple fruit scab",
+          "name_zh": "苹果果实黑星病"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: pepper anthracnose; B: apple anthracnose; C: fig leaf blight; D: apple fruit scab",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-7fab65e66bab8be55065",
+      "source_group_id": "source:c61982f348a110c1739048cb5de6f6662936f88ab2cf0b68802539945dce94a0",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:8f337698b0d4466912d9640a83165aede5ed6c370aee2a89197560628a96ca66",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04107/N04107_P00041.jpg",
+      "image_sha256": "8f337698b0d4466912d9640a83165aede5ed6c370aee2a89197560628a96ca66",
+      "language": "en",
+      "near_duplicate_group_id": "phash:64c109aceb860853ac6aab00c2a47cd8c6c38d4d3c7b5bbd45e2c8f378a1bb44",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "8f337698b0d4466912d9640a83165aede5ed6c370aee2a89197560628a96ca66",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05066",
+            "name": "tetranychus urticae",
+            "name_zh": "二斑叶螨",
+            "score": 0.6363874077796936
+          },
+          {
+            "code": "N05009",
+            "name": "brevicoryne brassicae",
+            "name_zh": "甘蓝蚜",
+            "score": 0.0608789399266243
+          },
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.025183558464050293
+          },
+          {
+            "code": "N04029",
+            "name": "cherry normal leaf",
+            "name_zh": "樱桃健康叶片",
+            "score": 0.010164234787225723
+          },
+          {
+            "code": "N04107",
+            "name": "sunflower downy mildew",
+            "name_zh": "向日葵霜霉病",
+            "score": 0.009558837860822678
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": "B",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04107",
+        "truth_name": "sunflower downy mildew"
+      },
+      "public_options": [
+        {
+          "code": "N04135",
+          "label": "A",
+          "name": "walnut red rust",
+          "name_zh": "核桃斑点病"
+        },
+        {
+          "code": "N04107",
+          "label": "B",
+          "name": "sunflower downy mildew",
+          "name_zh": "向日葵霜霉病"
+        },
+        {
+          "code": "N04029",
+          "label": "C",
+          "name": "cherry normal leaf",
+          "name_zh": "樱桃健康叶片"
+        },
+        {
+          "code": "N04027",
+          "label": "D",
+          "name": "cherry brown spot",
+          "name_zh": "樱桃褐斑病"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: walnut red rust; B: sunflower downy mildew; C: cherry normal leaf; D: cherry brown spot",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-8f337698b0d4466912d9",
+      "source_group_id": "source:72755492be579db33f650b54db47c6f95be25c79a07a2a202f45d42cfdd43359",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:9a1d03d34e68daf09efa70c66d553257a344f165b76ebc4036a4dff1c923b224",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04038/N04038_P00014.jpg",
+      "image_sha256": "9a1d03d34e68daf09efa70c66d553257a344f165b76ebc4036a4dff1c923b224",
+      "language": "en",
+      "near_duplicate_group_id": "phash:a8752c549ca76a7f3a2a2dd84a50d6bf756346010dbf119d05628990825a3506",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "9a1d03d34e68daf09efa70c66d553257a344f165b76ebc4036a4dff1c923b224",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04038",
+            "name": "citrus greening",
+            "name_zh": "柑橘黄龙病",
+            "score": 0.2575053870677948
+          },
+          {
+            "code": "N04128",
+            "name": "tomato yellow leaf curl disease",
+            "name_zh": "番茄黄化曲叶病毒病",
+            "score": 0.2010469138622284
+          },
+          {
+            "code": "N04125",
+            "name": "tomato two-spotted spider mite infestation",
+            "name_zh": "番茄二斑叶螨病",
+            "score": 0.07023461908102036
+          },
+          {
+            "code": "N04120",
+            "name": "tomato leaf mold",
+            "name_zh": "番茄叶霉病",
+            "score": 0.057036202400922775
+          },
+          {
+            "code": "N05066",
+            "name": "tetranychus urticae",
+            "name_zh": "二斑叶螨",
+            "score": 0.03152376785874367
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": "D",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N04038",
+        "truth_name": "citrus greening"
+      },
+      "public_options": [
+        {
+          "code": "N04120",
+          "label": "A",
+          "name": "tomato leaf mold",
+          "name_zh": "番茄叶霉病"
+        },
+        {
+          "code": "N04125",
+          "label": "B",
+          "name": "tomato two-spotted spider mite infestation",
+          "name_zh": "番茄二斑叶螨病"
+        },
+        {
+          "code": "N04128",
+          "label": "C",
+          "name": "tomato yellow leaf curl disease",
+          "name_zh": "番茄黄化曲叶病毒病"
+        },
+        {
+          "code": "N04038",
+          "label": "D",
+          "name": "citrus greening",
+          "name_zh": "柑橘黄龙病"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: tomato leaf mold; B: tomato two-spotted spider mite infestation; C: tomato yellow leaf curl disease; D: citrus greening",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-9a1d03d34e68daf09efa",
+      "source_group_id": "source:f5a5ef3568ccd052bf8e7c0185bd533ea6e2fc4af0f053217c2d78ef21d87eed",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:8f56bc6c662a3b22a9762f051f766e9f870fb55790ed23dc8d9d2a21210e8f92",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05054/N05054_P03440.jpg",
+      "image_sha256": "8f56bc6c662a3b22a9762f051f766e9f870fb55790ed23dc8d9d2a21210e8f92",
+      "language": "en",
+      "near_duplicate_group_id": "phash:7fab99fd6c6820873b90eb185b1e2f8917e40ba6c2b4eebdf6fef2ec4d6424b7",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "8f56bc6c662a3b22a9762f051f766e9f870fb55790ed23dc8d9d2a21210e8f92",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05001",
+            "name": "house cricket",
+            "name_zh": "家蟋蟀",
+            "score": 0.46371710300445557
+          },
+          {
+            "code": "N05025",
+            "name": "gryllotalpa orientalis",
+            "name_zh": "蝼蛄",
+            "score": 0.23104022443294525
+          },
+          {
+            "code": "N05067",
+            "name": "tettigonia viridissima",
+            "name_zh": "绿色蝗虫",
+            "score": 0.03502793610095978
+          },
+          {
+            "code": "N05058",
+            "name": "slug",
+            "name_zh": "蛞蝓",
+            "score": 0.026560045778751373
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.02131570689380169
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P5",
+        "class_role": "known",
+        "correct_option": "B",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P5",
+        "truth_code": "N05054",
+        "truth_name": "scarabaeid grub"
+      },
+      "public_options": [
+        {
+          "code": "N05067",
+          "label": "A",
+          "name": "tettigonia viridissima",
+          "name_zh": "绿色蝗虫"
+        },
+        {
+          "code": "N05054",
+          "label": "B",
+          "name": "scarabaeid grub",
+          "name_zh": "蛴螬"
+        },
+        {
+          "code": "N05001",
+          "label": "C",
+          "name": "house cricket",
+          "name_zh": "家蟋蟀"
+        },
+        {
+          "code": "N05025",
+          "label": "D",
+          "name": "gryllotalpa orientalis",
+          "name_zh": "蝼蛄"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: tettigonia viridissima; B: scarabaeid grub; C: house cricket; D: gryllotalpa orientalis",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-8f56bc6c662a3b22a976",
+      "source_group_id": "source:0b951d782957ba6246c5500ce53557e8759b77b631c0bf34c447331a26624868",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:8fded645494116354bcc6673b348d3a8c33c46d68400981fdf604af0b2638632",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05014/N05014_P02292.jpg",
+      "image_sha256": "8fded645494116354bcc6673b348d3a8c33c46d68400981fdf604af0b2638632",
+      "language": "en",
+      "near_duplicate_group_id": "phash:b4a70e359230b82d2e18bbf3511fdf19830d8f8306e5fbdd3b61bb6020dbc915",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "8fded645494116354bcc6673b348d3a8c33c46d68400981fdf604af0b2638632",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.5539695024490356
+          },
+          {
+            "code": "N05067",
+            "name": "tettigonia viridissima",
+            "name_zh": "绿色蝗虫",
+            "score": 0.22140580415725708
+          },
+          {
+            "code": "N05021",
+            "name": "empoasca fabae",
+            "name_zh": "甘薯叶蝉",
+            "score": 0.034869104623794556
+          },
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.023506799712777138
+          },
+          {
+            "code": "N05009",
+            "name": "brevicoryne brassicae",
+            "name_zh": "甘蓝蚜",
+            "score": 0.012418526224792004
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": "C",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N05014",
+        "truth_name": "cicadella viridis"
+      },
+      "public_options": [
+        {
+          "code": "N05048",
+          "label": "A",
+          "name": "phyllocnistis citrella",
+          "name_zh": "柑橘潜叶蛾"
+        },
+        {
+          "code": "N05021",
+          "label": "B",
+          "name": "empoasca fabae",
+          "name_zh": "甘薯叶蝉"
+        },
+        {
+          "code": "N05014",
+          "label": "C",
+          "name": "cicadella viridis",
+          "name_zh": "斑叶蝉"
+        },
+        {
+          "code": "N05067",
+          "label": "D",
+          "name": "tettigonia viridissima",
+          "name_zh": "绿色蝗虫"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: phyllocnistis citrella; B: empoasca fabae; C: cicadella viridis; D: tettigonia viridissima",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-8fded645494116354bcc",
+      "source_group_id": "source:88bcc5d665fc20a0f5606ddb14e3fcca2dd00f496f5c12c1bbf70eed654977fd",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:b595f4f605a500df2bf33b3ad9e582ca382e8691360b6d073bc17c2837f2143a",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05046/N05046_P03479.jpg",
+      "image_sha256": "b595f4f605a500df2bf33b3ad9e582ca382e8691360b6d073bc17c2837f2143a",
+      "language": "en",
+      "near_duplicate_group_id": "phash:8a57a07296113b85980468f26dbe8028085f91721d94cc525392eb0531f736d8",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "b595f4f605a500df2bf33b3ad9e582ca382e8691360b6d073bc17c2837f2143a",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05046",
+            "name": "otiorhynchus ovatus",
+            "name_zh": "苹果根象甲",
+            "score": 0.8967634439468384
+          },
+          {
+            "code": "N05018",
+            "name": "cosmopolites sordidus",
+            "name_zh": "香蕉象甲",
+            "score": 0.019589556381106377
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.0018137798178941011
+          },
+          {
+            "code": "N05001",
+            "name": "house cricket",
+            "name_zh": "家蟋蟀",
+            "score": 0.0017142922151833773
+          },
+          {
+            "code": "N05067",
+            "name": "tettigonia viridissima",
+            "name_zh": "绿色蝗虫",
+            "score": 0.0015557766892015934
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": "A",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N05046",
+        "truth_name": "otiorhynchus ovatus"
+      },
+      "public_options": [
+        {
+          "code": "N05046",
+          "label": "A",
+          "name": "otiorhynchus ovatus",
+          "name_zh": "苹果根象甲"
+        },
+        {
+          "code": "N05018",
+          "label": "B",
+          "name": "cosmopolites sordidus",
+          "name_zh": "香蕉象甲"
+        },
+        {
+          "code": "N05011",
+          "label": "C",
+          "name": "ceratitis capitata",
+          "name_zh": "地中海实蝇"
+        },
+        {
+          "code": "N05001",
+          "label": "D",
+          "name": "house cricket",
+          "name_zh": "家蟋蟀"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: otiorhynchus ovatus; B: cosmopolites sordidus; C: ceratitis capitata; D: house cricket",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-b595f4f605a500df2bf3",
+      "source_group_id": "source:6212c65add45e8b5ac434643e46f3200df62cd883aee2052c1e742e53fb1aa08",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:bcb2eab7e74e50ac903fb3615173abe9ff892601b2dbb5258e325ceeb10dc212",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05014/N05014_P02224.jpg",
+      "image_sha256": "bcb2eab7e74e50ac903fb3615173abe9ff892601b2dbb5258e325ceeb10dc212",
+      "language": "en",
+      "near_duplicate_group_id": "phash:44a73c041e5dbf8c551a5b4732c211e01a91e6c565c5544b8f63ae75a1b99a8d",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "bcb2eab7e74e50ac903fb3615173abe9ff892601b2dbb5258e325ceeb10dc212",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05008",
+            "name": "bactrocera dorsalis",
+            "name_zh": "东方果实蝇",
+            "score": 0.8533695936203003
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.029167084023356438
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.012348117306828499
+          },
+          {
+            "code": "N05001",
+            "name": "house cricket",
+            "name_zh": "家蟋蟀",
+            "score": 0.008960464037954807
+          },
+          {
+            "code": "N05054",
+            "name": "scarabaeid grub",
+            "name_zh": "蛴螬",
+            "score": 0.006876538507640362
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P5",
+        "class_role": "known",
+        "correct_option": "B",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P5",
+        "truth_code": "N05014",
+        "truth_name": "cicadella viridis"
+      },
+      "public_options": [
+        {
+          "code": "N05008",
+          "label": "A",
+          "name": "bactrocera dorsalis",
+          "name_zh": "东方果实蝇"
+        },
+        {
+          "code": "N05014",
+          "label": "B",
+          "name": "cicadella viridis",
+          "name_zh": "斑叶蝉"
+        },
+        {
+          "code": "N05022",
+          "label": "C",
+          "name": "etiella zinckenella",
+          "name_zh": "豆荚螟（Etiella zinckenella）"
+        },
+        {
+          "code": "N05011",
+          "label": "D",
+          "name": "ceratitis capitata",
+          "name_zh": "地中海实蝇"
+        }
+      ],
+      "question": "Identify the disease or pest shown in the image. Choose one option: A: bactrocera dorsalis; B: cicadella viridis; C: etiella zinckenella; D: ceratitis capitata",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-bcb2eab7e74e50ac903f",
+      "source_group_id": "source:5a525fff3f2b96709200ed6574d2f5f3a200d29762592ee7a07950c1e0a8802b",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:5814de9a04ae8ba9c92589308eaa96899ae5c059347a0ef891e97eb79eb0ee94",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04128/N04128_P03078.jpg",
+      "image_sha256": "5814de9a04ae8ba9c92589308eaa96899ae5c059347a0ef891e97eb79eb0ee94",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:162f1bb5c9ebc50da9dfbef7d6faae3cb8d9c38108400a8d704f2aae0d920a92",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "5814de9a04ae8ba9c92589308eaa96899ae5c059347a0ef891e97eb79eb0ee94",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04125",
+            "name": "tomato two-spotted spider mite infestation",
+            "name_zh": "番茄二斑叶螨病",
+            "score": 0.39351338148117065
+          },
+          {
+            "code": "N04128",
+            "name": "tomato yellow leaf curl disease",
+            "name_zh": "番茄黄化曲叶病毒病",
+            "score": 0.2702234089374542
+          },
+          {
+            "code": "N04126",
+            "name": "tomato target spot",
+            "name_zh": "番茄靶斑病",
+            "score": 0.03185788169503212
+          },
+          {
+            "code": "N04111",
+            "name": "tomato early blight",
+            "name_zh": "番茄早疫病",
+            "score": 0.0141759580001235
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.008439883589744568
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": "B",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N04128",
+        "truth_name": "番茄黄化曲叶病毒病"
+      },
+      "public_options": [
+        {
+          "code": "N04125",
+          "label": "A",
+          "name": "tomato two-spotted spider mite infestation",
+          "name_zh": "番茄二斑叶螨病"
+        },
+        {
+          "code": "N04128",
+          "label": "B",
+          "name": "tomato yellow leaf curl disease",
+          "name_zh": "番茄黄化曲叶病毒病"
+        },
+        {
+          "code": "N04111",
+          "label": "C",
+          "name": "tomato early blight",
+          "name_zh": "番茄早疫病"
+        },
+        {
+          "code": "N04126",
+          "label": "D",
+          "name": "tomato target spot",
+          "name_zh": "番茄靶斑病"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 番茄二斑叶螨病; B: 番茄黄化曲叶病毒病; C: 番茄早疫病; D: 番茄靶斑病",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-5814de9a04ae8ba9c925",
+      "source_group_id": "source:18660d4c24faa68e37fadb15944e5a21d69ab8997d99ed226c7aeaf6c7c9d0d6",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:5b44875fb409436c06254c2b5cbb1565b980bbc547b612d0b522a8ded220c132",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04046/N04046_P00143.jpg",
+      "image_sha256": "5b44875fb409436c06254c2b5cbb1565b980bbc547b612d0b522a8ded220c132",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:bb2c63f071a3622e7f691ad4c0a06bf9210a557688e5bde55bf55e9c72f06555",
+      "prediction": {
+        "checkpoint_sha256": "8df04adb5419a576433f71fedd213196bda77b15749180b0b8cff032be83b134",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 2,
+        "image_sha256": "5b44875fb409436c06254c2b5cbb1565b980bbc547b612d0b522a8ded220c132",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04046",
+            "name": "corn healthy leaf",
+            "name_zh": "玉米健康叶片",
+            "score": 0.906737744808197
+          },
+          {
+            "code": "N05062",
+            "name": "spodoptera exigua",
+            "name_zh": "甜菜夜蛾",
+            "score": 0.0017612520605325699
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.0014879745431244373
+          },
+          {
+            "code": "N05032",
+            "name": "icerya purchasi",
+            "name_zh": "吹棉蚧",
+            "score": 0.0014758805045858026
+          },
+          {
+            "code": "N04034",
+            "name": "citrus black spot",
+            "name_zh": "柑橘黑斑病",
+            "score": 0.001291929162107408
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl",
+        "training_manifest_sha256": "c22dccdece98a76c667a4d17b2ea13bc7b44218a4b91ae5c56d801a3476fe2ad"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": "C",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N04046",
+        "truth_name": "玉米健康叶片"
+      },
+      "public_options": [
+        {
+          "code": "N04070",
+          "label": "A",
+          "name": "pear black spot",
+          "name_zh": "梨黑斑病"
+        },
+        {
+          "code": "N04107",
+          "label": "B",
+          "name": "sunflower downy mildew",
+          "name_zh": "向日葵霜霉病"
+        },
+        {
+          "code": "N04046",
+          "label": "C",
+          "name": "corn healthy leaf",
+          "name_zh": "玉米健康叶片"
+        },
+        {
+          "code": "N04034",
+          "label": "D",
+          "name": "citrus black spot",
+          "name_zh": "柑橘黑斑病"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 梨黑斑病; B: 向日葵霜霉病; C: 玉米健康叶片; D: 柑橘黑斑病",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-5b44875fb409436c0625",
+      "source_group_id": "source:0df2a6dc9be12e9db1651456b89825003792b2a8deb8b425fb6478435c4c0066",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:60eaa0f68f750ecb1a254bd21725b2143b5578f03e2b97881230bd02d0ec02db",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04132/N04132_P01205.jpg",
+      "image_sha256": "60eaa0f68f750ecb1a254bd21725b2143b5578f03e2b97881230bd02d0ec02db",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:2e5b9aa83d151e0e9f2a4908fe3c93c6ff7878b368b4242d8340d3253e416127",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "60eaa0f68f750ecb1a254bd21725b2143b5578f03e2b97881230bd02d0ec02db",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04038",
+            "name": "citrus greening",
+            "name_zh": "柑橘黄龙病",
+            "score": 0.6412123441696167
+          },
+          {
+            "code": "N04075",
+            "name": "bell pepper bacterial spot",
+            "name_zh": "甜椒细菌性斑点病",
+            "score": 0.034709252417087555
+          },
+          {
+            "code": "N04068",
+            "name": "peach bacterial spot",
+            "name_zh": "桃树细菌性穿孔病",
+            "score": 0.030036842450499535
+          },
+          {
+            "code": "N04132",
+            "name": "walnut brown spot",
+            "name_zh": "核桃褐斑病",
+            "score": 0.019649013876914978
+          },
+          {
+            "code": "N04128",
+            "name": "tomato yellow leaf curl disease",
+            "name_zh": "番茄黄化曲叶病毒病",
+            "score": 0.014209863729774952
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": "D",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N04132",
+        "truth_name": "核桃褐斑病"
+      },
+      "public_options": [
+        {
+          "code": "N04068",
+          "label": "A",
+          "name": "peach bacterial spot",
+          "name_zh": "桃树细菌性穿孔病"
+        },
+        {
+          "code": "N04075",
+          "label": "B",
+          "name": "bell pepper bacterial spot",
+          "name_zh": "甜椒细菌性斑点病"
+        },
+        {
+          "code": "N04038",
+          "label": "C",
+          "name": "citrus greening",
+          "name_zh": "柑橘黄龙病"
+        },
+        {
+          "code": "N04132",
+          "label": "D",
+          "name": "walnut brown spot",
+          "name_zh": "核桃褐斑病"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 桃树细菌性穿孔病; B: 甜椒细菌性斑点病; C: 柑橘黄龙病; D: 核桃褐斑病",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-60eaa0f68f750ecb1a25",
+      "source_group_id": "source:2634dc8ec16ae4a981dd8b0cca14ca24a166702dbe8da065330150961e92892c",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:66b52055ddec5b97166dc3a0259a8f0287b834bedb766fb5ba7ab078eb5b2f48",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N04034/N04034_P00103.jpg",
+      "image_sha256": "66b52055ddec5b97166dc3a0259a8f0287b834bedb766fb5ba7ab078eb5b2f48",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:9056396cfe48ebdbca913e480d99f95829493902687d86e2b800d15357c9e3cf",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "66b52055ddec5b97166dc3a0259a8f0287b834bedb766fb5ba7ab078eb5b2f48",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N04034",
+            "name": "citrus black spot",
+            "name_zh": "柑橘黑斑病",
+            "score": 0.9087026715278625
+          },
+          {
+            "code": "N05046",
+            "name": "otiorhynchus ovatus",
+            "name_zh": "苹果根象甲",
+            "score": 0.0021433972287923098
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.001810855115763843
+          },
+          {
+            "code": "N05014",
+            "name": "cicadella viridis",
+            "name_zh": "斑叶蝉",
+            "score": 0.0014656054554507136
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.0012656222097575665
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P1",
+        "class_role": "known",
+        "correct_option": "C",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P1",
+        "truth_code": "N04034",
+        "truth_name": "柑橘黑斑病"
+      },
+      "public_options": [
+        {
+          "code": "N04122",
+          "label": "A",
+          "name": "tomato pseudomonas syringae pv tomato",
+          "name_zh": "番茄细菌性斑点病"
+        },
+        {
+          "code": "N04002",
+          "label": "B",
+          "name": "apple cedar apple rust",
+          "name_zh": "苹果雪松锈病"
+        },
+        {
+          "code": "N04034",
+          "label": "C",
+          "name": "citrus black spot",
+          "name_zh": "柑橘黑斑病"
+        },
+        {
+          "code": "N04014",
+          "label": "D",
+          "name": "apricot shot hole",
+          "name_zh": "杏穿孔病"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 番茄细菌性斑点病; B: 苹果雪松锈病; C: 柑橘黑斑病; D: 杏穿孔病",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-66b52055ddec5b97166d",
+      "source_group_id": "source:42caf0b02b295a65829491baf1382d857ddb9dd742ba26f85d69de623a8569f6",
+      "split": "train_candidate",
+      "task_domain": "disease"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:4552b019605be3f0c0b0b5298c13e9f021fa54069f0a4242a1bc6f45fa66c28d",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05036/N05036_P01834.jpg",
+      "image_sha256": "4552b019605be3f0c0b0b5298c13e9f021fa54069f0a4242a1bc6f45fa66c28d",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:bd80e625db2f0f335a7ba78fee93eeb09614a60e1339ee42152a8fe20877d448",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "4552b019605be3f0c0b0b5298c13e9f021fa54069f0a4242a1bc6f45fa66c28d",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05036",
+            "name": "mamestra brassicae",
+            "name_zh": "甘蓝夜蛾",
+            "score": 0.6100181937217712
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.15075081586837769
+          },
+          {
+            "code": "N05062",
+            "name": "spodoptera exigua",
+            "name_zh": "甜菜夜蛾",
+            "score": 0.04265676438808441
+          },
+          {
+            "code": "N05029",
+            "name": "helicoverpa armigera larva",
+            "name_zh": "棉铃虫幼体",
+            "score": 0.03982941061258316
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.02173447795212269
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": "B",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N05036",
+        "truth_name": "甘蓝夜蛾"
+      },
+      "public_options": [
+        {
+          "code": "N05004",
+          "label": "A",
+          "name": "agrotis ypsilon",
+          "name_zh": "地老虎"
+        },
+        {
+          "code": "N05036",
+          "label": "B",
+          "name": "mamestra brassicae",
+          "name_zh": "甘蓝夜蛾"
+        },
+        {
+          "code": "N05029",
+          "label": "C",
+          "name": "helicoverpa armigera larva",
+          "name_zh": "棉铃虫幼体"
+        },
+        {
+          "code": "N05062",
+          "label": "D",
+          "name": "spodoptera exigua",
+          "name_zh": "甜菜夜蛾"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 地老虎; B: 甘蓝夜蛾; C: 棉铃虫幼体; D: 甜菜夜蛾",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-4552b019605be3f0c0b0",
+      "source_group_id": "source:5cacd7aa0036b34359c6793b6caaa75e5502115a4f02de264bb49972fe1d3dcb",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:573d1c2db38ecce195173d3676aaebed1bf4305d684d4c424ac8c7ec3637d804",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05054/N05054_P01565.jpg",
+      "image_sha256": "573d1c2db38ecce195173d3676aaebed1bf4305d684d4c424ac8c7ec3637d804",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:19064158b973593eedefd994accdc9afeaf12b5d0e6a5083b687b8bf9f2ae51c",
+      "prediction": {
+        "checkpoint_sha256": "8df04adb5419a576433f71fedd213196bda77b15749180b0b8cff032be83b134",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 2,
+        "image_sha256": "573d1c2db38ecce195173d3676aaebed1bf4305d684d4c424ac8c7ec3637d804",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05009",
+            "name": "brevicoryne brassicae",
+            "name_zh": "甘蓝蚜",
+            "score": 0.5173264741897583
+          },
+          {
+            "code": "N05032",
+            "name": "icerya purchasi",
+            "name_zh": "吹棉蚧",
+            "score": 0.10195697098970413
+          },
+          {
+            "code": "N05054",
+            "name": "scarabaeid grub",
+            "name_zh": "蛴螬",
+            "score": 0.06298074126243591
+          },
+          {
+            "code": "N05041",
+            "name": "myzus persicae",
+            "name_zh": "桃蚜",
+            "score": 0.05598757788538933
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.021819060668349266
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl",
+        "training_manifest_sha256": "c22dccdece98a76c667a4d17b2ea13bc7b44218a4b91ae5c56d801a3476fe2ad"
+      },
+      "private": {
+        "candidate_pattern": "P3",
+        "class_role": "known",
+        "correct_option": "C",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P3",
+        "truth_code": "N05054",
+        "truth_name": "蛴螬"
+      },
+      "public_options": [
+        {
+          "code": "N05032",
+          "label": "A",
+          "name": "icerya purchasi",
+          "name_zh": "吹棉蚧"
+        },
+        {
+          "code": "N05009",
+          "label": "B",
+          "name": "brevicoryne brassicae",
+          "name_zh": "甘蓝蚜"
+        },
+        {
+          "code": "N05054",
+          "label": "C",
+          "name": "scarabaeid grub",
+          "name_zh": "蛴螬"
+        },
+        {
+          "code": "N05041",
+          "label": "D",
+          "name": "myzus persicae",
+          "name_zh": "桃蚜"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 吹棉蚧; B: 甘蓝蚜; C: 蛴螬; D: 桃蚜",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-573d1c2db38ecce19517",
+      "source_group_id": "source:841241f18dddd25146eafc684ebbe18c1e381a54934396fbd4732d8c2b6c40f1",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:5ca727538a4362e849e296d073a71220511fb35e39ca60f34b09312552127f1a",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05037/N05037_P02936.jpg",
+      "image_sha256": "5ca727538a4362e849e296d073a71220511fb35e39ca60f34b09312552127f1a",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:c7ccedd506c87e575f561ef6ef57b9bf3c5bc81a841a5a8b724c44303cc0e0f0",
+      "prediction": {
+        "checkpoint_sha256": "3e921003dcab7293fd7cdadb61ae6fc2a6906b714a49f4a32a860f4eadc18db1",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 0,
+        "image_sha256": "5ca727538a4362e849e296d073a71220511fb35e39ca60f34b09312552127f1a",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05048",
+            "name": "phyllocnistis citrella",
+            "name_zh": "柑橘潜叶蛾",
+            "score": 0.513291597366333
+          },
+          {
+            "code": "N05011",
+            "name": "ceratitis capitata",
+            "name_zh": "地中海实蝇",
+            "score": 0.10760793089866638
+          },
+          {
+            "code": "N05008",
+            "name": "bactrocera dorsalis",
+            "name_zh": "东方果实蝇",
+            "score": 0.0943056046962738
+          },
+          {
+            "code": "N05054",
+            "name": "scarabaeid grub",
+            "name_zh": "蛴螬",
+            "score": 0.02061525732278824
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.017871933057904243
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl",
+        "training_manifest_sha256": "43729147af6847f523a85db50a8556f44ec5dabd9e37f45f43f55253ec85fbae"
+      },
+      "private": {
+        "candidate_pattern": "P4",
+        "class_role": "known",
+        "correct_option": "A",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P4",
+        "truth_code": "N05022",
+        "truth_name": "豆荚螟（Etiella zinckenella）"
+      },
+      "public_options": [
+        {
+          "code": "N05022",
+          "label": "A",
+          "name": "etiella zinckenella",
+          "name_zh": "豆荚螟（Etiella zinckenella）"
+        },
+        {
+          "code": "N05011",
+          "label": "B",
+          "name": "ceratitis capitata",
+          "name_zh": "地中海实蝇"
+        },
+        {
+          "code": "N05048",
+          "label": "C",
+          "name": "phyllocnistis citrella",
+          "name_zh": "柑橘潜叶蛾"
+        },
+        {
+          "code": "N05008",
+          "label": "D",
+          "name": "bactrocera dorsalis",
+          "name_zh": "东方果实蝇"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 豆荚螟（Etiella zinckenella）; B: 地中海实蝇; C: 柑橘潜叶蛾; D: 东方果实蝇",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-5ca727538a4362e849e2",
+      "source_group_id": "source:aa79ca901ef1265b44921a3b474a357b1ebc57e0d613f20ae6040fea129daf9f",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    },
+    {
+      "dataset_version": "open_agri_v3",
+      "image_group_id": "image:61330e6e07bab799348058d50a19bc35b309ea27e76d555b9b54ae598136db24",
+      "image_path": "/data/share/datasets/agriculture/AgriNet-1K/all/N05040/N05040_P00479.jpg",
+      "image_sha256": "61330e6e07bab799348058d50a19bc35b309ea27e76d555b9b54ae598136db24",
+      "language": "zh",
+      "near_duplicate_group_id": "phash:30de13d2cbccd59dd0d7b4ec58550fa1397d061a93a78183b8eaf27558e61188",
+      "prediction": {
+        "checkpoint_sha256": "cd51397485dea2a66c8f86fcf6306cb8f65107afc0dcc05e8b92c123023e25cb",
+        "classifier_version": "vitl-oof-v2",
+        "excluded_supervised_codes": [],
+        "folds": 3,
+        "held_out_fold": 1,
+        "image_sha256": "61330e6e07bab799348058d50a19bc35b309ea27e76d555b9b54ae598136db24",
+        "kind": "out_of_fold",
+        "label_map_sha256": "b032415d45fa8c23be10855da692f5ebc8248ce55c29ca6d04ca64f0bc5bba99",
+        "mae_saw_related_unlabeled": "unknown",
+        "registry_sha256": "4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8",
+        "top5": [
+          {
+            "code": "N05040",
+            "name": "mythimna separata",
+            "name_zh": "稻苞虫",
+            "score": 0.6072352528572083
+          },
+          {
+            "code": "N05062",
+            "name": "spodoptera exigua",
+            "name_zh": "甜菜夜蛾",
+            "score": 0.11536093056201935
+          },
+          {
+            "code": "N05022",
+            "name": "etiella zinckenella",
+            "name_zh": "豆荚螟（Etiella zinckenella）",
+            "score": 0.05765421688556671
+          },
+          {
+            "code": "N05064",
+            "name": "spodoptera frugiperda larva",
+            "name_zh": "草地贪夜蛾幼虫",
+            "score": 0.029103931039571762
+          },
+          {
+            "code": "N05004",
+            "name": "agrotis ypsilon",
+            "name_zh": "地老虎",
+            "score": 0.0255151204764843
+          }
+        ],
+        "training_manifest": "/data/home/jiangwentao/Repos/foundation-agriculture/outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl",
+        "training_manifest_sha256": "f8a2de8b7c2b84a728bf0cb2b3066a0ea3b900c32519dd5504cb730eee341837"
+      },
+      "private": {
+        "candidate_pattern": "P2",
+        "class_role": "known",
+        "correct_option": "D",
+        "intervention": false,
+        "mae_saw_related_unlabeled": "unknown",
+        "p6_group": null,
+        "sampling_arm": "targeted",
+        "sampling_bucket": "targeted",
+        "simulated_unknown": false,
+        "status": "prescreen",
+        "target_pattern": "P2",
+        "truth_code": "N05040",
+        "truth_name": "稻苞虫"
+      },
+      "public_options": [
+        {
+          "code": "N05062",
+          "label": "A",
+          "name": "spodoptera exigua",
+          "name_zh": "甜菜夜蛾"
+        },
+        {
+          "code": "N05022",
+          "label": "B",
+          "name": "etiella zinckenella",
+          "name_zh": "豆荚螟（Etiella zinckenella）"
+        },
+        {
+          "code": "N05064",
+          "label": "C",
+          "name": "spodoptera frugiperda larva",
+          "name_zh": "草地贪夜蛾幼虫"
+        },
+        {
+          "code": "N05040",
+          "label": "D",
+          "name": "mythimna separata",
+          "name_zh": "稻苞虫"
+        }
+      ],
+      "question": "请识别图像中的病害或害虫。 请选择一个选项：A: 甜菜夜蛾; B: 豆荚螟（Etiella zinckenella）; C: 草地贪夜蛾幼虫; D: 稻苞虫",
+      "question_type": "option",
+      "sample_id": "e2-prescreen-61330e6e07bab7993480",
+      "source_group_id": "source:08b880626b1394d0a0bef5086a220ecb5ff94fca8383b2e37cbc58266d7b8c3a",
+      "split": "train_candidate",
+      "task_domain": "pest"
+    }
+  ],
+  "schema_version": "agrinet.e2-e3-training-eligibility-campaign-source/v1",
+  "sft_may_start": false,
+  "training_eligible": false
+}

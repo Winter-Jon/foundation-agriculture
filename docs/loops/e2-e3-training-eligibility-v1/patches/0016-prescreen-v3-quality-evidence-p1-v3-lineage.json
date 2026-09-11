@@ -1,0 +1,33 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0016-prescreen-v3-quality-evidence-p1-v3-lineage",
+  "created_at": "2026-09-11T10:22:56+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "e8fe8d2c07a99e6d3fa4819552c633ee67611f645eafc668774eaf476ca522bc",
+  "purpose": "Authorize one future-only image-bound v3 E2 lineage from a newly rebuilt, all-prior-lineage-excluded OOF candidate pool after the prescreen-v2 pool was exhausted.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "evidence": {
+    "predecessor_collection_final": "outputs/artifacts/micu-classifier-hcv-e2/rewrite-v3-prescreen-v2-tenth-v1/reports/collection-final.json",
+    "predecessor_result": "Tenth prescreen-v2 collection closed at 27 selected, three quality rejections, and two terminal delivery shortfalls; it cannot enter rewrite.",
+    "pool": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v3/source-80.jsonl",
+    "pool_sha256": "3c323df26c3c126c62602ee5042328a7c51205c14d6fbe9f129b30e16285c27d",
+    "pool_summary": "outputs/artifacts/micu-classifier-hcv-e2/prescreen-v3/summary.json",
+    "pool_summary_sha256": "cb88eaa51328d429a1978e55cf3f9d954694f9739a5f9ac8342d8e07b3a1d96d",
+    "pool_isolation": "80 paths exist; each image/source/near-duplicate identity is unique and has zero overlap with 616 identities from all earlier E2 source lineages.",
+    "quality_attribution": "Across ten closed prescreen-v2 collections, P1 had 108 selected and four confirmed quality rejections; P6 had 39 selected and one confirmed quality rejection. This is directional sampling evidence only, not a relaxed acceptance rule.",
+    "failed_uniform_recipe": "Rebuilding the old P1-P6 five-per-cell recipe after full exclusion failed because option/zh/disease P4 had fewer than five candidates."
+  },
+  "future_only_changes": {
+    "source_selection": "Freeze exactly four fresh identities per fixed cell from prescreen-v3 only, excluding all preceding E2 sources across image/source/near-duplicate identity. Select lower candidate patterns first, yielding P1-first selection with P6 and random rows only as deterministic fallback.",
+    "rewrite_schema": "image-bound-compact-observation-comparison-v3",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_ledgers": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "The new lineage retains the exact 32 unique collection winners, four rows per fixed cell, accepted image-bound rewrite, accepted independent private rewrite audit, and conversion-gate requirements. Quality rejects and R2 delivery shortfalls remain terminal. SFT remains separately unauthorized."
+}
