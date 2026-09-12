@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-audit-r0-plan-v3
+display_name: {en: E3.5 fresh balanced audit R0 manifest, zh: E3.5 新鲜均衡审计 R0 清单}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Freezes the v3 fresh balanced audit source as a new immutable R0 manifest.
+lifecycle: active
+parameters:
+  operation: plan-r0
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v3.jsonl
+  audit: true
+  source_is_audit: true
+  campaign_id: e35-dual-arm-audit-v3
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v3-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-audit-r0-plan-v3/}
+tags: [e35, audit, r0, fresh-lineage, no-sft]

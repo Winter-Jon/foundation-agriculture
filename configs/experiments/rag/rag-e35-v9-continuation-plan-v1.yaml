@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-v9-continuation-plan-v1
+display_name: {en: E3.5 v9 budget-controlled continuation plan, zh: E3.5 v9 预算受控续采计划}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Freezes only four Classifier and six RAG E3.5 continuation samples. This is
+  local planning only; it neither contacts the provider nor authorizes SFT.
+lifecycle: active
+parameters:
+  operation: plan-v9-continuation
+  source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  continuation: configs/sampling/e35-v9-continuation-sidecar.json
+  campaign_id: e35-dual-arm-audit-v9
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v9-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-v9-continuation-plan-v1/}
+tags: [e35, audit, v9, continuation, token-budget, no-sft]

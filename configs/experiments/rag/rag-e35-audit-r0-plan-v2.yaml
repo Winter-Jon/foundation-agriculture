@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-audit-r0-plan-v2
+display_name: {en: E3.5 balanced audit R0 manifest, zh: E3.5 均衡审计 R0 清单}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Freezes the exact balanced-v2 32-image source as an immutable R0 collection
+  manifest. This planning operation makes no teacher request.
+lifecycle: active
+parameters:
+  operation: plan-r0
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v2.jsonl
+  audit: true
+  source_is_audit: true
+  campaign_id: e35-dual-arm-audit-v2
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v2-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-audit-r0-plan-v2/}
+tags: [e35, audit, r0, no-sft]

@@ -6,7 +6,9 @@ import sys
 import subprocess
 import os
 import signal
+import socket
 from pathlib import Path
+from urllib.parse import urlparse
 
 import typer
 
@@ -28,6 +30,28 @@ app.add_typer(index_app, name="index")
 
 
 MICU_SLB_BASE_URL = "https://api-slb.micuapi.ai/v1"
+_LOOPBACK_PROXY_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _usable_proxy_environment() -> dict[str, str]:
+    """Return the configured proxy unless its loopback listener is absent.
+
+    A stale local Clash/Mihomo shell helper otherwise blocks the provider
+    capability preflight before an E3.5 ledger or provider intent exists.
+    Non-loopback proxy endpoints are not probed or altered here.
+    """
+    proxy = local_proxy_environment()
+    value = next((proxy[key] for key in ("ALL_PROXY", "HTTPS_PROXY", "HTTP_PROXY") if proxy.get(key)), "")
+    parsed = urlparse(value)
+    if parsed.hostname not in _LOOPBACK_PROXY_HOSTS:
+        return proxy
+    try:
+        with socket.create_connection((parsed.hostname, int(parsed.port or 0)), timeout=1):
+            return proxy
+    except OSError:
+        # Direct access remains subject to the provider's ordinary authenticated
+        # capability preflight; this branch never dispatches a teacher request.
+        return {}
 
 
 def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -> dict[str, str]:
@@ -39,7 +63,14 @@ def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -
     """
     if dry_run:
         return {}
-    environment = {**yunwu_environment(profile="micu_slb"), **local_proxy_environment()}
+    environment = {**yunwu_environment(profile="micu_slb"), **_usable_proxy_environment()}
+    # The child process needs the provider proxy and its local typed RAG HTTP
+    # endpoint.  Explicitly keep loopback off the proxy path.
+    inherited_no_proxy = os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or ""
+    entries = {item.strip() for item in inherited_no_proxy.split(",") if item.strip()}
+    entries.update({"127.0.0.1", "localhost", "::1"})
+    environment["NO_PROXY"] = ",".join(sorted(entries))
+    environment["no_proxy"] = environment["NO_PROXY"]
     configured = parameters.get("teacher_base_url")
     if configured is None:
         return environment
@@ -148,8 +179,18 @@ def submit(
         config = resolve_config(spec)
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True); raise typer.Exit(2) from exc
+    # These historical E2 rewrite/prescreen manifests repeatedly replayed
+    # full multimodal parents and private audits.  Keep them inspectable, but
+    # reject all execution paths before credentials or a run directory exist.
+    if experiment_id.startswith("rag-micu-classifier-hcv-e2-rewrite-"):
+        typer.echo("error: legacy E2 rewrite/prescreen execution is hard-disabled; historical artifacts are read-only", err=True)
+        raise typer.Exit(2)
     if operation == "distill" and spec.task == "classifier_distill_preflight":
         operation = "classifier-distill-preflight"
+    if operation == "distill" and spec.task == "e35_classifier_cascade_preflight":
+        operation = "e35-classifier-cascade-preflight"
+    if operation == "distill" and spec.task == "e35_live_audit_collect":
+        operation = "e35-live-audit-collect"
     if operation == "distill" and spec.task == "micu_slb_canary":
         operation = "micu-slb-canary"
     if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
@@ -166,6 +207,42 @@ def submit(
             if key in parameters:
                 command.extend(["--" + key.replace("_", "-"), str(parameters[key])])
         child_env = {}
+    elif operation == "e35-classifier-cascade-preflight":
+        parameters = config.get("parameters", {})
+        operation_name = str(parameters.get("operation") or "preflight")
+        command = [sys.executable, "-m", "agrinet.rag.e35_classifier_cascade", operation_name]
+        for key in ("contract", "candidate_source", "source", "continuation", "output", "campaign_id", "manifest", "outcomes", "summary", "next_round", "base_r0_summary", "r0_summary", "r1_summary", "r2_summary", "prior_summary", "source_output", "oof_predictions", "images_manifest", "known_output", "simulated_unknown_output", "simulated_unknown_scope", "known_scope", "known_pool", "simulated_unknown_pool", "fold_manifest_dir", "registry_sha256", "registry", "candidate_output", "audit_output"):
+            if key in parameters:
+                command.extend(["--" + key.replace("_", "-"), str(parameters[key])])
+        for path in parameters.get("prior_reauthorization_summary", []):
+            command.extend(["--prior-reauthorization-summary", str(path)])
+        if parameters.get("audit"):
+            command.append("--audit")
+        if parameters.get("source_is_audit"):
+            command.append("--source-is-audit")
+        for path in parameters.get("e3_holdouts", []):
+            command.extend(["--e3-holdout", str(path)])
+        for path in parameters.get("exclude_source", []):
+            command.extend(["--exclude-source", str(path)])
+        if "rag_witnesses_per_arm" in parameters:
+            command.extend(["--rag-witnesses-per-arm", str(parameters["rag_witnesses_per_arm"])])
+        for key, flag in (("e3_prediction", "--e3-prediction"), ("e3_label_map", "--e3-label-map"),
+                          ("e3_checkpoint", "--e3-checkpoint"), ("e3_training_manifest", "--e3-training-manifest")):
+            for path in parameters.get(key, []): command.extend([flag, str(path)])
+        child_env = {}
+    elif operation == "e35-live-audit-collect":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e35_live"]
+        for key, flag in (("manifest", "--manifest"), ("source", "--source"), ("output", "--output"),
+                          ("output_root", "--output-root"), ("rag_endpoint", "--rag-endpoint"),
+                          ("private_registry", "--private-registry"),
+                          ("teacher_model", "--teacher-model"), ("timeout", "--timeout")):
+            if key in parameters: command.extend([flag, str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
     elif operation == "micu-classifier-hcv-v2":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.micu_classifier_hcv_v2"]

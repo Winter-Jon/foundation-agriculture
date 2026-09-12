@@ -24,5 +24,7 @@ parameters:
   classifier_checkpoint_interval: 10
   workers: 8
   cuda_visible_devices: '1,2'
+  e35_scoring_manifest: outputs/artifacts/e35-dual-arm-rag-distill/scopes/e3-fold-manifests/fold-0.jsonl
+  e35_scoring_output: outputs/artifacts/e35-dual-arm-rag-distill/classfold-cards/fold-0
   training_eligible: false
 tags: [open-agri-v3, e3, adjacent-classfold, fold0, vit-large, two-gpu, no-teacher, no-sft]

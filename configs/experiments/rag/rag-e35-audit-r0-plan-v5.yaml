@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-audit-r0-plan-v5
+display_name: {en: E3.5 RAG-witness audit R0 manifest, zh: E3.5 RAG 见证审计 R0 清单}
+domain: rag
+task: e35_classifier_cascade_preflight
+lifecycle: active
+parameters:
+  operation: plan-r0
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  audit: true
+  source_is_audit: true
+  campaign_id: e35-dual-arm-audit-v5
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v5-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-audit-r0-plan-v5/}
+tags: [e35, audit, r0, rag-witness, private-audit, fresh-lineage, no-sft]

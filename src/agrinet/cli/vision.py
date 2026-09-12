@@ -84,6 +84,16 @@ def _command(config: dict, operation: str) -> list[str]:
         checkpoint = artifact / "classifier" / "model_best.pth.tar"
         return base + ["evaluate", "--artifact-root", str(artifact), "--output-dir", str(artifact / "classifier"),
                        "--checkpoint", str(checkpoint), "--split", "test_known"]
+    if operation == "e3-score-e35-scope":
+        if config.get("task") != "e3_adjacent_class_holdout_classification":
+            raise ConfigError("E3.5 scoring requires an E3 class-fold experiment")
+        manifest = params.get("e35_scoring_manifest"); output = params.get("e35_scoring_output")
+        if not isinstance(manifest, str) or not isinstance(output, str):
+            raise ConfigError("E3.5 scoring requires manifest and isolated output paths")
+        checkpoint = artifact / "classifier" / "model_best.pth.tar"
+        return base + ["evaluate", "--artifact-root", str(artifact), "--output-dir", str(root / output),
+                       "--checkpoint", str(checkpoint), "--manifest", str(root / manifest),
+                       "--split", "dev_known", "--score-only"]
     if operation == "evaluate": return base + ["evaluate", "--artifact-root", str(artifact), "--output-dir", str(root / config["outputs"]["classifier_formal"]), "--checkpoint", str(root / inputs["classifier_checkpoint"]), "--split", "test_known"]
     raise ConfigError(f"unsupported vision operation: {operation}")
 

@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-select-balanced-audit-v3
+display_name: {en: E3.5 fresh balanced audit selector, zh: E3.5 新鲜均衡审计抽样}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Creates a separately authorized candidate audit sidecar by excluding every
+  image from the exhausted v2 audit lineage. It is offline-only.
+lifecycle: active
+parameters:
+  operation: select-audit
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  exclude_source:
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v2.jsonl
+  output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v3.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-select-balanced-audit-v3/}
+tags: [e35, audit, balanced, fresh-lineage, no-sft]

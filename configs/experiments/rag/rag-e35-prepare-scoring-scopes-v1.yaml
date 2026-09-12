@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-prepare-scoring-scopes-v1
+display_name: {en: E3.5 freeze dual-arm scoring scopes, zh: E3.5 冻结双臂评分范围}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Offline-only deterministic selection of 535 OOF and 535 E3-heldout images,
+  with image/source/near-duplicate isolation before class-fold scoring.
+lifecycle: active
+components: {classifier: six-frozen-vitl}
+parameters:
+  operation: materialize-fold-manifests
+  simulated_unknown_scope: outputs/artifacts/e35-dual-arm-rag-distill/scopes/simulated-unknown-e3.jsonl
+  fold_manifest_dir: outputs/artifacts/e35-dual-arm-rag-distill/scopes/e3-fold-manifests
+outputs: {run_root: outputs/runs/rag/rag-e35-prepare-scoring-scopes-v1/}
+tags: [e35, source, oof, classfold, no-teacher, no-sft]

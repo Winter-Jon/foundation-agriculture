@@ -1,0 +1,35 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-build-card-pools-v1
+display_name: {en: E3.5 bind six classifier cards, zh: E3.5 绑定六个分类器卡片}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Offline-only join of frozen OOF cards and E3 class-fold Top-5 predictions.
+  Fails if a simulated-Unknown truth is visible in its fold label map.
+lifecycle: active
+components: {classifier: six-frozen-vitl}
+parameters:
+  operation: build-card-pools
+  known_scope: outputs/artifacts/e35-dual-arm-rag-distill/scopes/known-oof.jsonl
+  simulated_unknown_scope: outputs/artifacts/e35-dual-arm-rag-distill/scopes/simulated-unknown-e3.jsonl
+  e3_prediction:
+    - outputs/artifacts/e35-dual-arm-rag-distill/classfold-cards/fold-0/predictions_dev_known.jsonl
+    - outputs/artifacts/e35-dual-arm-rag-distill/classfold-cards/fold-1/predictions_dev_known.jsonl
+    - outputs/artifacts/e35-dual-arm-rag-distill/classfold-cards/fold-2/predictions_dev_known.jsonl
+  e3_label_map:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/label_map.json
+  e3_checkpoint:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/classifier/model_best.pth.tar
+  e3_training_manifest:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/manifests/train.jsonl
+  registry_sha256: 4fa6426203c64631315a2d754f3d53d6c3a7639e26c1c8617b2cbf92caf00cb8
+  known_output: outputs/artifacts/e35-dual-arm-rag-distill/card-pools/known.jsonl
+  simulated_unknown_output: outputs/artifacts/e35-dual-arm-rag-distill/card-pools/simulated-unknown.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-build-card-pools-v1/}
+tags: [e35, classifier-cards, oof, classfold, no-teacher, no-sft]

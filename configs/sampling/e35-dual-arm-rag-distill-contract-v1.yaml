@@ -1,0 +1,12 @@
+schema_version: agrinet.e35-dual-arm-rag-distill/v1
+status: designed_not_launched
+dataset: {version: open_agri_v3, known_classes: 107}
+arms:
+  known: {classifier_count: 3, classifier_family: openagri-v3-known-vitl-oof-v2, prediction_kind: out_of_fold}
+  simulated_unknown: {classifier_count: 3, classifier_family: openagri-v3-known-vitl-e3-adjacent-classfold-v1, truth_excluded_from_label_map: true}
+sampling: {per_class: 5, open_per_class: 3, option_per_class: 2, identity_keys: [image_sha256, source_group_id, near_duplicate_group_id]}
+audit: {images: 32, per_arm: 16, source: final_candidate_pool, carry_closed_winners_to_campaign: true}
+recovery: {rounds: [R0, R1, R2], max_new_attempts: 2, automatic_replay_allowed: false, workers: 4}
+budgets: {micu_intents: 8000}
+rag: {full_registry_visible: true, combine_classifier_and_retrieval_scores: false, insufficient_evidence_requires_rag_call: true}
+gates: {training_eligible: false, training_authorized: false, sft_may_start: false}

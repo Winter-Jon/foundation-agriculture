@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-dual-arm-audit-v1
+display_name: {en: E3.5 dual-arm RAG distillation audit, zh: E3.5 双臂 RAG 蒸馏审计}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Offline-only 32-image audit contract for the frozen six-classifier cascade.
+  It does not call a teacher or authorize training.
+lifecycle: active
+components: {classifier: six-frozen-vitl, rag: agrinet-local-full}
+parameters:
+  contract: configs/sampling/e35-dual-arm-rag-distill-contract-v1.yaml
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  audit_size: 32
+  output: outputs/artifacts/e35-dual-arm-rag-distill/audit-preflight.json
+outputs: {run_root: outputs/runs/rag/rag-e35-dual-arm-audit-v1/}
+tags: [e35, rag-distill, dual-arm, audit, no-sft]

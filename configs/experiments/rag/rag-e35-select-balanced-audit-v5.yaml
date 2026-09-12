@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-select-balanced-audit-v5
+display_name: {en: E3.5 fresh private RAG-witness audit selector, zh: E3.5 新鲜私有 RAG 见证审计抽样}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Freezes a new 32-image, dual-arm, balanced audit after excluding v2/v3/v4
+  identities. One private-only RAG route-coverage witness is designated per arm;
+  it is not visible to the teacher, public tools, public trajectory, or export.
+lifecycle: active
+parameters:
+  operation: select-audit
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  exclude_source:
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v2.jsonl
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v3.jsonl
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v4.jsonl
+  rag_witnesses_per_arm: 1
+  output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-select-balanced-audit-v5/}
+tags: [e35, audit, balanced, rag-witness, private-audit, fresh-lineage, no-sft]

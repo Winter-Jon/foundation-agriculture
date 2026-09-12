@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-delivery-reauthorize-v6
+display_name: {en: E3.5 v5 delivery-gap reauthorization manifest, zh: E3.5 v5 交付缺口重新授权清单}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  User-authorized fresh v6 R0 for only the 25 v5 R2 unknown-delivery gaps after
+  provider quota recovery. It creates a new source, request identity, ledger,
+  and campaign root; it never replays or rewrites v5 artifacts.
+lifecycle: active
+parameters:
+  operation: reauthorize-delivery
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  prior_summary: outputs/artifacts/e35-dual-arm-rag-distill/outcomes/e35-dual-arm-audit-v5-r2-summary.json
+  campaign_id: e35-dual-arm-delivery-reauthorization-v6
+  source_output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-delivery-reauthorization-v6.jsonl
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-delivery-reauthorization-v6-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-delivery-reauthorize-v6/}
+tags: [e35, audit, delivery-reauthorization, v6, fresh-request-ids, no-sft]

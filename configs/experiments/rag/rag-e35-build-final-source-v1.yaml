@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-build-final-source-v1
+display_name: {en: E3.5 freeze final dual-arm source, zh: E3.5 冻结最终双臂来源}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Offline-only construction of the 1,070-image private source and its 32-image
+  audit subset from frozen six-classifier card pools and the full registry.
+lifecycle: active
+components: {classifier: six-frozen-vitl, rag: agrinet-local-full}
+parameters:
+  operation: build-source
+  contract: configs/sampling/e35-dual-arm-rag-distill-contract-v1.yaml
+  known_pool: outputs/artifacts/e35-dual-arm-rag-distill/card-pools/known.jsonl
+  simulated_unknown_pool: outputs/artifacts/e35-dual-arm-rag-distill/card-pools/simulated-unknown.jsonl
+  registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  candidate_output: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  audit_output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-build-final-source-v1/}
+tags: [e35, source, dual-arm, audit, no-teacher, no-sft]

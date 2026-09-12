@@ -37,8 +37,21 @@ def test_e2_micu_runtime_requires_validated_slb_endpoint(monkeypatch: pytest.Mon
     monkeypatch.setattr("agrinet.cli.rag.local_proxy_environment", lambda: {})
     environment = _micu_runtime_environment({"teacher_base_url": MICU_SLB_BASE_URL}, dry_run=False)
     assert environment["YUNWU_API_BASE_URL"] == MICU_SLB_BASE_URL
+    assert {"127.0.0.1", "localhost", "::1"}.issubset(set(environment["NO_PROXY"].split(",")))
+    assert environment["no_proxy"] == environment["NO_PROXY"]
     with pytest.raises(ValueError, match="validated SLB"):
         _micu_runtime_environment({"teacher_base_url": "https://www.micuapi.ai/v1"}, dry_run=False)
+
+
+def test_micu_runtime_omits_unreachable_loopback_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agrinet.cli.rag import _micu_runtime_environment
+
+    monkeypatch.setattr("agrinet.cli.rag.yunwu_environment", lambda **_kwargs: {
+        "YUNWU_API_KEY": "test-key", "YUNWU_API_BASE_URL": "https://api-slb.micuapi.ai/v1"})
+    monkeypatch.setattr("agrinet.cli.rag.local_proxy_environment", lambda: {"ALL_PROXY": "http://127.0.0.1:7899"})
+    monkeypatch.setattr("agrinet.cli.rag.socket.create_connection", lambda *_args, **_kwargs: (_ for _ in ()).throw(ConnectionRefusedError()))
+    environment = _micu_runtime_environment({"teacher_base_url": "https://api-slb.micuapi.ai/v1"}, dry_run=False)
+    assert "ALL_PROXY" not in environment
 
 
 def test_slb_canary_stops_after_a_failed_first_round(tmp_path: Path) -> None:

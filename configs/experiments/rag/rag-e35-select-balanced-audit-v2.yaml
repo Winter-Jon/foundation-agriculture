@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-select-balanced-audit-v2
+display_name: {en: E3.5 balanced 32-image audit selector, zh: E3.5 均衡 32 图审计抽样}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Creates a new immutable, balanced audit sidecar from the frozen 1,070-image
+  candidate source. It is offline-only and does not contact a teacher.
+lifecycle: active
+parameters:
+  operation: select-audit
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v2.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-select-balanced-audit-v2/}
+tags: [e35, audit, balanced, no-sft]

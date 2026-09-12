@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-v11-local-rag-repair-plan-v1
+display_name: {en: E3.5 v11 local-RAG repair plan, zh: E3.5 v11 本地 RAG 修复续采计划}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Creates a new six-sample RAG-only lineage after v10's delivered native RAG
+  calls could not receive a local tool response because the CUDA service failed.
+lifecycle: active
+parameters:
+  operation: plan-v9-continuation
+  source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  continuation: configs/sampling/e35-v11-local-rag-repair-sidecar.json
+  campaign_id: e35-dual-arm-audit-v11-local-rag-repair
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v11-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-v11-local-rag-repair-plan-v1/}
+tags: [e35, audit, v11, rag, local-tool-repair, token-budget, no-sft]

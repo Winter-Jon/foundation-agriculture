@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-v10-rag-repair-plan-v1
+display_name: {en: E3.5 v10 RAG repair plan, zh: E3.5 v10 RAG 修复续采计划}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Creates a fresh six-sample RAG-only lineage after v9's private-audit
+  data-URL duplication defect. No accepted classifier winner is resent.
+lifecycle: active
+parameters:
+  operation: plan-v9-continuation
+  source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  continuation: configs/sampling/e35-v10-rag-repair-sidecar.json
+  campaign_id: e35-dual-arm-audit-v10-rag-repair
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v10-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-v10-rag-repair-plan-v1/}
+tags: [e35, audit, v10, rag, repair, token-budget, no-sft]

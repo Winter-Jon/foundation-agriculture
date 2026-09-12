@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-select-balanced-audit-v4
+display_name: {en: E3.5 truth-audited fresh balanced selector, zh: E3.5 真值私审新鲜均衡抽样}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Selects a fresh 32-image balanced audit after excluding both earlier audit
+  lineages; the resulting live audit binds a private truth-name registry.
+lifecycle: active
+parameters:
+  operation: select-audit
+  candidate_source: outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl
+  exclude_source:
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v2.jsonl
+    - outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v3.jsonl
+  output: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v4.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e35-select-balanced-audit-v4/}
+tags: [e35, audit, balanced, truth-audit, fresh-lineage, no-sft]

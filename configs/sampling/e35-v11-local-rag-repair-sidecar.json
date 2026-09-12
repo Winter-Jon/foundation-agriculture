@@ -1,0 +1,8 @@
+[
+  {"sample_id": "e35-known-N04001-01d74e68aa13379f8e2b", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "970fe87fd38d4a41be37a3c74eaf0d77"},
+  {"sample_id": "e35-known-N05004-001a5d86f96f201d6258", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "915cd7ecfb2c4824861920d8c47864cf"},
+  {"sample_id": "e35-known-N05054-00106b9c4d348f822cbd", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "3e65fa40c1484abc8cd6776950b74ae2"},
+  {"sample_id": "e35-simulated_unknown-N04027-0a1466b2de5dd9f63c62", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "4dad8dfed52448819639da43c58e024e"},
+  {"sample_id": "e35-simulated_unknown-N05049-01fdf448aba07db7790a", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "026c93d4916c48eaaffde8607867ec8c"},
+  {"sample_id": "e35-simulated_unknown-N05064-014afb29cd27bf22b0b3", "resume_route": "rag", "prior_state": "rag_local_tool_shortfall", "predecessor_request_id": "32596e64a03a40d9aaa8b30db5af62cf"}
+]

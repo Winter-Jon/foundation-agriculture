@@ -1,0 +1,22 @@
+schema_version: agrinet.experiment/v1
+id: rag-serve-open-agri-v3-micu-v2-cpu-recovery-v1
+display_name: {en: OpenAgri v3 RAG CPU recovery service, zh: OpenAgri v3 RAG CPU 恢复服务}
+domain: rag
+task: serve
+description: >-
+  Temporary CPU-only recovery service for E3.5 RAG evidence collection while
+  the workstation CUDA driver/library mismatch is unresolved.
+lifecycle: active
+components: {retrieval: retrieval/siglip2-milvus-v1, runtime: runtime/local-rag}
+runtime_profile: runtime/local-rag
+inputs:
+  database: outputs/milvus/agrinet_wiki_lite.db
+  model: models/siglip2-so400m-patch16-naflex
+outputs: {}
+parameters:
+  host: 127.0.0.1
+  port: 8077
+  device: cpu
+  class_collection: open_agri_v3_classes
+  image_collection: open_agri_v3_images
+tags: [rag, e35, recovery, cpu, no-teacher]

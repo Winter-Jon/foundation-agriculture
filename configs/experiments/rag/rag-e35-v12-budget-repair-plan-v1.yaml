@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-v12-budget-repair-plan-v1
+display_name: {en: E3.5 v12 budget-control repair plan, zh: E3.5 v12 预算控制修复续采计划}
+domain: rag
+task: e35_classifier_cascade_preflight
+description: >-
+  Creates a four-sample RAG-only lineage for v11 second-turn deliveries that
+  were incorrectly stopped by a per-call reservation overrun despite capacity
+  remaining under the frozen campaign cap.
+lifecycle: active
+parameters:
+  operation: plan-v9-continuation
+  source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+  continuation: configs/sampling/e35-v12-budget-repair-sidecar.json
+  campaign_id: e35-dual-arm-audit-v12-budget-repair
+  output: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v12-r0.json
+outputs: {run_root: outputs/runs/rag/rag-e35-v12-budget-repair-plan-v1/}
+tags: [e35, audit, v12, rag, budget-repair, no-sft]

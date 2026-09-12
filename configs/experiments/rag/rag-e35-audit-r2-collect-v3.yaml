@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-e35-audit-r2-collect-v3
+display_name: {en: E3.5 fresh audit R2 final recovery, zh: E3.5 新鲜审计 R2 最终恢复}
+domain: rag
+task: e35_live_audit_collect
+description: >-
+  Runs the final permitted recovery attempt for the seven unconfirmed v3 audit
+  deliveries; no R3 or image replacement is allowed.
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v3-r2.json
+  source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v3.jsonl
+  output: outputs/artifacts/e35-dual-arm-rag-distill/outcomes/e35-dual-arm-audit-v3-r2.json
+  output_root: outputs/artifacts/e35-dual-arm-rag-distill/campaigns/e35-dual-arm-audit-v3
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e35-audit-r2-collect-v3/}
+tags: [e35, audit, r2, fresh-lineage, no-sft]
