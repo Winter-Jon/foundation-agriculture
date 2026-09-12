@@ -1,0 +1,27 @@
+{
+  "schema_version": "agrinet.e2-e3-training-eligibility-contract-patch/v1",
+  "patch_id": "0020-e35-dual-arm-rag-distill",
+  "created_at": "2026-09-11T13:00:00+08:00",
+  "base_contract_sha256": "25df1e5e0ae4209a56ec74e87e582e2528f725349a22428be91b6433ab509850",
+  "parent_patch_sha256": "22de693cd7a76762c0349ae5f953015f1f0476eedc986e4dfe995cb2a6909c40",
+  "purpose": "Add a future-only E3.5 dual-arm RAG distillation data contract after E3 classifier evidence, without changing E2/E3 locks or granting training authority.",
+  "prohibited_changes": [
+    "historical_contract",
+    "strict_canary_history",
+    "old_ledgers_or_request_ids",
+    "sft_authorization"
+  ],
+  "future_only_changes": {
+    "e35_contract": "configs/sampling/e35-dual-arm-rag-distill-contract-v1.yaml",
+    "arms": ["known-oof", "simulated-unknown-classfold"],
+    "candidate_target": "107 classes x 5 images x 2 arms = 1070 images",
+    "audit": "deterministic 32-image subset of the frozen final candidate pool",
+    "cascade": ["Direct", "private audit reject", "Classifier", "private audit reject", "RAG"],
+    "teacher_prompt_policy": "collection may use route-specific teacher prompts; Hermes conversion rewrites every candidate to the one frozen English SFT system prompt",
+    "hermes_sft_system_prompt": "single frozen English prompt for every Direct, Classifier, and RAG candidate",
+    "delivery_recovery": ["R0", "R1", "R2"],
+    "fresh_request_ids_and_lineage": true,
+    "automatic_replay_allowed": false
+  },
+  "qualification": "E3.5 closes only a RAG-distillation data line. All outputs retain training_eligible=false, training_authorized=false, and sft_may_start=false; E2 plus E3.5 training freeze is a later authorized phase."
+}

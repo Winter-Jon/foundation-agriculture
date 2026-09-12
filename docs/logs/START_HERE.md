@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-11 12:30:00 CST
+Last updated: 2026-09-13 01:11:00 CST
 
 ## Repository state
 
@@ -21,6 +21,115 @@ caches, retry snapshots, and ad-hoc launchers—under ignored local roots,
 normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
+
+### Current — E3.5 RAG recovery is ready; full campaign is not authorized
+
+The former pre-provider blocker is resolved safely. The stale unreachable
+loopback proxy helper is bypassed only when its local listener is absent;
+authenticated direct provider capability preflight passed, and the local CPU
+RAG service remains healthy. v11 plus its four-row v12 budget-control repair
+are complete, producing three accepted RAG trajectories: Known N04001 and
+simulated Unknown N05049/N04027. Every accepted path retains the native RAG
+tool call and typed actual response. v12 used 27,975 / 200,000 uncached input
+tokens with no unresolved delivery. Its remaining rows are delivery-confirmed
+route-contract or quality terminals, not unknown delivery.
+
+The next action is immutable audit-summary/gate assessment only. Do not replay
+v11/v12 or start full collection, export, SFT, or training.
+
+The future-only E3.5 contract, six-classifier source/card binding, deterministic
+source builder, balanced audit selector, cascade/recovery checks, and registered
+offline preflight are now in the mainline. The real frozen candidate source is
+`outputs/artifacts/e35-dual-arm-rag-distill/final-candidates.jsonl`: 1,070 rows
+(535 Known plus 535 simulated Unknown), each arm covers 107 classes x 5 with
+3 Open + 2 Option and has zero cross-arm overlap for image/source/near-duplicate
+identities. Its preflight report is ready with no errors.
+
+The v2/v3/v4 audits are immutable historical observations and must not be
+replayed. v5 was sampled from the same final 1,070-candidate pool while
+excluding every earlier audit `sample_id`, image SHA, source group, and
+near-duplicate group. It has 16 rows per arm and exactly four in each
+Open/Option x disease/pest cell. A single private-only route-coverage witness
+per arm required Direct and Classifier terminals to be rejected by private
+audit, while the shared English teacher prompt and public tools remained
+unchanged. The controller separately validates that any RAG witness terminal
+contains an actual retained `agrinet_rag_search` call/response; this designation
+cannot enter teacher inputs, public ledger payloads, public trajectories,
+lineage, or Hermes export.
+
+The v5 R0/R1/R2 immutable lineage is exhausted without image replacement or an
+R3 attempt. Following explicit user reauthorization after quota recovery, v6
+created a new R0 lineage only for v5's final 25 delivery gaps: new source
+sidecar, campaign root, request IDs, ledgers, and R0/R1/R2 manifests, while the
+seven original v5 Direct winners were not resent. v6 reclosed 11 further Direct
+winners (8 in R0 and 3 in R1); its final 14 R2 items remain delivery shortfalls.
+The combined 32-image report therefore records Known `closed=9,
+delivery_shortfall=7` and simulated Unknown `closed=9, delivery_shortfall=7`.
+No accepted RAG terminal was observed: `rag_evidence_closed=false` and
+`protocol_gate_passed=false`. This remains a provider delivery shortfall, not a
+quality rejection or a negative model claim.
+
+The user's subsequent instruction to reattempt quota-exhausted
+`unknown_delivery` created v7—not an illegal v6 replay—for only v6's final 14
+gaps. The native OpenAI-compatible tool continuation bug was repaired
+future-only: provider `tool_calls` and their `tool_call_id` are now preserved
+in the next request instead of being rewritten as ordinary assistant JSON. v7
+R0/R1/R2 closed three additional non-RAG trajectories, recorded ten R2 delivery
+shortfalls, and one delivered RAG `route_contract_reject`; that RAG-stage
+teacher path called only the classifier before finalizing, so it did not issue
+the required `agrinet_rag_search` call. No R3 was created.
+The layered immutable report is
+`outputs/artifacts/e35-dual-arm-rag-distill/reports/e35-dual-arm-delivery-reauthorization-v7-final.json`: Known `closed=11`,
+`delivery_shortfall=4`, `route_contract_reject=1`; simulated Unknown
+`closed=10`, `delivery_shortfall=6`. It still has
+`rag_evidence_closed=false`, `protocol_gate_passed=false`, and all training
+flags false. v5/v6/v7 are exhausted and must never be replayed.
+Future collection summaries additionally preserve a public-safe
+`contract_error` code for controller protocol failures (such as a missing RAG
+call/response), without exposing private audit content.
+
+For future collection, Direct/Classifier/RAG may use separate teacher prompts
+and tool policies. This is not an SFT prompt change: Hermes conversion must
+replace the collection prompt with the single fixed English `system_prompt` on
+every exported candidate.
+
+The v8 R2 ledger isolated four Direct parents whose generation had been
+delivered but whose private-audit POST was unknown in every ordinary attempt.
+An explicitly frozen, parent-only private-audit replay sent no teacher
+generation requests and delivered all four new private-audit requests; all four
+decisions were `reject`. This confirms a private-auditor delivery-stability
+shortfall rather than a RAG endpoint failure. Any legal classifier escalation
+must use a separately frozen follow-on scope; it cannot be appended to the
+completed parent-only recovery ledger.
+
+The v9 follow-on scope is now frozen locally, but has not been collected: it
+contains exactly 10 of the existing audit images—four resume at Classifier
+after the confirmed Direct-private reject, and six resume at RAG (five delivery
+unknowns plus the one historical RAG contract reject). It introduces a
+200,000 uncached-input-token dispatch cap, conservative pre-dispatch
+reservations that remain charged for unknown delivery, deterministic 1024 px
+JPEG transport images, and two public turns per resumed route. Its local
+adapter dry-run passed RAG health and all ten in-memory image encodes with
+`teacher_requests=0`. The high-cost legacy E2 rewrite/prescreen submit paths
+are hard-disabled; historical artifacts remain readable.
+
+Full 1,070-image collection is additionally code-gated: a manifest can only be
+created by `plan-full-after-audit` when an immutable audit final report has both
+`protocol_gate_passed=true` and a retained real RAG call/response closure. The
+v6 combined final report was used to verify rejection; no full manifest was created.
+
+No SFT or training has started. All E3.5 artifacts remain training-ineligible
+and unauthorized. Any later audit requires a new, separately frozen source and
+lineage; v2/v3/v4/v5/v6/v7 must never be replayed.
+The future-only controller now writes public trajectories and private-audit
+receipts under immutable `work_id` paths and writes the receipt only after the
+private provider response is durably ledgered. This prevents R1/R2 local file
+collisions from being misclassified as provider delivery ambiguity; it does not
+alter any exhausted historical lineage.
+See `configs/sampling/e35-dual-arm-rag-distill-contract-v1.yaml` and
+`docs/loops/e2-e3-training-eligibility-v1/patches/0020-e35-dual-arm-rag-distill.json`.
+For v9, see `configs/sampling/e35-v9-continuation-sidecar.json` and
+`outputs/artifacts/e35-dual-arm-rag-distill/manifests/e35-dual-arm-audit-v9-r0.json`.
 
 ### Current — E2 image-bound rewrite-v3: P1-first lineage reaches formal training eligibility
 

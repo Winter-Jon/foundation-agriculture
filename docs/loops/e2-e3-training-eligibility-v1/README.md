@@ -6,14 +6,13 @@ replace `docs/logs/START_HERE.md` as the repository-wide research entrypoint.
 
 ## Current phase
 
-1. E3 formal classifiers are running; verify all three terminal run records,
-   then evaluate and aggregate their held-out generalization evidence.
-2. E2 is offline-only until E3 aggregation completes. The completed recovery
-   campaign has no accepted rewrites; its failure analysis drives a versioned
-   contract patch and offline validation.
-3. A separate 8-cell x 1 provider pilot may be planned only after that patch
-   validates. It remains a narrow risk exception, never evidence that the strict
-   10/10 x 2 canary passed.
+1. E3 generalization evidence is complete; E2 remains independently governed
+   and SFT remains unauthorized even where its data-quality qualification passes.
+2. E3.5 is a future-only dual-arm RAG-distillation line: freeze and audit a
+   three-key-isolated 1,070-image candidate pool before any teacher request.
+3. Its 32-image audit uses Direct -> private audit -> Classifier -> private
+   audit -> RAG. Delivery recovery remains limited to R0/R1/R2 and never
+   converts an ambiguous delivery into a content failure.
 
 ## Immutable boundaries
 
@@ -25,6 +24,8 @@ replace `docs/logs/START_HERE.md` as the repository-wide research entrypoint.
   four accepted rows in each fixed Open/Option x EN/ZH x disease/pest cell.
   Each row needs a closed rewrite and independent private rewrite-audit accept.
 - SFT is not authorized by this loop.
+- E3.5 is bound by patch `0020-e35-dual-arm-rag-distill` and its separate
+  immutable contract; it cannot modify these E2/E3 locks.
 
 ## Records
 
