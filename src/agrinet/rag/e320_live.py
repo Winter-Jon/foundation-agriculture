@@ -27,6 +27,7 @@ from agrinet.rag.e35_transport import transport_image
 from agrinet.rag.micu_classifier_hcv_v2 import local_rag_health
 from agrinet.rag.micu_classifier_hcv_v2_collect import GlobalMicuBudget, execute_rag, parse_teacher_action
 from agrinet.research.hcv.collector import post_teacher_json
+from agrinet.research.hcv.v13_collector import _isolated_micu_request
 
 
 def _private_names(path: Path) -> dict[str, str]:
@@ -119,7 +120,16 @@ def main(argv: list[str] | None = None) -> int:
             return request_id,response
 
         def teacher(payload: dict[str, Any]) -> dict[str, Any]:
-            return post_teacher_json(base_url.rstrip("/")+"/chat/completions",payload,headers,post_args)
+            # The ordinary HTTP helper converts network failures to
+            # UnknownTeacherDelivery, but a blocked TLS/socket poll can evade
+            # that helper's timeout in a worker thread.  Keep the provider
+            # call in a killable child so a lost delivery reaches the existing
+            # E35 ledger as unresolved rather than stalling an entire immutable
+            # Direct shard indefinitely.  No retry occurs here: the E3.21
+            # controller alone may create predecessor-bound R1/R2 attempts.
+            return _isolated_micu_request(
+                base_url.rstrip("/") + "/chat/completions", payload, headers, int(args.timeout),
+            )
 
         def stage_runner(row: dict[str, Any], stage: str, context: dict[str, Any]) -> tuple[str, dict[str, Any]]:
             ledger=E35Ledger(args.output_root / "ledgers" / str(context["work_id"]).replace(":","_"),work_id=str(context["work_id"]),attempt_ordinal=int(context["attempt_ordinal"]),intent_limit=8000)

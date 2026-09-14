@@ -16,7 +16,7 @@ from typing import Any
 from agrinet.rag.e321_direct_first import (
     write_direct_delivery_recovery_manifest, write_direct_quality_repair_manifest,
 )
-from agrinet.rag.e321_report import checkpoint_report
+from agrinet.rag.e321_report import checkpoint_report, delivery_shortfall_report
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -79,6 +79,11 @@ def _resolve_chain(*, base_manifest: Path, source: Path, outcomes: Path, campaig
             _report(manifest=recovery_manifest,source=source,outcomes=recovery_out,campaign_root=campaign_root,report=report_dir / f"{recovery_manifest.stem}.json")
             completed.append({"manifest":str(recovery_manifest),"outcomes":str(recovery_out)})
             pending.append((recovery_manifest,recovery_out))
+        if next_round == "R2" and (outcome_dir / f"{recovery_manifest.stem}.json").exists():
+            recovery_out=outcome_dir / f"{recovery_manifest.stem}.json"
+            shortfall=report_dir / f"{recovery_manifest.stem}-delivery-shortfall.json"
+            if not shortfall.exists():
+                delivery_shortfall_report(manifest=recovery_manifest,outcomes=recovery_out,output=shortfall)
     return completed
 
 

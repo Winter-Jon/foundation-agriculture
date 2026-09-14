@@ -6,7 +6,7 @@ from agrinet.rag.e321_direct_first import (
     write_direct_delivery_recovery_manifest, write_direct_quality_repair_manifest,
 )
 from agrinet.rag.e320_live import validate_e320_live_inputs
-from agrinet.rag.e321_report import checkpoint_report
+from agrinet.rag.e321_report import checkpoint_report, delivery_shortfall_report
 from agrinet.rag.e321_campaign import run_campaign
 
 
@@ -82,6 +82,29 @@ def test_e321_checkpoint_report_binds_complete_outcomes(tmp_path):
     report=checkpoint_report(manifest=manifest_path,source=source,outcomes=outcome,campaign_root=campaign,output=tmp_path / "report.json")
     assert report["public_validation"]["passed"]
     assert report["scope"]["arm"] == {"known":1}
+
+
+def test_e321_r2_unknown_delivery_is_a_terminal_shortfall_record(tmp_path):
+    row=_candidate(0, "known"); row["e39_protocol"] = E321_PROTOCOL
+    source=tmp_path / "source.jsonl"; _jsonl(source,[row])
+    manifest_path=tmp_path / "r0.json"
+    r0=write_direct_manifest(source=source,sample_ids=["s-0"],campaign_id="test",output=manifest_path,shard="r0")
+    import hashlib
+    r0_out=tmp_path / "r0-out.json"
+    r0_out.write_text(json.dumps({"manifest_sha256":hashlib.file_digest(manifest_path.open("rb"), "sha256").hexdigest(),"outcomes":[{"work_id":r0["work_items"][0]["work_id"],"delivery_status":"unknown_delivery","request_id":"lost-r0"}]}))
+    r1_path=tmp_path / "r1.json"
+    r1=write_direct_delivery_recovery_manifest(prior_manifest=manifest_path,outcomes=r0_out,next_round="R1",output=r1_path)
+    r1_out=tmp_path / "r1-out.json"
+    r1_out.write_text(json.dumps({"manifest_sha256":hashlib.file_digest(r1_path.open("rb"), "sha256").hexdigest(),"outcomes":[{"work_id":r1["work_items"][0]["work_id"],"delivery_status":"unknown_delivery","request_id":"lost-r1"}]}))
+    r2_path=tmp_path / "r2.json"
+    r2=write_direct_delivery_recovery_manifest(prior_manifest=r1_path,outcomes=r1_out,next_round="R2",output=r2_path)
+    r2_out=tmp_path / "r2-out.json"
+    r2_out.write_text(json.dumps({"manifest_sha256":hashlib.file_digest(r2_path.open("rb"), "sha256").hexdigest(),"outcomes":[{"work_id":r2["work_items"][0]["work_id"],"delivery_status":"unknown_delivery","request_id":"lost-r2"}]}))
+    report=delivery_shortfall_report(manifest=r2_path,outcomes=r2_out,output=tmp_path / "shortfall.json")
+    assert report["count"] == 1
+    assert report["delivery_shortfalls"][0]["last_request_id"] == "lost-r2"
+    assert report["delivery_shortfalls"][0]["no_r3_created"] is True
+    assert report["training_eligible"] is False
 
 
 def test_e321_campaign_skips_existing_direct_outcomes_and_freezes_empty_continuations(tmp_path, monkeypatch):
