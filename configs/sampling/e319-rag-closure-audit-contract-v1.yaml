@@ -1,0 +1,30 @@
+schema_version: agrinet.e319-rag-closure-audit-contract/v1
+protocol: agrinet.e319-rag-closure-audit/v1
+purpose: prospective repair of E3.18 RAG over-abstention, Option terminal formatting, and public controller diagnostics; no training authorization
+source:
+  target_rows: 32
+  arm: simulated_unknown
+  identity_disjoint_from: [E3.9, E3.10, E3.11, E3.12, E3.13, E3.14, E3.15, E3.16-canary, E3.17, E3.18]
+  identity_keys: [sample_id, image_sha256, source_group_id, near_duplicate_group_id]
+  question_domain_cells: {open_disease: 8, open_pest: 8, option_disease: 8, option_pest: 8}
+  classifier_fold_targets: {0: 11, 1: 11, 2: 10}
+cascade:
+  private_rag_witness_for_every_row: true
+  routes: [direct, classifier, rag]
+  rag_protocol: discriminative-retrieval-with-concrete-closure
+  closure_rule: answer concretely after visible-trait and actual-RAG evidence establish the discriminator; abstain only with matched missing-visible-trait and RAG-limitation statements
+  option_terminal: exact public class name, one space, em dash, one space, uppercase option letter
+  teacher_visibility_forbidden: [truth, arm, folds, coverage_designation, private_audit]
+controls:
+  transport_image_max_side: 512
+  uncached_input_token_cap: 8000000
+  workers: 4
+  recovery_rounds: [R0, R1, R2]
+  no_r3: true
+  training_eligible: false
+  training_authorized: false
+  sft_may_start: false
+acceptance:
+  require_at_least_one_private_accepted_concrete_rag_winner: true
+  report_concrete_contract_error_codes: true
+  distinguish_delivery_shortfall_from_quality_or_contract_reject: true

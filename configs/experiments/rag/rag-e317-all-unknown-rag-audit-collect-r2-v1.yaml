@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e317-all-unknown-rag-audit-collect-r2-v1
+display_name: {en: E3.17 all-simulated-Unknown 32-image RAG audit R2 recovery, zh: E3.17 全模拟 Unknown 32 图 RAG 审计 R2 恢复}
+domain: rag
+task: e35_live_audit_collect
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e317-all-unknown-rag-audit/manifests/e317-all-unknown-rag-audit-r2.json
+  source: outputs/artifacts/e317-all-unknown-rag-audit/sources/e317-all-unknown-rag-audit-source-v1.jsonl
+  output: outputs/artifacts/e317-all-unknown-rag-audit/outcomes/e317-all-unknown-rag-audit-r2.json
+  output_root: outputs/artifacts/e317-all-unknown-rag-audit/campaigns/e317-all-unknown-rag-audit-v1
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e317-all-unknown-rag-audit-collect-r2-v1/}
+tags: [e317, simulated-unknown, three-classifier, hcv, hermes, rag, audit, r2-recovery, no-sft]

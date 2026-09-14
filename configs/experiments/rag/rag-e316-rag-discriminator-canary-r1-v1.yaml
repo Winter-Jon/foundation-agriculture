@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e316-rag-discriminator-canary-r1-v1
+display_name: {en: E3.16 discriminative-RAG canary R1 delivery recovery, zh: E3.16 判别式 RAG canary R1 交付恢复}
+domain: rag
+task: e35_live_audit_collect
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e316-rag-discriminator-canary/manifests/e316-rag-discriminator-canary-r1.json
+  source: outputs/artifacts/e316-rag-discriminator-canary/sources/e316-rag-discriminator-canary-source-v1.jsonl
+  output: outputs/artifacts/e316-rag-discriminator-canary/outcomes/e316-rag-discriminator-canary-r1.json
+  output_root: outputs/artifacts/e316-rag-discriminator-canary/campaigns/e316-rag-discriminator-canary-v1
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e316-rag-discriminator-canary-r1-v1/}
+tags: [e316, canary, r1, recovery, delivery-only, rag, no-sft]

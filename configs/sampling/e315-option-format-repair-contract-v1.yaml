@@ -1,0 +1,12 @@
+schema_version: agrinet.e315-option-format-repair/v1
+status: designed_not_launched
+predecessor: e314-hcv-audit-v1-terminal
+scope: {rows: 5, source: delivered_e314_option_terminal_format_only, resume_route: classifier}
+lineage: {new_protocol: true, new_request_ids: true, preserve_e314_terminal_records: true, superseded_classifier_request_id_private_only: true}
+teacher_prompt:
+  one_shot_option_terminal_format: true
+  required_terminal: 'class name — letter'
+  forbidden_examples: ['A. class name', 'class name (A)', 'A']
+protocol: {strict_hermes_final: true, strict_native_tool_schema: true, explicit_option_a_to_d_comparison: true, classifier_predict_once: true, classifier_expand_max: 1, rag_after_private_reject_only: true}
+recovery: {rounds: [R0, R1, R2], replay_only: unresolved_provider_delivery, r2_terminal: delivery_shortfall}
+gates: {training_eligible: false, training_authorized: false, sft_may_start: false}

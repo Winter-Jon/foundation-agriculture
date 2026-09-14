@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e315-option-format-repair-v1
+display_name: {en: E3.15 five-sample Option-format repair pre-collection, zh: E3.15 五样本 Option 格式修复预采集}
+domain: rag
+task: e35_live_audit_collect
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e315-option-format-repair/manifests/e315-option-format-repair-r0.json
+  source: outputs/artifacts/e315-option-format-repair/sources/e315-option-format-repair-source-v1.jsonl
+  output: outputs/artifacts/e315-option-format-repair/outcomes/e315-option-format-repair-r0.json
+  output_root: outputs/artifacts/e315-option-format-repair/campaigns/e315-option-format-repair-v1
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e315-option-format-repair-v1/}
+tags: [e315, hcv, hermes, option-format, one-shot, five-sample, repair, no-sft]

@@ -1,0 +1,24 @@
+schema_version: agrinet.e318-all-unknown-512-rag-audit-contract/v1
+protocol: agrinet.e318-all-unknown-512-rag-audit/v1
+purpose: full 32-image 512px transport and token-budget calibration; no training authorization
+source:
+  target_rows: 32
+  arm: simulated_unknown
+  identity_disjoint_from: [E3.9, E3.10, E3.11, E3.12, E3.13, E3.14, E3.15, E3.16-canary, E3.17]
+  identity_keys: [sample_id, image_sha256, source_group_id, near_duplicate_group_id]
+  question_domain_cells: {open_disease: 8, open_pest: 8, option_disease: 8, option_pest: 8}
+  classifier_fold_targets: {0: 11, 1: 11, 2: 10}
+  each_cell_covers_classifier_folds: [0, 1, 2]
+cascade:
+  private_rag_witness_for_every_row: true
+  routes: [direct, classifier, rag]
+  rag_protocol: E3.16-discriminative-retrieval
+  teacher_visibility_forbidden: [truth, arm, folds, coverage_designation, private_audit]
+controls:
+  transport_image_max_side: 512
+  uncached_input_token_cap: 8000000
+  budget_basis: 32 forced full cascades have a conservative R0 reservation of about 6.75M; cache is observed only, not assumed
+  micu_intent_limit: 8000
+  training_eligible: false
+  training_authorized: false
+  sft_may_start: false
