@@ -1,0 +1,8 @@
+schema_version: agrinet.e39-hcv-cascade/v1
+status: designed_not_launched
+base_source: outputs/artifacts/e35-dual-arm-rag-distill/audit-source-balanced-v5.jsonl
+audit: {images: 32, per_arm: 16, route_winners_per_arm: [direct, classifier, rag]}
+hcv: {hermes_final: true, direct_open_hypotheses: [2, 3], classifier_predict_first: true, rag_predict_first: true, rag_searches: [1, 3]}
+full_campaign: {non_audit_images: 1038, total_target_images: 1070, uncached_input_token_cap: 8000000}
+audit_budget: {uncached_input_token_cap: 300000, micu_intents: 8000}
+gates: {training_eligible: false, training_authorized: false, sft_may_start: false}

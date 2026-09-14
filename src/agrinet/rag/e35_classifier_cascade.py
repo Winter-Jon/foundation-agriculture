@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -152,6 +153,11 @@ def cascade_outcome(*, work_item: dict[str, Any], stages: list[dict[str, Any]]) 
             return {"work_id": work_item["work_id"], "delivery_status": "delivered",
                     "request_id": stage.get("request_id"), "winner": False, "final_route": route,
                     "quality_status": str(audit or "missing_private_audit"), "parent_path": stage.get("parent_path"),
+                    "contract_error": stage.get("contract_error")}
+        if stage.get("terminal_reject") is True:
+            return {"work_id": work_item["work_id"], "delivery_status": "delivered",
+                    "request_id": stage.get("request_id"), "winner": False, "final_route": route,
+                    "quality_status": "quality_rejected", "parent_path": stage.get("parent_path"),
                     "contract_error": stage.get("contract_error")}
         if route == "rag":
             return {"work_id": work_item["work_id"], "delivery_status": "delivered",
@@ -511,6 +517,9 @@ def recovery_attempt(*, prior_attempt_ordinal: int, status: str, predecessor_req
 
 def validate_rag_terminal(trajectory: dict[str, Any]) -> None:
     route, answer = trajectory.get("route"), trajectory.get("answer")
+    if isinstance(answer, str):
+        match = re.search(r"<answer>(.*?)</answer>", answer, flags=re.I | re.S)
+        if match: answer = match.group(1).strip()
     calls = trajectory.get("tool_calls", [])
     if route != "rag": return
     rag_positions = [i for i, call in enumerate(calls) if call.get("name") == "agrinet_rag_search"]

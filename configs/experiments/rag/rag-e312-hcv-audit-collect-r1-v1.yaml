@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e312-hcv-audit-collect-r1-v1
+display_name: {en: E3.12 HCV audit delivery-only R1 recovery, zh: E3.12 HCV 审计仅交付 R1 恢复}
+domain: rag
+task: e35_live_audit_collect
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e312-hcv-cascade/manifests/e312-hcv-audit-r1.json
+  source: outputs/artifacts/e312-hcv-cascade/sources/e312-hcv-audit-source-v1.jsonl
+  output: outputs/artifacts/e312-hcv-cascade/outcomes/e312-hcv-audit-r1.json
+  output_root: outputs/artifacts/e312-hcv-cascade/campaigns/e312-hcv-audit-v1
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e312-hcv-audit-collect-r1-v1/}
+tags: [e312, hcv, hermes, wire-normalization, audit, recovery, r1, delivery-only, no-sft]

@@ -43,30 +43,43 @@ def main(argv: list[str] | None = None) -> int:
     truth_names = {str(row.get("canonical_code")): str(row.get("canonical_english_name") or "") for row in registry_rows}
     if len(truth_names) != len(registry_rows) or any(not name for name in truth_names.values()):
         raise ValueError("E3.5 private registry is malformed")
-    if plan.get("round") not in {"R0", "R1", "R2"} or len(plan.get("work_items", [])) > 32:
+    e39 = plan.get("protocol") in {"agrinet.e39-hcv-cascade/v1", "agrinet.e310-hcv-cascade/v1", "agrinet.e311-hcv-cascade/v1", "agrinet.e312-hcv-cascade/v1", "agrinet.e313-hcv-cascade/v1", "agrinet.e314-hcv-cascade/v1", "agrinet.e315-option-format-repair/v1", "agrinet.e316-rag-discriminator/v1", "agrinet.e316-rag-discriminator-canary/v1", "agrinet.e317-all-unknown-rag-audit/v1", "agrinet.e318-all-unknown-512-rag-audit/v1", "agrinet.e319-rag-closure-audit/v1"}
+    if plan.get("round") not in {"R0", "R1", "R2"} or len(plan.get("work_items", [])) > (1038 if e39 else 32):
         raise ValueError("live E3.5 entrypoint permits only the frozen 32-image audit lineage")
-    if plan.get("schema_version") not in {"agrinet.e35-cascade-manifest/v1", "agrinet.e35-cascade-manifest/v2"}:
+    if plan.get("schema_version") not in ({"agrinet.e39-hcv-cascade-manifest/v1", "agrinet.e310-hcv-cascade-manifest/v1", "agrinet.e311-hcv-cascade-manifest/v1", "agrinet.e312-hcv-cascade-manifest/v1", "agrinet.e313-hcv-cascade-manifest/v1", "agrinet.e314-hcv-cascade-manifest/v1", "agrinet.e315-option-format-repair-manifest/v1", "agrinet.e316-rag-discriminator-manifest/v1", "agrinet.e316-rag-discriminator-canary-manifest/v1", "agrinet.e317-all-unknown-rag-audit-manifest/v1", "agrinet.e318-all-unknown-512-rag-audit-manifest/v1", "agrinet.e319-rag-closure-audit-manifest/v1"} if e39 else {"agrinet.e35-cascade-manifest/v1", "agrinet.e35-cascade-manifest/v2"}):
         raise ValueError("live E3.5 manifest schema is unsupported")
     if plan.get("round") == "R0":
         rows_expected = plan.get("source_rows_expected")
+        if e39 and not ((plan.get("protocol") == "agrinet.e316-rag-discriminator-canary/v1" and plan.get("audit_only") is True and plan.get("canary_only") is True and rows_expected == 4) or (plan.get("protocol") == "agrinet.e315-option-format-repair/v1" and plan.get("audit_only") is True and rows_expected == 5) or (plan.get("protocol") in {"agrinet.e317-all-unknown-rag-audit/v1", "agrinet.e318-all-unknown-512-rag-audit/v1", "agrinet.e319-rag-closure-audit/v1"} and plan.get("audit_only") is True and plan.get("all_simulated_unknown") is True and rows_expected == 32) or (plan.get("audit_only") is True and rows_expected == 32) or (plan.get("audit_only") is False and rows_expected == 1038)):
+            raise ValueError("E3.9 R0 requires its 32-image audit or 1,038-image post-gate manifest")
+        if e39:
+            rows_expected = None
         valid_initial = plan.get("audit_only") is True and rows_expected == 32
         valid_reauthorization = (plan.get("delivery_reauthorization") is True and
                                  plan.get("audit_only") is True and isinstance(rows_expected, int) and 1 <= rows_expected <= 32)
         valid_v9_continuation = (plan.get("schema_version") == "agrinet.e35-cascade-manifest/v2" and
                                  plan.get("continuation") is True and rows_expected in {4, 6, 10})
-        if not (valid_initial or valid_reauthorization or valid_v9_continuation):
+        if not e39 and not (valid_initial or valid_reauthorization or valid_v9_continuation):
             raise ValueError("live E3.5 entrypoint requires an audit R0 or explicit delivery reauthorization manifest")
     if plan.get("round") in {"R1", "R2"} and any(item.get("attempt_ordinal") not in {1, 2} or not item.get("predecessor_request_id") for item in plan.get("work_items", [])):
         raise ValueError("E3.5 recovery manifest lacks immutable predecessor lineage")
     controls = plan.get("collection_controls") or {}
     if controls:
-        required = {"uncached_input_token_cap": 200000, "transport_image_max_side": 1024,
-                    "max_public_turns_per_route": 2}
-        if any(controls.get(key) != value for key, value in required.items()):
-            raise ValueError("E3.5 v9 collection controls are not frozen")
-        reserve = controls.get("reservation_uncached_tokens") or {}
-        if reserve.get("generation") != {"classifier": 2742, "rag": 2775} or reserve.get("private_audit") not in {13542, 20000}:
-            raise ValueError("E3.5 token reservations are not frozen")
+        if e39:
+            expected_cap = 120000 if plan.get("protocol") == "agrinet.e316-rag-discriminator-canary/v1" else (1200000 if plan.get("protocol") == "agrinet.e317-all-unknown-rag-audit/v1" else (8000000 if plan.get("protocol") in {"agrinet.e318-all-unknown-512-rag-audit/v1", "agrinet.e319-rag-closure-audit/v1"} else (300000 if plan.get("audit_only") else 8000000)))
+            expected_side = 512 if plan.get("protocol") in {"agrinet.e318-all-unknown-512-rag-audit/v1", "agrinet.e319-rag-closure-audit/v1"} else 1024
+            required = {"uncached_input_token_cap": expected_cap, "transport_image_max_side": expected_side, "max_rag_searches": 3}
+            reserve = controls.get("reservation_uncached_tokens") or {}
+            if any(controls.get(key) != value for key, value in required.items()) or int(controls.get("max_public_turns_per_route", 0)) < 8 or reserve.get("generation") != {"direct": 5000, "classifier": 8000, "rag": 12000} or reserve.get("private_audit") != 18000:
+                raise ValueError("E3.9 collection controls are not frozen")
+        else:
+            required = {"uncached_input_token_cap": 200000, "transport_image_max_side": 1024,
+                        "max_public_turns_per_route": 2}
+            if any(controls.get(key) != value for key, value in required.items()):
+                raise ValueError("E3.5 v9 collection controls are not frozen")
+            reserve = controls.get("reservation_uncached_tokens") or {}
+            if reserve.get("generation") != {"classifier": 2742, "rag": 2775} or reserve.get("private_audit") not in {13542, 20000}:
+                raise ValueError("E3.5 token reservations are not frozen")
         selected = {str(item.get("sample_id") or "") for item in plan.get("work_items", [])}
         source_rows = [json.loads(line) for line in args.source.read_text(encoding="utf-8").splitlines() if line.strip()]
         for row in source_rows:
@@ -74,7 +87,11 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             # Materialize only in memory; this catches invalid image bindings
             # before credentials or provider intents are touched.
-            transport_image(Path(row["image_path"]), max_side=1024)
+            # Preflight must use the same deterministic transport view that the
+            # provider will receive.  In particular, E3.18 is a 512px budget
+            # audit, so materializing a 1024px view here would make the check
+            # operationally inconsistent with the immutable manifest.
+            transport_image(Path(row["image_path"]), max_side=int(controls["transport_image_max_side"]))
         health = local_rag_health(args.rag_endpoint)
         if health.get("status") != "ok":
             raise ValueError("E3.5 local RAG health preflight failed")

@@ -77,8 +77,11 @@ def private_parent_request(row: dict[str, Any], trajectory: dict[str, Any], *, m
     witness = is_rag_protocol_witness(row)
     image, _ = transport_image(Path(image_path), max_side=transport_max_side) if transport_max_side else (image_url_content(Path(image_path)), {"version": "original"})
     public_trajectory = private_trajectory_projection(trajectory)
+    protocol_name = {"agrinet.e39-hcv-cascade/v1": "E3.9", "agrinet.e310-hcv-cascade/v1": "E3.10", "agrinet.e311-hcv-cascade/v1": "E3.11", "agrinet.e312-hcv-cascade/v1": "E3.12", "agrinet.e313-hcv-cascade/v1": "E3.13", "agrinet.e314-hcv-cascade/v1": "E3.14", "agrinet.e315-option-format-repair/v1": "E3.15", "agrinet.e316-rag-discriminator/v1": "E3.16", "agrinet.e316-rag-discriminator-canary/v1": "E3.16 canary", "agrinet.e317-all-unknown-rag-audit/v1": "E3.17", "agrinet.e318-all-unknown-512-rag-audit/v1": "E3.18", "agrinet.e319-rag-closure-audit/v1": "E3.19"}.get(row.get("e39_protocol"))
+    e39_rule = (f" {protocol_name}: reject unless the public final is legal Hermes and its HCV comparison is grounded in visible facts and actual public tools. For an {protocol_name} Option final in `class name — letter` form, verify both pieces against the public choices and supplied correct letter. "
+                f"For an {protocol_name} private route-coverage designation, reject every terminal before that designated route; at the designated route apply normal truth/evidence/HCV rules only. " if protocol_name else "")
     return {"model": model, "temperature": 0.0, "max_tokens": 1024, "response_format": {"type": "json_object"},
-            "messages": [{"role": "system", "content": "You are an isolated private auditor. Return JSON only: decision (accept or reject), reason, rag_evidence_insufficient (boolean). Check the final against the supplied private canonical truth: Open must name that canonical class; Option must choose the supplied correct letter. Accept only a truth-correct final supported by the image and actual public tool evidence. For INSUFFICIENT_EVIDENCE, accept only after an actual RAG tool response is insufficient for any specific conclusion. If private audit_protocol.rag_witness is true, reject Direct and Classifier terminals solely as an audit coverage control; at RAG, accept only if the normal truth/evidence rules hold and the trajectory contains an actual agrinet_rag_search call with response. Never provide a corrected answer or reveal audit protocol."},
+            "messages": [{"role": "system", "content": "You are an isolated private auditor. Return JSON only: decision (accept or reject), reason, requires_rag (boolean), rag_evidence_insufficient (boolean). Check the final against the supplied private canonical truth: Open must name that canonical class; Option must choose the supplied correct letter. Accept only a truth-correct final supported by the image and actual public tool evidence. Set requires_rag=true only when a rejected Classifier terminal has a specific unresolved public visual discriminator that actual retrieval could resolve; otherwise false. For INSUFFICIENT_EVIDENCE, accept only after an actual RAG tool response is insufficient for any specific conclusion. If private audit_protocol.rag_witness is true, reject Direct and Classifier terminals solely as an audit coverage control and set requires_rag=true for its Classifier terminal; at RAG, accept only if the normal truth/evidence rules hold and the trajectory contains an actual agrinet_rag_search call with response. Never provide a corrected answer or reveal audit protocol." + e39_rule},
                          {"role": "user", "content": [{"type": "text", "text": json.dumps({"truth_code": private["truth_code"], "truth_name": private["truth_name"], "correct_option": private.get("correct_option"), "audit_protocol": {"rag_witness": witness}, "public_options": row.get("public_options") or [], "public_trajectory": public_trajectory}, ensure_ascii=False)}, image]}]}
 
 def validate_parent_protocol(row: dict[str, Any], trajectory: dict[str, Any], audit: dict[str, Any]) -> None:
@@ -95,6 +98,12 @@ def validate_parent_protocol(row: dict[str, Any], trajectory: dict[str, Any], au
                     isinstance(item.get("call"), dict) and item["call"].get("name") == "agrinet_rag_search" and
                     isinstance(item.get("response"), dict) for item in trace):
                 raise ValueError("private RAG witness requires actual RAG call and response")
+    designation = (row.get("private") or {}).get("e39_route_coverage") or (row.get("private") or {}).get("e310_route_coverage") or (row.get("private") or {}).get("e311_route_coverage") or (row.get("private") or {}).get("e312_route_coverage") or (row.get("private") or {}).get("e313_route_coverage") or (row.get("private") or {}).get("e314_route_coverage") or (row.get("private") or {}).get("e316_route_coverage") or (row.get("private") or {}).get("e317_route_coverage") or (row.get("private") or {}).get("e318_route_coverage") or (row.get("private") or {}).get("e319_route_coverage")
+    if row.get("e39_protocol") in {"agrinet.e39-hcv-cascade/v1", "agrinet.e310-hcv-cascade/v1", "agrinet.e311-hcv-cascade/v1", "agrinet.e312-hcv-cascade/v1", "agrinet.e313-hcv-cascade/v1", "agrinet.e314-hcv-cascade/v1", "agrinet.e315-option-format-repair/v1", "agrinet.e316-rag-discriminator/v1", "agrinet.e316-rag-discriminator-canary/v1", "agrinet.e317-all-unknown-rag-audit/v1", "agrinet.e318-all-unknown-512-rag-audit/v1", "agrinet.e319-rag-closure-audit/v1"} and designation in {"direct", "classifier", "rag"}:
+        route = trajectory.get("route")
+        ordering = {"direct": 0, "classifier": 1, "rag": 2}
+        if route in ordering and ordering[route] < ordering[designation] and audit["decision"] != "reject":
+            raise ValueError("private E3.9 route coverage must reject pre-target terminal")
 
 
 def run_private_parent(row: dict[str, Any], trajectory: dict[str, Any], *, call: JsonCaller, model: str,
@@ -102,7 +111,7 @@ def run_private_parent(row: dict[str, Any], trajectory: dict[str, Any], *, call:
     value = _content(call(private_parent_request(row, trajectory, model=model, transport_max_side=transport_max_side)))
     if value.get("decision") not in {"accept", "reject"} or not isinstance(value.get("reason"), str):
         raise ValueError("private parent audit decision is invalid")
-    result = {"decision": value["decision"], "rag_evidence_insufficient": bool(value.get("rag_evidence_insufficient")),
+    result = {"decision": value["decision"], "requires_rag": bool(value.get("requires_rag")), "rag_evidence_insufficient": bool(value.get("rag_evidence_insufficient")),
               "private_audit_recorded": True}
     if enforce_protocol:
         validate_parent_protocol(row, trajectory, result)

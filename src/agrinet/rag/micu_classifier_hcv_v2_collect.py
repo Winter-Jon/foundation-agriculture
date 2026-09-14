@@ -485,8 +485,18 @@ def execute_rag(endpoint: str, public: dict[str, Any], arguments: dict[str, Any]
         raise RuntimeError(f"local RAG request failed: {type(exc).__name__}") from exc
     if raw.get("schema_version") != "agrinet.rag.search/v1" or not isinstance(raw.get("evidence"), list):
         raise ValueError("local RAG returned an invalid typed response")
+    # This is a public projection of the typed response, not a model guess.
+    # Later RAG protocols may require final answers to quote one of these
+    # service-returned standard names exactly.
+    returned_standard_class_names=[]
+    for item in raw["evidence"]:
+        metadata=item.get("metadata") if isinstance(item, dict) else None
+        name=metadata.get("english_name") if isinstance(metadata, dict) else None
+        if isinstance(name, str) and name.strip() and name.strip() not in returned_standard_class_names:
+            returned_standard_class_names.append(name.strip())
     return {"tool": "agrinet_rag_search", "arguments": {"query": query,
-            "retrieval_type": retrieval_type, "rationale": rationale}, "raw_response": raw}
+            "retrieval_type": retrieval_type, "rationale": rationale}, "raw_response": raw,
+            "returned_standard_class_names": returned_standard_class_names}
 
 
 def run_parent(*, source_row: dict[str, Any], output_root: Path, rag_endpoint: str,

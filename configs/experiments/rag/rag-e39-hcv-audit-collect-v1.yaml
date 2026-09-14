@@ -1,0 +1,21 @@
+schema_version: agrinet.experiment/v1
+id: rag-e39-hcv-audit-collect-v1
+display_name: {en: E3.9 HCV 32-image prospective audit, zh: E3.9 HCV 32 图前瞻审计}
+domain: rag
+task: e35_live_audit_collect
+description: >-
+  Collects only the independently frozen E3.9 32-image audit lineage. The
+  source and manifest must be materialized first by agrinet.rag.e39_hcv_cascade.
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e39-hcv-cascade/manifests/e39-hcv-audit-r0.json
+  source: outputs/artifacts/e39-hcv-cascade/sources/e39-hcv-audit-source-v1.jsonl
+  output: outputs/artifacts/e39-hcv-cascade/outcomes/e39-hcv-audit-r0.json
+  output_root: outputs/artifacts/e39-hcv-cascade/campaigns/e39-hcv-audit-v1
+  rag_endpoint: http://127.0.0.1:8077
+  private_registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e39-hcv-audit-collect-v1/}
+tags: [e39, hcv, hermes, audit, classifier, rag, no-sft]

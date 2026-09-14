@@ -1,0 +1,18 @@
+schema_version: agrinet.e311-hcv-cascade/v1
+status: designed_not_launched
+predecessors: [e39-hcv-audit-v1-terminal-failed, e310-hcv-audit-v1-terminal-failed]
+audit: {images: 32, exclude_prior_audit_identity_layers: [sample_id, image_sha256, source_group_id, near_duplicate_group_id], route_winners_per_arm: [direct, classifier, rag]}
+protocol:
+  two_step_native_tool_turn: true
+  native_tool_content_empty: true
+  tool_response_adjacent: true
+  hermes_hcv_in_think_required: true
+  classifier_predict_once: true
+  classifier_expand_max: 1
+  rag_searches: [1, 3]
+  equivalent_rejected_alternative_clauses: ["candidate: reason", "candidate is rejected because reason", "candidate is less likely because reason"]
+  uncertainty: explicit_judgement_and_evidence_limitation
+  direct_private_reject_continuation_on_internal_hcv_observation: true
+recovery: {rounds: [R0, R1, R2], replay_only: unresolved_provider_delivery, r2_terminal: delivery_shortfall}
+budgets: {audit_uncached_input_token_cap: 300000, audit_micu_intents: 8000}
+gates: {training_eligible: false, training_authorized: false, sft_may_start: false}
