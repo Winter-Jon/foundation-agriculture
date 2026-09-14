@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e322-classifier-presample-v1
+display_name: {en: E3.22 Classifier presample, zh: E3.22 Classifier 预采样}
+domain: rag
+task: e322_classifier_presample
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e322-classifier-presample/manifest-r0.json
+  source: outputs/artifacts/e322-classifier-presample/source.jsonl
+  queue: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/e321-future-classifier-queue-v3.json
+  output_root: outputs/artifacts/e322-classifier-presample/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e322-classifier-presample-v1/}
+tags: [e322, classifier, presample, hcv, hermes, classifier-only, no-rag, no-sft]

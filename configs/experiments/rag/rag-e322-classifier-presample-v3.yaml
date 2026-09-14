@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e322-classifier-presample-v3
+display_name: {en: E3.22 Classifier paired preflight v3, zh: E3.22 Classifier 配对预检 v3}
+domain: rag
+task: e322_classifier_presample
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e322-classifier-presample-v3/manifest-r0.json
+  source: outputs/artifacts/e322-classifier-presample-v3/source.jsonl
+  queue: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/e321-future-classifier-queue-v3.json
+  output_root: outputs/artifacts/e322-classifier-presample-v3/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e322-classifier-presample-v3/}
+tags: [e322, classifier, paired-preflight, v3, hcv, hermes, classifier-only, no-rag, no-sft]

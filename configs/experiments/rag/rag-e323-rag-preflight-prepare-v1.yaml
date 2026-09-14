@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-e323-rag-preflight-prepare-v1
+display_name: {en: E3.23 RAG preflight prepare, zh: E3.23 RAG 预检准备}
+domain: rag
+task: e323_rag_preflight_prepare
+lifecycle: active
+parameters:
+  e322_source: outputs/artifacts/e322-classifier-presample-v3/source.jsonl
+  e322_outcomes:
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/r0.json
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/q1.json
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/r1.json
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/q1-r1.json
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/r2.json
+    - outputs/artifacts/e322-classifier-presample-v3/campaign/outcomes/q1-r2.json
+  e322_final_report: outputs/artifacts/e322-classifier-presample-v3/campaign/final-report.json
+  e322_gate_decision: outputs/artifacts/e322-classifier-presample-v3/campaign/final-gate-decision.json
+  output_root: outputs/artifacts/e323-rag-preflight
+outputs: {run_root: outputs/runs/rag/rag-e323-rag-preflight-prepare-v1/}
+tags: [e323, rag, preflight, prepare, offline, no-reject, no-sft]

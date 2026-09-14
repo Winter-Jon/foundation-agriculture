@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-14 12:55:00 CST
+Last updated: 2026-09-14 20:24:02 CST
 
 ## Repository state
 
@@ -21,6 +21,71 @@ caches, retry snapshots, and ad-hoc launchers—under ignored local roots,
 normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
+
+### Current — E3.23 v4 RAG preflight completed below gate; Reject remains unauthorized
+
+The user-authorized 16-image E3.23 RAG-only preflight consumed exactly the
+E3.22 v3 frozen future-RAG cohort while preserving its private 6 autonomous
+`INSUFFICIENT_EVIDENCE` / 10 oracle-rescued unsafe-accept split. The terminal
+v4 campaign is under `outputs/artifacts/e323-rag-preflight-v4/campaign/`; its
+managed run `20260914T200528-350c670c-a01` completed with exit code 0.
+
+The artifact audit passes: 29 persisted trajectories each contain exactly one
+frozen classifier predict followed by exactly one actual local RAG search; 156
+global intents match 156 ledger intents and request IDs; there are zero public
+private-data leaks and zero Reject calls. The performance gate fails: final
+disposition is 12 quality-exhausted, three budget-shortfall, and one frozen
+future-Reject, with 0/16 semantic-correct. Budget closed at 296,649/300,000
+committed. Therefore do not execute Reject, remaining Classifier rows,
+conversion, SFT, or training. The next step is to interview the user and redesign
+the RAG evidence/answer contract under a new protocol rather than enlarge or
+replay this frozen campaign.
+
+### Historical — E3.22 v3 paired Classifier preflight passed
+
+E3.22 derived an immutable 32-image Classifier-only presample from the frozen
+525-row E3.21 queue. The source has 16 Known and 16 simulated-Unknown rows, 32
+truth classes, exact Open/Option × disease/pest quotas, all six frozen
+checkpoint bindings, and uniqueness on sample ID, image SHA, source group, and
+near-duplicate group. The two scarce simulated-Unknown Option-pest rows are
+included. Source, manifest, outcomes, and reports retain all three no-training
+flags.
+
+The immutable v1 terminal report is
+`outputs/artifacts/e322-classifier-presample/campaign/final-report.json`; the
+original independent audit is `artifact-audit-v2.json` in the same directory. Final
+disposition is 12 semantic-correct (Known 11, simulated-Unknown 1), nine frozen
+future-RAG, seven quality-exhausted, and four budget-shortfall. All six
+checkpoint resolvers executed predict. A corrected read-only audit,
+`artifact-audit-v3.json`, finds 36 Open terminal-format errors across attempts
+(R0 24, Q1 11, R1 1) that v2 of the validator now detects; zero private
+classifier-binding leakage and zero tool-order errors remain verified.
+The 300,000-token ledger closed at 289,044 committed (246,544 settled plus
+42,500 unknown-delivery exposure). `presample_gate_passed=false`; the remaining
+Classifier queue is frozen at 493 rows. Do not run those rows, RAG/Reject,
+conversion, SFT, or training without a new user decision.
+
+The repaired v2 protocol is prepared at
+`outputs/artifacts/e322-classifier-presample-v2/`. It deliberately reuses the
+exact same 32-image v1 cohort as a paired diagnostic, binds the actual canonical
+registry, separates Open/Option prompts and validation, settles delivered
+contract failures, distinguishes private-audit contract errors from unknown
+delivery, persists continuation lineage, records frozen-card resolver receipts,
+and reports semantic accuracy separately from stage-appropriate Unknown routing.
+Its live campaign was never started and remains historical prepare-only.
+
+The user-authorized v3 paired preflight completed at
+`outputs/artifacts/e322-classifier-presample-v3/campaign/`. It additionally
+implements private-audit-only recovery, per-provider-call intent accounting,
+wire-payload hashes, durable failure-path resolver receipts, conservative 5,000
+token private-audit reservations, autonomous insufficient-evidence reporting,
+and a final gate bound to both report and independent audit hashes. Final state
+is 16 semantic-correct and 16 future-RAG: Known is 16/16 semantic-correct; all
+16 simulated-Unknown rows are oracle-routed appropriately, but only 6/16 defer
+autonomously and 10/16 still make an incorrect closed-set acceptance. The final
+gate passes with zero terminal contract, quality, delivery, budget, leakage,
+tool-order, resolver, online-classifier, or lineage failures. This authorizes no
+remaining-493 execution, RAG/Reject, conversion, SFT, or training.
 
 ### Current — E3.21 Direct-First HCV Cascade Direct-only collection is closed
 
@@ -861,6 +926,14 @@ not. Do not train, freeze, expand, or run DP8 until a stronger offline-tested de
 mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
+
+- E3.23 v4 RAG preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 20:24:02 CST). The 16-image RAG-only campaign completed safely but failed its performance gate with zero semantic-correct, 12 quality-exhausted, three budget shortfalls, and one future-Reject.
+
+- E3.22 v3 paired Classifier preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 19:10:14 CST). The repaired 32-image preflight passed its report+artifact gate; Known reached 16/16, while simulated-Unknown autonomous deferral remains only 6/16.
+
+- E3.22 v2 paired-repair preparation: [changes/2026-W38-0914-0920.md](changes/2026-W38-0914-0920.md) (2026-09-14 18:20:41 CST). Prompt, validation, budget, audit, lineage, registry, and report defects were fixed under a new protocol; offline prepare passed and live collection remains unauthorized.
+
+- E3.22 Classifier presample terminal failure: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 17:06:51 CST). The 32-image Classifier-only audit closed below semantic and quality gates with four budget shortfalls; no downstream route is authorized.
 
 - OpenAgri v3 Known-only ViT-L MAE launch: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-06 18:14:37 CST). v3 manifests and smoke validation passed; corrected eight-A800 MAE pretraining is volatile, while classification waits for its formal encoder.
 - OpenAgri v3 ViT-L MAE epoch-25 checkpoint: [experiments/2026-W36-0831-0906.md](experiments/2026-W36-0831-0906.md) (2026-09-07 01:19:00 CST). Formal pretraining is healthy at epoch 39/100; keep classification blocked until the planned final encoder is written.

@@ -1,0 +1,36 @@
+schema_version: agrinet.experiment/v1
+id: rag-e322-classifier-presample-prepare-v3
+display_name: {en: E3.22 Classifier paired preflight v3 prepare, zh: E3.22 Classifier 配对预检 v3 准备}
+domain: rag
+task: e322_classifier_presample_prepare
+lifecycle: active
+parameters:
+  queue: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/e321-future-classifier-queue-v3.json
+  direct_source: outputs/artifacts/e321-direct-first-hcv-cascade/sources/e321-direct-full-source-v1.jsonl
+  e320_source: outputs/artifacts/e320-four-stage-cascade/sources/e320-four-stage-cascade-source-v1.jsonl
+  reference_v1_source: outputs/artifacts/e322-classifier-presample/source.jsonl
+  output_root: outputs/artifacts/e322-classifier-presample-v3
+  registry: datasets/AgriNet-1K/open_agri_v3/taxonomy/canonical_label_registry.jsonl
+  checkpoints:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier/model_best.pth.tar
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/classifier/model_best.pth.tar
+  label_maps:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/classifier/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/classifier/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/classifier/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/classifier/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/classifier/label_map.json
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/classifier/label_map.json
+  training_manifests:
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-1/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-2/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-0/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-1/manifests/train.jsonl
+    - outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1/fold-2/manifests/train.jsonl
+outputs: {run_root: outputs/runs/rag/rag-e322-classifier-presample-prepare-v3/}
+tags: [e322, classifier, paired-preflight, v3, prepare, offline, no-sft]

@@ -195,6 +195,14 @@ def submit(
         operation = "e321-direct-collect"
     if operation == "distill" and spec.task == "e321_direct_campaign":
         operation = "e321-direct-campaign"
+    if operation == "distill" and spec.task == "e322_classifier_presample_prepare":
+        operation = "e322-classifier-presample-prepare"
+    if operation == "distill" and spec.task == "e322_classifier_presample":
+        operation = "e322-classifier-presample"
+    if operation == "distill" and spec.task == "e323_rag_preflight_prepare":
+        operation = "e323-rag-preflight-prepare"
+    if operation == "distill" and spec.task == "e323_rag_preflight":
+        operation = "e323-rag-preflight"
     if operation == "distill" and spec.task == "micu_slb_canary":
         operation = "micu-slb-canary"
     if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
@@ -256,6 +264,56 @@ def submit(
                           ("timeout", "--timeout")):
             if key in parameters: command.extend([flag, str(parameters[key])])
         if dry_run: command.append("--dry-run")
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "e322-classifier-presample-prepare":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e322_presample"]
+        for key, flag in (("queue", "--queue"), ("direct_source", "--direct-source"),
+                          ("e320_source", "--e320-source"), ("output_root", "--output-root"),
+                          ("registry", "--registry"), ("reference_v1_source", "--reference-v1-source")):
+            if key in parameters:
+                command.extend([flag, str(parameters[key])])
+        for key, flag in (("checkpoints", "--checkpoint"), ("label_maps", "--label-map"),
+                          ("training_manifests", "--training-manifest")):
+            for path in parameters.get(key, []):
+                command.extend([flag, str(path)])
+        child_env = {}
+    elif operation == "e322-classifier-presample":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e322_campaign"]
+        for key, flag in (("manifest", "--manifest"), ("source", "--source"),
+                          ("queue", "--queue"), ("output_root", "--output-root"),
+                          ("private_registry", "--private-registry"),
+                          ("teacher_model", "--teacher-model"), ("timeout", "--timeout")):
+            command.extend([flag, str(parameters[key])])
+        if dry_run:
+            command.append("--dry-run")
+        if parameters.get("authorize_live_collection"):
+            command.append("--authorize-live-collection")
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "e323-rag-preflight-prepare":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e323_rag_presample"]
+        for key, flag in (("e322_source", "--e322-source"), ("e322_final_report", "--e322-final-report"),
+                          ("e322_gate_decision", "--e322-gate-decision"), ("output_root", "--output-root")):
+            command.extend([flag, str(parameters[key])])
+        for path in parameters.get("e322_outcomes", []): command.extend(["--e322-outcome", str(path)])
+        child_env = {}
+    elif operation == "e323-rag-preflight":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e323_rag_campaign"]
+        for key, flag in (("manifest", "--manifest"), ("source", "--source"), ("output_root", "--output-root"),
+                          ("private_registry", "--private-registry"), ("rag_endpoint", "--rag-endpoint"),
+                          ("teacher_model", "--teacher-model"), ("timeout", "--timeout")):
+            command.extend([flag, str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
         try:
             child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
         except (CredentialError, NetworkConfigError, ConfigError) as exc:
