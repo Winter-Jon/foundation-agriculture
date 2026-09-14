@@ -275,6 +275,21 @@ def test_public_projection_and_cascade_require_private_rejection():
     assert len(card["candidates"]) == 3 and "fold" not in str(card).casefold() and "secret" not in str(card)
 
 
+def test_public_classifier_card_rounds_scores_half_up_to_three_decimal_places():
+    row = {"classifier": {"top5": [
+        {"name": "candidate-1", "score": 0.9995},
+        {"name": "candidate-2", "score": 0.2345},
+        {"name": "candidate-3", "score": 0.12349},
+        {"name": "candidate-4", "score": 0.0105},
+        {"name": "candidate-5", "score": 0.0004},
+    ]}}
+
+    assert [item["score"] for item in public_classifier_card(row)["candidates"]] == [1.0, 0.235, 0.123]
+    assert [item["score"] for item in public_classifier_card(row, expanded=True)["candidates"]] == [
+        1.0, 0.235, 0.123, 0.011, 0.0,
+    ]
+
+
 def test_private_truth_name_stays_out_of_public_teacher_projection(tmp_path: Path):
     row = _bound_row(tmp_path)
     row["private"] = {"truth_code": "C000", "truth_name": "Private canonical name"}

@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from collections import Counter
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 
@@ -109,7 +110,8 @@ def public_classifier_card(row: dict[str, Any], *, expanded: bool = False) -> di
                 not isinstance(item.get("score"), (float, int)) or not 0 <= item["score"] <= previous):
             raise ValueError("classifier card candidate lacks public name")
         previous = item["score"]
-        candidates.append({"rank": rank, "name": item["name"], "score": item.get("score")})
+        score = float(Decimal(str(item["score"])).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))
+        candidates.append({"rank": rank, "name": item["name"], "score": score})
     return {"tool": "agrinet_classifier_expand" if expanded else "agrinet_classifier_predict",
             "candidates": candidates}
 

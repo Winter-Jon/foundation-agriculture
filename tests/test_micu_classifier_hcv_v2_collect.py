@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from agrinet.rag.micu_classifier_hcv_v2_collect import (
-    ProgressBudget, classifier_tool_result, normalize_final_answer, parse_teacher_action, public_sample, teacher_first_request,
+    ProgressBudget, classifier_tool_result, execute_rag, normalize_final_answer, parse_teacher_action, public_sample, teacher_first_request,
     ToolState, g1_rewrite_payload, g2_prefix, parse_g1_rewrite, parse_private_audit, private_audit_payload, run_parent,
     select_derivation_parents, GlobalRagBudget,
 )
@@ -57,6 +57,32 @@ def test_p6_classifier_result_hides_holdout_class_list() -> None:
     assert len(public["candidates"]) == 3
     assert "excluded_supervised_codes" not in rendered and "H0" not in rendered
     assert "label_codes" not in rendered
+
+
+def test_execute_rag_rounds_public_evidence_scores_half_up_to_three_decimal_places(monkeypatch) -> None:
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return (
+                b'{"schema_version":"agrinet.rag.search/v1","evidence":['
+                b'{"artifact_id":"a","score":0.9995,"metadata":{"english_name":"A"}},'
+                b'{"artifact_id":"b","score":0.2345,"metadata":{"english_name":"B"}},'
+                b'{"artifact_id":"c","score":0.12349,"metadata":{"english_name":"C"}}]}'
+            )
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda *_args, **_kwargs: Response())
+    result = execute_rag(
+        "http://rag", {"image_path": "image.jpg"},
+        {"query": "visible lesion", "retrieval_type": "visual", "rationale": "compare candidates"},
+    )
+
+    assert [item["score"] for item in result["raw_response"]["evidence"]] == [1.0, 0.235, 0.123]
+    assert result["returned_standard_class_names"] == ["A", "B", "C"]
 
 
 def test_progress_budget_is_cumulative_and_reserves_closure() -> None:

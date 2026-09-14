@@ -11,6 +11,7 @@ import re
 import argparse
 from argparse import Namespace
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 import fcntl
 import os
 import urllib.error
@@ -485,6 +486,11 @@ def execute_rag(endpoint: str, public: dict[str, Any], arguments: dict[str, Any]
         raise RuntimeError(f"local RAG request failed: {type(exc).__name__}") from exc
     if raw.get("schema_version") != "agrinet.rag.search/v1" or not isinstance(raw.get("evidence"), list):
         raise ValueError("local RAG returned an invalid typed response")
+    for item in raw["evidence"]:
+        score = item.get("score") if isinstance(item, dict) else None
+        if not isinstance(score, (float, int)) or isinstance(score, bool):
+            raise ValueError("local RAG returned an invalid typed response")
+        item["score"] = float(Decimal(str(score)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))
     # This is a public projection of the typed response, not a model guess.
     # Later RAG protocols may require final answers to quote one of these
     # service-returned standard names exactly.
