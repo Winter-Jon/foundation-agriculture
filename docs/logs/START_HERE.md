@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-13 01:11:00 CST
+Last updated: 2026-09-14 00:54:00 CST
 
 ## Repository state
 
@@ -22,7 +22,88 @@ normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
-### Current — E3.5 RAG recovery is ready; full campaign is not authorized
+### Current — E3.21 Direct-First HCV Cascade is collecting Direct-only data
+
+E3.21 DFHC is the active, forward-only full-candidate collection goal. Its
+canonical memory is `docs/e321-direct-first-hcv-cascade/README.md`; immutable
+input/source/manifests and campaign state are under
+`outputs/artifacts/e321-direct-first-hcv-cascade/`. It preserves the current
+four-stage method (`Direct → Classifier → RAG → Reject`) but authorizes and
+executes **Direct only** in this phase. Classifier, RAG and Reject are frozen
+future plans, not provider calls.
+
+The fixed 1,070-image pool remains dual arm: Known 535 and simulated-Unknown
+535, with 107 classes × five images and per-class 3 Open/2 Option. E3.20 R1
+contributes 25 reused correct Direct winners; six well-formed semantic errors
+are deferred to Classifier; its one quality failure entered an E3.21 Q1 Direct
+repair. The new Direct source therefore has 1,039 calls (535 Known, 504
+simulated-Unknown) split as one Q1 repair plus eight immutable R0 shards.
+
+E3.21 uses `gpt-5.6-sol`, 512px transport, shared atomic 16M uncached-input
+token accounting, and a shared 8,000 Micu-intent ledger. Direct calls reserve
+1,000 tokens and isolated private audits reserve 2,500; actual delivery settles
+to provider usage, while unknown delivery retains exposure and can only recover
+through R0/R1/R2. Q1 has already closed semantic-correct with 2,006 settled
+uncached input tokens. R0 shard 00 is running under a managed local process.
+No conversion, SFT, or training is authorized; all three training flags remain
+false. Contract: `configs/sampling/e321-direct-first-hcv-cascade-contract-v1.yaml`.
+
+### Historical — E3.20 four-stage semantic cascade established the reusable partition
+
+E3.20 supersedes E3.19's prospective method interpretation without changing
+any historical evidence. Semantic error advances exactly one stage
+(`Direct → Classifier → RAG → Reject`); Hermes/HCV/tool/Option/RAG-grounding
+quality failure receives one same-stage prompt-repair resample. Unknown provider
+delivery remains R0/R1/R2 recovery only.
+
+The new 32-image source and R0 manifest are frozen in
+`outputs/artifacts/e320-four-stage-cascade/`: all simulated-Unknown, folds
+11/11/10, eight rows per Open/Option × disease/pest cell, and zero overlap on
+sample ID, image SHA-256, source group, or near-duplicate group with E3.9--E3.19.
+RAG concrete finals must use public `returned_standard_class_names`; Reject is
+an actual fourth teacher stage using the preceding public RAG trace. The
+specialized E3.20 collector and its no-provider dry-run gate now pass against
+the frozen source/manifest; the gate reports 32 rows, all four routes, and zero
+provider requests. Provider collection, conversion, SFT, and training remain
+unauthorized. Contract: `configs/sampling/e320-four-stage-cascade-contract-v1.yaml`.
+
+### Superseded, not launched — E3.19 RAG concrete-closure repair
+
+E3.19 is a prospective, unlaunched successor to E3.18. It freezes a new 32-image all-simulated-Unknown source with zero overlap with E3.9--E3.18 across sample ID, image SHA-256, source group, and near-duplicate group; folds remain 11/11/10 and each Open/Option × disease/pest cell has eight rows. It retains 512px transport, the 8,000,000 shared uncached-input cap, private forced RAG coverage, Hermes/HCV/native-tool rules, and all no-SFT flags.
+
+The public teacher contract now requires a concrete canonical answer when an actual RAG response plus a visible trait establishes the discriminator against the nearest alternative. `INSUFFICIENT_EVIDENCE` is legal only with a named decisive trait that is not visible and a matching statement that RAG did not establish that same trait. Option finals remain mechanically exact `class name — letter`. Delivered controller rejects will retain their public trajectory and stable detailed contract code. Static source/leakage checks and 21 focused tests pass; R0 provider collection has not started. Contract: `configs/sampling/e319-rag-closure-audit-contract-v1.yaml`; frozen source/manifest: `outputs/artifacts/e319-rag-closure-audit/`.
+
+### Historical — E3.18 512px full-32 budget audit is terminal
+
+E3.18 is a new, identity-disjoint all-simulated-Unknown 32-image successor to the terminal E3.17 audit. It preserved the private forced Direct → Classifier → RAG cascade, three classifier folds (11/11/10), four Open/Option × disease/pest cells (eight each), and no-SFT gates, while using deterministic 512px image transport and a fixed shared 8,000,000 uncached-input-token cap. R0/R1/R2 ran 32/11/10 rows exactly; only genuine `unknown_delivery` rows replayed, with new predecessor-bound request IDs, and no R3 was made.
+
+The budget is operationally sufficient for this audit: 795,323 settled plus 504,000 conservative unresolved exposure = 1,299,323 committed tokens, leaving 6,700,677. Provider prompt caching was only 7,168 / 450,790 = 1.59%, so this conclusion does not depend on cache. The data-quality gate still fails: 25 delivered terminals are `controller_contract_error` / route-contract rejects and seven R2 terminals are actual `delivery_shortfall`; there are zero winners and no authorization for conversion, SFT, training, or a full campaign. Final evidence is `outputs/artifacts/e318-all-unknown-512-rag-audit/reports/e318-all-unknown-512-rag-audit-v1-final.json`.
+
+### Historical — E3.17 all-simulated-Unknown three-classifier RAG audit is terminal
+
+E3.17 completed its separate 32-image all-simulated-Unknown audit after excluding E3.9--E3.16 (including the E3.16 canary) across sample ID, image SHA, source group, and near-duplicate group. The frozen source covers classifier folds 0/1/2 as 11/11/10 and every Open/Option × disease/pest cell as eight rows; every row was a private RAG witness. R0/R1 ledgers retained 46 real schema-valid RAG responses, but all 32 source rows ultimately closed as fixed-budget delivery shortfalls: R1 had 17 and R2 had 15; no R3, substitution, budget expansion, candidate conversion, SFT, training authorization, or full campaign is allowed.
+
+R0's all-unknown projection was a controller error-classification defect, not evidence that RAG failed: durable validator/controller errors were incorrectly placed into `unknown_delivery`. It remains immutable. The prospective controller fix classifies post-delivery `ValueError` as a delivered contract terminal; only `DeliveryUnresolved` remains replayable. The final report, including its v1/v2 correction lineage, is `outputs/artifacts/e317-all-unknown-rag-audit/reports/e317-all-unknown-rag-audit-v3-final.json`; deeper method memory is `docs/e317-all-unknown-rag-audit/`. All training gates remain false.
+
+### Historical — E3.9 HCV prospective audit is terminal; full campaign is blocked
+
+E3.9 v1 completed its independent R0/R1/R2 32-image audit. Its final report is `outputs/artifacts/e39-hcv-cascade/reports/e39-hcv-audit-v1-final.json`: 9 accepted, 22 delivered route-contract rejects, and one R2 delivery shortfall. Required Direct/Classifier/RAG coverage winners were not observed in both arms, so `protocol_gate_passed=false` and the conditional 1,038-image campaign is not authorized or materialized. No SFT export, training, or authorization started.
+
+The memory and protocol are in `docs/e39-hcv-cascade/`; E3.9 v1 is terminal. Any successor must be a new versioned prospective audit, not a replay of its delivered terminals.
+
+E3.10 is terminal after its complete R0/R1/R2 lineage: final report `outputs/artifacts/e310-hcv-cascade/reports/e310-hcv-audit-v1-final.json` records 30 delivered route-contract rejects and two R2 delivery shortfalls, with no winner or retained RAG evidence. E3.11 has now also completed its independent identity-disjoint R0/R1/R2 audit: `outputs/artifacts/e311-hcv-cascade/reports/e311-hcv-audit-v1-final.json` records 11 accepted, 18 delivered route-contract rejects, and three R2 delivery shortfalls. The E3.11 expression-compatible HCV repair restored Direct/Classifier/RAG route reachability (22/7/3), but all three delivered RAG terminals failed `hermes_pretool_format`; no accepted retained RAG evidence exists. Both gates are false and full collection remains unauthorized. All delivered terminals and shortfalls remain immutable; no training flag changed.
+
+E3.12 is also terminal: its new identity-disjoint R0/R1/R2 audit used strict wire-level normalization only for a provider-native call combined with an unchanged pure Hermes plan. The final report, `outputs/artifacts/e312-hcv-cascade/reports/e312-hcv-audit-v1-final.json`, records nine accepted, four quality rejects, 18 route-contract rejects, and one R2 `delivery_shortfall`. It has retained real RAG evidence and no `hermes_pretool_format` rejection, proving the E3.11 wire failure was repaired without inventing planning text. The six private route-coverage witnesses nevertheless produced no required coverage winners, so `protocol_gate_passed=false`; no full collection, conversion, SFT, or training is authorized.
+
+E3.13 is terminal after a new identity-disjoint R0/R1/R2 audit that strengthened the teacher-visible HCV content scaffold without weakening validation. Its final report, `outputs/artifacts/e313-hcv-cascade/reports/e313-hcv-audit-v1-final.json`, records 20 accepted, 11 route-contract rejects, and one R2 `delivery_shortfall`. The explicit Option A--D comparison and named trait-conflict prompts reduced E3.12's `hcv_option_coverage` and `hcv_rejected_alternatives` rejects to zero. However, no RAG terminal became an accepted retained-evidence winner (`rag_evidence_closed=false`) and coverage winners are Direct only in both arms; `protocol_gate_passed=false`. Full collection, conversion, SFT, and training remain unauthorized.
+
+E3.14 is terminal after a new identity-disjoint conditional-cascade audit. Its final report, `outputs/artifacts/e314-hcv-cascade/reports/e314-hcv-audit-v1-final.json`, records 20 accepted, five quality rejects, six route-contract rejects, and one R2 `delivery_shortfall`. It correctly retains ten private-approved Classifier winners instead of forcing them into RAG, and every retained RAG trace includes an actual `agrinet_rag_search` response. None of those RAG terminals was accepted, however, so `rag_evidence_closed=false`, coverage winners remain incomplete, and `protocol_gate_passed=false`. No full collection, conversion, SFT, or training is authorized.
+
+E3.15 is a separate five-sample Option-format repair pre-collection, not an E3.14 replay. It selected only E3.14's five delivered `option_terminal_format` rows, started new Classifier-only lineages with a label-agnostic one-shot answer-format example, and completed 5/5 private-approved candidates in strict `class name — letter` form. This repairs the observed teacher wire-format compliance issue but does not alter E3.14's immutable terminal report, missing accepted RAG coverage, or gate. Its memory is `docs/e315-option-format-repair/`; no conversion, SFT, training, or full campaign is authorized.
+
+E3.16 is designed but not launched: a future identity-disjoint 32-image RAG audit whose teacher prompt makes the first retrieval contrast the leading candidate with its nearest visually confusable alternative, gives a schema-complete `retrieval_type` one-shot, and requires visible-trait → RAG-evidence → discriminator linkage or evidence-grounded abstention. Its validator rejects the E3.14 failure modes directly. No E3.16 source, manifest, request, conversion, SFT, or training has been created; see `docs/e316-rag-discriminator/`.
+
+An E3.16 four-image behavioral canary has since tested the prompt without launching the future 32-image audit: both Open witnesses reached schema-complete, nearest-neighbor RAG and produced evidence-limited refusals; one was privately accepted and the other private audit was unknown-delivery. R0 remains immutable; two Option rows had the pre-RAG format failure, and delivery-only R1 for only the two unknown Open rows ended in truthful `budget_shortfall` under the fixed 120k canary cap. Thus the prompt/trajectory repair is evidenced, but no accepted concrete-class RAG winner exists and no E3.16 32-image audit/full campaign/SFT/training is authorized.
 
 The former pre-provider blocker is resolved safely. The stale unreachable
 loopback proxy helper is bypassed only when its local listener is absent;
