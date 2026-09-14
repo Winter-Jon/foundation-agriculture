@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e321-direct-first-hcv-campaign-v1
+display_name: {en: E3.21 Direct-First HCV completion campaign, zh: E3.21 Direct-First HCV 全量 Direct 完成采集}
+domain: rag
+task: e321_direct_campaign
+lifecycle: active
+parameters:
+  source: outputs/artifacts/e321-direct-first-hcv-cascade/sources/e321-direct-full-source-v1.jsonl
+  manifest_dir: outputs/artifacts/e321-direct-first-hcv-cascade/manifests
+  outcome_dir: outputs/artifacts/e321-direct-first-hcv-cascade/outcomes
+  report_dir: outputs/artifacts/e321-direct-first-hcv-cascade/reports
+  campaign_root: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1
+  budget_path: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/token_budget.jsonl
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e321-direct-first-hcv-campaign-v1/}
+tags: [e321, direct-first, hcv, direct-only, campaign, no-sft]

@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-e321-direct-first-hcv-full-shard00-v1
+display_name: {en: E3.21 Direct-First HCV Direct shard 00, zh: E3.21 Direct-First HCV Direct 分片 00}
+domain: rag
+task: e321_direct_collect
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e321-direct-first-hcv-cascade/manifests/e321-direct-r0-shard-00.json
+  source: outputs/artifacts/e321-direct-first-hcv-cascade/sources/e321-direct-full-source-v1.jsonl
+  output: outputs/artifacts/e321-direct-first-hcv-cascade/outcomes/e321-direct-r0-shard-00.json
+  output_root: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1
+  budget_path: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/token_budget.jsonl
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  timeout: 180
+outputs: {run_root: outputs/runs/rag/rag-e321-direct-first-hcv-full-shard00-v1/}
+tags: [e321, direct-first, hcv, hermes, direct-only, shard-00, no-sft]

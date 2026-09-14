@@ -1,0 +1,27 @@
+schema_version: agrinet.e320-four-stage-cascade-contract/v1
+protocol: agrinet.e320-four-stage-cascade/v1
+purpose: prospective four-stage semantic cascade; no provider collection or training authorization
+source:
+  target_rows: 32
+  arm: simulated_unknown
+  identity_disjoint_from: [E3.9, E3.10, E3.11, E3.12, E3.13, E3.14, E3.15, E3.16-canary, E3.17, E3.18, E3.19]
+  identity_keys: [sample_id, image_sha256, source_group_id, near_duplicate_group_id]
+  question_domain_cells: {open_disease: 8, open_pest: 8, option_disease: 8, option_pest: 8}
+  classifier_fold_targets: {0: 11, 1: 11, 2: 10}
+cascade:
+  stages: [direct, classifier, rag, reject]
+  semantic_wrong_transition: {direct: classifier, classifier: rag, rag: reject}
+  quality_reject: same_stage_repair
+  quality_repair_limit_per_stage: 1
+  delivery_unknown: R0_R1_R2_only
+  reject_stage: public-prior-rag-trace-only
+  rag_standard_name_rule: concrete answer must use actual returned_standard_class_names; INSUFFICIENT_EVIDENCE only if every list is empty
+  teacher_visibility_forbidden: [truth, arm, folds, coverage_designation, private_audit]
+controls:
+  transport_image_max_side: 512
+  uncached_input_token_cap: 8000000
+  recovery_rounds: [R0, R1, R2]
+  no_r3: true
+  training_eligible: false
+  training_authorized: false
+  sft_may_start: false

@@ -1,0 +1,33 @@
+schema_version: agrinet.e321-direct-first-hcv-cascade-contract/v1
+protocol: agrinet.e321-direct-first-hcv-cascade/v1
+purpose: full Direct-only collection with a frozen future four-stage HCV cascade; no SFT or training
+teacher:
+  model: gpt-5.6-sol
+  binding_required: true
+source:
+  total_candidates: 1070
+  arms: {known: 535, simulated_unknown: 535}
+  per_arm_class: {classes: 107, images: 5, open: 3, option: 2}
+  e320_r1_reuse: {semantic_correct_direct_winners: 25, deferred_classifier_semantic_wrong: 6, direct_q1_quality_repair: 1}
+  direct_provider_scope: 1039
+  identity_keys: [sample_id, image_sha256, source_group_id, near_duplicate_group_id]
+cascade:
+  stages: [direct, classifier, rag, reject]
+  executed_now: [direct]
+  frozen_not_executed: [classifier, rag, reject]
+  semantic_wrong_transition: {direct: classifier, classifier: rag, rag: reject}
+  quality_reject: same_stage_repair_once
+  delivery_unknown: R0_R1_R2_only
+  no_r3: true
+  rag_standard_name_rule: concrete answer must use actual returned_standard_class_names; abstention only when every returned list is empty
+controls:
+  transport_image_max_side: 512
+  uncached_input_token_cap: 16000000
+  reservation_uncached_tokens:
+    generation: {direct: 1000, classifier: 8000, rag: 12000, reject: 5000}
+    private_audit: 2500
+  shared_atomic_token_ledger: true
+  shared_atomic_micu_intent_ledger: true
+  training_eligible: false
+  training_authorized: false
+  sft_may_start: false

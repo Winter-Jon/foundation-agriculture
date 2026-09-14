@@ -191,6 +191,10 @@ def submit(
         operation = "e35-classifier-cascade-preflight"
     if operation == "distill" and spec.task == "e35_live_audit_collect":
         operation = "e35-live-audit-collect"
+    if operation == "distill" and spec.task == "e321_direct_collect":
+        operation = "e321-direct-collect"
+    if operation == "distill" and spec.task == "e321_direct_campaign":
+        operation = "e321-direct-campaign"
     if operation == "distill" and spec.task == "micu_slb_canary":
         operation = "micu-slb-canary"
     if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
@@ -230,6 +234,32 @@ def submit(
                           ("e3_checkpoint", "--e3-checkpoint"), ("e3_training_manifest", "--e3-training-manifest")):
             for path in parameters.get(key, []): command.extend([flag, str(path)])
         child_env = {}
+    elif operation == "e321-direct-campaign":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e321_campaign"]
+        for key, flag in (("source", "--source"), ("manifest_dir", "--manifest-dir"),
+                          ("outcome_dir", "--outcome-dir"), ("report_dir", "--report-dir"),
+                          ("campaign_root", "--campaign-root"), ("budget_path", "--budget-path"),
+                          ("private_registry", "--private-registry"), ("teacher_model", "--teacher-model"),
+                          ("timeout", "--timeout")):
+            if key in parameters: command.extend([flag, str(parameters[key])])
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "e321-direct-collect":
+        parameters = config.get("parameters", {})
+        command = [sys.executable, "-m", "agrinet.rag.e320_live"]
+        for key, flag in (("manifest", "--manifest"), ("source", "--source"), ("output", "--output"),
+                          ("output_root", "--output-root"), ("budget_path", "--budget-path"),
+                          ("private_registry", "--private-registry"), ("teacher_model", "--teacher-model"),
+                          ("timeout", "--timeout")):
+            if key in parameters: command.extend([flag, str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        try:
+            child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
+        except (CredentialError, NetworkConfigError, ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
     elif operation == "e35-live-audit-collect":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.e35_live"]
