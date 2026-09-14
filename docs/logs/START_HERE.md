@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-14 00:54:00 CST
+Last updated: 2026-09-14 12:55:00 CST
 
 ## Repository state
 
@@ -22,15 +22,15 @@ normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
-### Current — E3.21 Direct-First HCV Cascade is collecting Direct-only data
+### Current — E3.21 Direct-First HCV Cascade Direct-only collection is closed
 
-E3.21 DFHC is the active, forward-only full-candidate collection goal. Its
+E3.21 DFHC Direct-only collection is complete. Its
 canonical memory is `docs/e321-direct-first-hcv-cascade/README.md`; immutable
 input/source/manifests and campaign state are under
 `outputs/artifacts/e321-direct-first-hcv-cascade/`. It preserves the current
-four-stage method (`Direct → Classifier → RAG → Reject`) but authorizes and
-executes **Direct only** in this phase. Classifier, RAG and Reject are frozen
-future plans, not provider calls.
+four-stage method (`Direct → Classifier → RAG → Reject`) but authorized and
+executed **Direct only** in this phase. Classifier, RAG and Reject remain
+frozen future plans, not provider calls.
 
 The fixed 1,070-image pool remains dual arm: Known 535 and simulated-Unknown
 535, with 107 classes × five images and per-class 3 Open/2 Option. E3.20 R1
@@ -39,14 +39,18 @@ are deferred to Classifier; its one quality failure entered an E3.21 Q1 Direct
 repair. The new Direct source therefore has 1,039 calls (535 Known, 504
 simulated-Unknown) split as one Q1 repair plus eight immutable R0 shards.
 
-E3.21 uses `gpt-5.6-sol`, 512px transport, shared atomic 16M uncached-input
-token accounting, and a shared 8,000 Micu-intent ledger. Direct calls reserve
-1,000 tokens and isolated private audits reserve 2,500; actual delivery settles
-to provider usage, while unknown delivery retains exposure and can only recover
-through R0/R1/R2. Q1 has already closed semantic-correct with 2,006 settled
-uncached input tokens. R0 shard 00 is running under a managed local process.
-No conversion, SFT, or training is authorized; all three training flags remain
-false. Contract: `configs/sampling/e321-direct-first-hcv-cascade-contract-v1.yaml`.
+The managed campaign exited 0 after all eight R0 shards and permitted Direct
+Q1/R1/R2 descendants. Final Direct accounting is 505 winners, 519 new frozen
+future-Classifier parents, 12 quality-repair-exhausted rows, and three terminal
+R2 delivery shortfalls. The final frozen Classifier queue has 525 rows after
+adding the six E3.20 semantic-wrong parents. The final v3 report and queue are
+under `outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/`.
+The 1,070-pool coverage check passed: two 535-image arms, 107 classes per arm,
+five images/class, and 3 Open / 2 Option per class. `gpt-5.6-sol` used 512px
+transport; the 16M atomic ledger reports 2,857,862 settled tokens and 178,000
+unknown-delivery exposure (4,101,500 reserved). All provider routes were
+Direct, no R3 manifest exists, and no conversion, SFT, or training is authorized;
+all three training flags remain false. Contract: `configs/sampling/e321-direct-first-hcv-cascade-contract-v1.yaml`.
 
 ### Historical — E3.20 four-stage semantic cascade established the reusable partition
 
