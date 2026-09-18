@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e339-visual-top3-safe-subset-prepare-v1
+display_name: {en: E3.39 dynamic visual Top-3 RAG safe-subset prepare, zh: E3.39 动态 visual Top-3 RAG 安全子集准备}
+domain: rag
+task: e339_visual_top3_safe_subset_prepare
+lifecycle: active
+parameters:
+  e328_source: outputs/artifacts/e338-classifier-full-v1/source.jsonl
+  e328_report: outputs/artifacts/e338-classifier-full-v1/campaign/final-report.json
+  # The original audit/gate are retained as immutable evidence of a
+  # prompt-text false positive.  E3.39 binds to the non-overwriting
+  # remediation pair, which audits structured provider operations only.
+  e328_audit: outputs/artifacts/e338-classifier-full-v1/campaign/artifact-audit-remediation-v1.json
+  e328_gate: outputs/artifacts/e338-classifier-full-v1/campaign/final-gate-decision-remediation-v1.json
+  e327_source: outputs/artifacts/e327-visual-top3-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e339-visual-top3-rag-safe-subset-v1
+outputs: {run_root: outputs/runs/rag/rag-e339-visual-top3-safe-subset-prepare-v1/}
+tags: [e339, visual-top3, dynamic, safe-subset, sample-level, prepare, no-reject, no-sft]

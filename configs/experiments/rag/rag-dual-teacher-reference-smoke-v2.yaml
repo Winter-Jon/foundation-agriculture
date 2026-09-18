@@ -1,0 +1,17 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-reference-smoke-v2
+display_name: {en: Dual-teacher reference-image eight-cell smoke, zh: 双教师参考图八组合试采}
+domain: rag
+task: dual_teacher_smoke
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-reference-v2/live
+  source: outputs/artifacts/dual-teacher-reference-v1/source.jsonl
+  bindings: outputs/artifacts/e344-full-tool-v2/classifier-bindings.json
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 16
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-reference-smoke-v2/}
+tags: [dual-teacher, multimodal, smoke8]

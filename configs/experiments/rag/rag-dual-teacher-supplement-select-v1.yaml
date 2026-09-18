@@ -1,0 +1,13 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-supplement-select-v1
+display_name: {en: Dual teacher quota supplement selection, zh: 双教师配额补采选图}
+domain: rag
+task: dual_teacher_supplement_select
+lifecycle: active
+parameters:
+  source_root: outputs/artifacts/dual-teacher-full-v1
+  output_root: outputs/artifacts/dual-teacher-full-supplement-v1
+  inventory: outputs/artifacts/e344-full-tool-v2/cluster-inventory.jsonl
+  multiplier: 2
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-supplement-select-v1/}
+tags: [dual-teacher, quota-supplement, no-sft]

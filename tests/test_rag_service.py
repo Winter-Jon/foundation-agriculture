@@ -149,3 +149,19 @@ def test_name_hits_prioritize_canonical_source_over_mismatched_duplicate() -> No
     hits = backend._name_hits("Carambola Hooded Hopper Insect Disease", 3)
     assert len(hits) == 1
     assert hits[0]["entry_id"] == "agri_disease_pest_wiki::N04025"
+
+
+def test_source_scoped_payload_bypasses_legacy_enrichment():
+    import pytest
+    backend = object.__new__(MilvusSiglipBackend)
+    backend._catalog_similar_classes = {'source::N1': {'public_description': 'wrong host'}}
+    payload = dict(code='N2', english_name='grape black rot', chinese_name='葡萄黑腐病',
+                   source_dataset='source', source_code='N1', canonical_class_code='N2',
+                   identity_version='source-scoped-wiki/v1', description={'content_1': 'Original grape disease.'})
+    row = {key: payload[key] for key in ('code', 'english_name', 'chinese_name', 'source_dataset')}
+    result = backend._plain_row(dict(row, entry_id='source::N1', payload=payload))
+    assert result['public_description'] == 'Original grape disease.'
+    assert result['source_code'] == 'N1'
+    assert 'payload' not in result
+    with pytest.raises(ValueError, match='payload_mismatch'):
+        backend._plain_row(dict(row, code='N1', payload=payload))

@@ -144,6 +144,12 @@ def _generation(row:dict[str,Any],item:dict[str,Any],*,model:str,teacher,budget:
     try:
         for turn in range(1,7):
             payload={"model":model,"temperature":0.0,"top_p":1.0,"max_tokens":4096,"messages":messages,"tools":list(TOOLS.values()),"tool_choice":"none"}
+            # The initial turn is a wire-level planning phase.  Keeping it
+            # separate from the full HCV instruction prevents providers from
+            # collapsing planning, answer, and the required frozen-card call
+            # into one final response.
+            if turn==1:
+                payload["messages"]=[{"role":"system","content":"Planning phase only. Return exactly one standalone <think>...</think> that states the visual ambiguity to resolve. Do not give an answer, diagnosis, HCV sections, tool call, or any text outside that one tag."},messages[1]]
             if not predicted and messages[-1].get("role")=="assistant" and is_pre_tool_think(messages[-1].get("content")): payload["tool_choice"]={"type":"function","function":{"name":"agrinet_classifier_predict"}}
             elif predicted and not expanded and messages[-1].get("role")=="assistant" and is_pre_tool_think(messages[-1].get("content")): payload["tool_choice"]={"type":"function","function":{"name":"agrinet_classifier_expand"}}
             elif not predicted: payload["tool_choice"]="none"
@@ -222,14 +228,14 @@ def _one(row:dict[str,Any],item:dict[str,Any],**kwargs)->dict[str,Any]:
     except QualityFailure as exc:
         calls=[x["call"]["name"] for x in exc.trajectory.get("tool_trace",[])]
         exc.trajectory["image_sha256"]=row["image_sha256"]; parent,parent_sha=_persist_trajectory(kwargs["root"],item,exc.trajectory)
-        return {**base,"delivery_status":"delivered","request_id":exc.request_id,"disposition":"quality_reject","winner":False,"contract_error":str(exc),"parent_path":parent,"parent_trajectory_sha256":parent_sha,"predict_calls":calls.count("agrinet_classifier_predict"),"expand_calls":calls.count("agrinet_classifier_expand")}
+        return {**base,"delivery_status":"delivered","request_id":exc.request_id,"disposition":"contract_shortfall","winner":False,"contract_error":str(exc),"parent_path":parent,"parent_trajectory_sha256":parent_sha,"predict_calls":calls.count("agrinet_classifier_predict"),"expand_calls":calls.count("agrinet_classifier_expand")}
     except ValueError as exc:
         ledger_path=kwargs["root"]/"ledgers"/item["work_id"].replace(":","_")/"events.jsonl"; request_id=None
         if ledger_path.is_file():
             events=[json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
             delivered=[x for x in events if x.get("event")=="result" and x.get("status")=="delivered"]
             if delivered: request_id=delivered[-1].get("request_id")
-        return {**base,"delivery_status":"delivered","request_id":request_id,"disposition":"quality_reject","winner":False,"contract_error":str(exc),"predict_calls":0,"expand_calls":0}
+        return {**base,"delivery_status":"delivered","request_id":request_id,"disposition":"contract_shortfall","winner":False,"contract_error":str(exc),"predict_calls":0,"expand_calls":0}
     if audit_only:
         parent_path=str(item["parent_path"]); parent_sha=str(item["parent_trajectory_sha256"])
     else:
@@ -245,6 +251,94 @@ def _one(row:dict[str,Any],item:dict[str,Any],**kwargs)->dict[str,Any]:
     public_answer=re.search(r"<answer>(.*?)</answer>",str(trajectory.get("answer") or ""),re.S|re.I)
     autonomous=bool(public_answer and public_answer.group(1).strip()=="INSUFFICIENT_EVIDENCE")
     return {**base,"delivery_status":"delivered","request_id":audit["request_id"] if audit_only else request_id,"generation_request_id":request_id,"private_audit_request_id":audit["request_id"],"disposition":disposition,"semantic":audit["semantic"],"quality":audit["quality"],"autonomous_unknown_deferral":autonomous,"winner":disposition=="semantic_correct","parent_path":parent_path,"parent_trajectory_sha256":parent_sha,"predict_calls":0 if audit_only else 1,"expand_calls":0 if audit_only else calls.count("agrinet_classifier_expand")}
+
+def trace_bound_quality_repair(row:dict[str,Any],item:dict[str,Any],**kwargs)->dict[str,Any]:
+    """E3.30 Q1: repair Hermes text while preserving the frozen R0 tool trace."""
+    base={"work_id":item["work_id"],"work_item_sha256":_json_sha(item),"sample_id":row["sample_id"],"round":item["round"],"attempt_ordinal":item["attempt_ordinal"],"quality_attempt_ordinal":1,"predecessor_request_id":item.get("predecessor_request_id"),"predecessor_outcome_sha256":item.get("predecessor_outcome_sha256"),"predecessor_manifest_sha256":item.get("predecessor_manifest_sha256"),"checkpoint_sha256":row["classifier"]["checkpoint_sha256"]}
+    parent=Path(str(item.get("parent_path") or ""))
+    if not parent.is_file() or digest(parent)!=item.get("parent_trajectory_sha256"): raise ValueError("E3.30 Q1 parent trajectory changed")
+    frozen=json.loads(parent.read_text()); calls=[x.get("call",{}).get("name") for x in frozen.get("tool_trace") or []]
+    if calls.count("agrinet_classifier_predict")!=1 or calls.count("agrinet_classifier_expand")>1: raise ValueError("E3.30 Q1 frozen trace invalid")
+    question=public_teacher_input(row,"classifier")["question"]
+    if row.get("public_options"): question+="\n"+"\n".join(f"{x['label']}. {x['name']}" for x in row["public_options"])
+    target=("exactly one canonical public class name with no option letter, em dash, or added words, or exactly INSUFFICIENT_EVIDENCE" if row.get("question_type")=="open" else "exactly class name — LETTER using the selected public option, or exactly INSUFFICIENT_EVIDENCE")
+    rejection_contract=("Under Candidate comparison:, compare each public option A., B., C., and D. explicitly. Under Rejected alternatives:, write exactly three separate lines, one for every unselected public option. "
+                        if row.get("question_type")=="option" else
+                        "Under Rejected alternatives:, write exactly two separate lines. ")
+    prompt=("You are repairing only a public Hermes response. The frozen classifier tool trace below is complete and must be reused exactly; do not call or request any tool. "
+            "Return exactly one complete <think>...</think><answer>...</answer> response. The <think> must contain these six headings exactly once and in this order: Visual observations:, Candidate hypotheses:, Candidate comparison:, Evidence:, Rejected alternatives:, Uncertainty:. Under Visual observations:, write exactly three numbered, image-grounded observations (1., 2., 3.) and no fourth observation. " + rejection_contract + "Each rejected-alternative line must begin with the actual name of an unselected frozen-card candidate, never the literal word `candidate`, and must use `name: rejected because visible trait conflicts with ...`; each reason must name a concrete visible trait. Give a confidence plus one image-evidence limitation. Confidence must be calibrated only to diagnostic traits actually visible in this image: a frozen-card score, candidate rank, or class name is never visual evidence. Generic color, mottling, blight, or lesion shape alone is not enough for a closed-set assertion when it does not visibly distinguish the selected candidate from the other frozen-card candidates. If the selected class requires a decisive trait that is absent, blurred, or not resolvable, or the image is only a low-resolution/close crop that leaves that distinction unresolved, state that limitation, use only low or medium confidence, and answer INSUFFICIENT_EVIDENCE rather than asserting a closed-set result. Keep all reasoning grounded in the public question and frozen card trace; do not mention repair, private data, or hidden metadata. "
+            f"The answer must be {target}.")
+    image,_=transport_image(Path(row["image_path"]),max_side=512)
+    public={"question":question,"frozen_tool_trace":frozen.get("tool_trace") or [],"prior_public_answer":frozen.get("answer")}
+    payload={"model":kwargs["model"],"temperature":0.0,"top_p":1.0,"max_tokens":4096,"messages":[{"role":"system","content":prompt},{"role":"user","content":[{"type":"text","text":json.dumps(public,ensure_ascii=False)},image]}]}
+    ledger=E35Ledger(kwargs["root"]/"ledgers"/item["work_id"].replace(":","_"),work_id=item["work_id"],attempt_ordinal=int(item["attempt_ordinal"]),intent_limit=8000)
+    budget=kwargs["budget"]; intents=kwargs["intents"]; token_key=f"{item['work_id']}:quality_repair"
+    try:
+        budget.reserve(token_key,uncached_input_tokens=8000,metadata={"kind":"trace_bound_quality_repair"}); intents.reserve(token_key)
+        projection={"operation":"trace_bound_quality_repair","sample_id":row["sample_id"],"parent_trajectory_sha256":item["parent_trajectory_sha256"],"wire_payload_sha256":_json_sha(payload)}
+        request_id,raw=ledger.call(kind="generation",key="quality_repair",payload=projection,invoke=lambda:kwargs["teacher"](payload))
+        used=uncached_input_tokens(raw)
+        if used is not None: budget.settle(token_key,uncached_input_tokens=used)
+        action=parse_teacher_action(raw)
+        if action["type"]!="final" or is_pre_tool_think(action.get("content")): raise QualityFailure("E3.30 Q1 must deliver final Hermes response",request_id=request_id,trajectory=frozen)
+        trajectory={**frozen,"answer":action["content"]}
+        validate_trajectory(row,trajectory)
+        _validate_trace_bound_q1_contract(frozen,action["content"],question_type=str(row.get("question_type") or "open"),public_options=row.get("public_options") or [])
+    except DeliveryUnresolved as exc:
+        return {**base,"delivery_status":"unknown_delivery","request_id":exc.request_id,"unresolved_operation":"quality_repair","disposition":"delivery_unknown","winner":False,"parent_path":str(parent),"parent_trajectory_sha256":digest(parent),"predict_calls":0,"expand_calls":0}
+    except BudgetExhausted:
+        return {**base,"delivery_status":"budget_shortfall","request_id":None,"disposition":"budget_shortfall","winner":False,"predict_calls":0,"expand_calls":0}
+    except (QualityFailure,ValueError) as exc:
+        return {**base,"delivery_status":"delivered","request_id":locals().get("request_id"),"disposition":"contract_shortfall","winner":False,"contract_error":str(exc),"parent_path":str(parent),"parent_trajectory_sha256":digest(parent),"predict_calls":0,"expand_calls":0}
+    trajectory["image_sha256"]=row["image_sha256"]; repaired_path,repaired_sha=_persist_trajectory(kwargs["root"],item,trajectory)
+    try: audit=_audit(row,item,trajectory,**kwargs)
+    except DeliveryUnresolved as exc:
+        return {**base,"delivery_status":"unknown_delivery","request_id":exc.request_id,"unresolved_operation":"private_audit","generation_request_id":request_id,"disposition":"delivery_unknown","winner":False,"parent_path":repaired_path,"parent_trajectory_sha256":repaired_sha,"predict_calls":0,"expand_calls":0}
+    except (BudgetExhausted,AuditContractFailure) as exc:
+        return {**base,"delivery_status":"budget_shortfall" if isinstance(exc,BudgetExhausted) else "delivered","request_id":request_id,"disposition":"budget_shortfall" if isinstance(exc,BudgetExhausted) else "audit_contract_error","winner":False,"contract_error":None if isinstance(exc,BudgetExhausted) else str(exc),"parent_path":repaired_path,"parent_trajectory_sha256":repaired_sha,"predict_calls":0,"expand_calls":0}
+    disposition="semantic_correct" if audit["semantic"]=="correct" and audit["quality"]=="pass" else "quality_reject" if audit["quality"]=="fail" else "future_rag"
+    return {**base,"delivery_status":"delivered","request_id":request_id,"generation_request_id":request_id,"private_audit_request_id":audit["request_id"],"disposition":disposition,"semantic":audit["semantic"],"quality":audit["quality"],"winner":disposition=="semantic_correct","parent_path":repaired_path,"parent_trajectory_sha256":repaired_sha,"predict_calls":0,"expand_calls":0}
+
+
+def _validate_trace_bound_q1_contract(frozen:dict[str,Any],answer:str,*,question_type:str="open",public_options:list[dict[str,Any]]|None=None)->None:
+    """Fail closed on the public Q1 form required by the quality contract."""
+    match=re.search(r"<think>(.*?)</think>",answer,re.S|re.I)
+    if not match:
+        raise ValueError("E3.34 Q1 missing think block")
+    body=match.group(1)
+    headings=("Visual observations:","Candidate hypotheses:","Candidate comparison:",
+              "Evidence:","Rejected alternatives:","Uncertainty:")
+    offsets=[body.find(heading) for heading in headings]
+    if any(offset<0 for offset in offsets) or offsets!=sorted(offsets) or any(body.count(heading)!=1 for heading in headings):
+        raise ValueError("E3.34 Q1 headings invalid")
+    observations=body[offsets[0]+len(headings[0]):offsets[1]]
+    numbered=re.findall(r"(?m)^\s*([1-9][0-9]*)\.\s+.+$",observations)
+    if numbered != ["1","2","3"]:
+        raise ValueError("E3.34 Q1 requires exactly three numbered visual observations")
+    comparison=body[offsets[2]+len(headings[2]):offsets[3]]
+    rejected=body[offsets[4]+len(headings[4]):offsets[5]]
+    clauses=[line.strip() for line in rejected.splitlines() if line.strip()]
+    required_clauses=3 if question_type=="option" else 2
+    if len(clauses)!=required_clauses:
+        raise ValueError(f"E3.34 Q1 requires exactly {required_clauses} rejected-alternative clauses")
+    if question_type=="option" and not all(re.search(rf"(?m)(?:^|\s){letter}\.",comparison) for letter in "ABCD"):
+        raise ValueError("E3.34 Q1 Option reasoning must compare every public option")
+    candidates=[str(option.get("name") or "").strip() for option in (public_options or [])] if question_type=="option" else []
+    if not candidates:
+        for entry in frozen.get("tool_trace") or []:
+            candidates.extend(str(candidate.get("name") or "").strip() for candidate in (entry.get("response") or {}).get("candidates") or [])
+    valid={candidate.casefold() for candidate in candidates if candidate}
+    for clause in clauses:
+        rejected_match=re.match(r"^(.+?): rejected because visible trait conflicts with .+",clause,re.I)
+        if not rejected_match:
+            raise ValueError("E3.34 Q1 rejected-alternative clause invalid")
+        candidate=rejected_match.group(1).strip()
+        normalized=candidate.casefold()
+        # A public response may use the unambiguous display-name prefix before
+        # a parenthetical scientific alias, but may not invent a new candidate.
+        matches=normalized in valid or any(full.startswith(normalized+" (") for full in valid)
+        if normalized=="candidate" or not matches:
+            raise ValueError("E3.34 Q1 rejected alternative must name a frozen-card candidate")
 
 def _write_outcomes(path:Path,round_name:str,manifest_sha:str,outcomes:list[dict[str,Any]])->None:
     if path.exists(): raise ValueError(f"E3.22 {round_name} outcome is immutable")
@@ -270,13 +364,20 @@ def _successor(prior:dict[str,Any],round_name:str,*,quality:bool=False)->dict[st
     if quality:
         if prior.get("quality_attempt_ordinal")!=0 or prior.get("disposition")!="quality_reject" or not prior.get("request_id"): raise ValueError("E3.22 invalid Q1 predecessor")
         clean={k:v for k,v in prior.items() if not k.startswith("_")}
-        return {"work_id":f"{round_name}:{sid}:e322-classifier-quality","sample_id":sid,"round":round_name,"resume_route":"classifier","resume_operation":"generation","attempt_ordinal":prior["attempt_ordinal"],"quality_attempt_ordinal":1,"predecessor_request_id":prior["request_id"],"predecessor_outcome_sha256":_json_sha(clean),"predecessor_manifest_sha256":prior.get("_manifest_sha256"),"prompt_revision":"quality_repair_v1"}
+        item={"work_id":f"{round_name}:{sid}:e322-classifier-quality","sample_id":sid,"round":round_name,"resume_route":"classifier","resume_operation":"generation","attempt_ordinal":prior["attempt_ordinal"],"quality_attempt_ordinal":1,"predecessor_request_id":prior["request_id"],"predecessor_outcome_sha256":_json_sha(clean),"predecessor_manifest_sha256":prior.get("_manifest_sha256"),"prompt_revision":"quality_repair_v1"}
+        # E3.30 binds Q1 to the already-collected R0 trace.  E3.22 callers
+        # simply ignore these optional lineage fields.
+        if prior.get("parent_path"):
+            item.update({"parent_path":prior["parent_path"],"parent_trajectory_sha256":prior.get("parent_trajectory_sha256")})
+        return item
     if round_name not in {"R1","R2"} or prior.get("delivery_status")!="unknown_delivery" or not prior.get("request_id"): raise ValueError("E3.22 invalid delivery predecessor")
     clean={k:v for k,v in prior.items() if not k.startswith("_")}
     operation="private_audit" if prior.get("unresolved_operation")=="private_audit" else "generation"
     item={"work_id":f"{round_name}:{sid}:e322-classifier-delivery","sample_id":sid,"round":round_name,"resume_route":"classifier","resume_operation":operation,"attempt_ordinal":int(prior["attempt_ordinal"])+1,"quality_attempt_ordinal":prior["quality_attempt_ordinal"],"predecessor_request_id":prior["request_id"],"predecessor_outcome_sha256":_json_sha(clean),"predecessor_manifest_sha256":prior.get("_manifest_sha256"),"prompt_revision":"quality_repair_v1" if prior["quality_attempt_ordinal"] else "base"}
     if operation=="private_audit":
         item.update({"parent_path":prior.get("parent_path"),"parent_trajectory_sha256":prior.get("parent_trajectory_sha256"),"generation_request_id":prior.get("generation_request_id")})
+    elif prior.get("quality_attempt_ordinal") == 1 and prior.get("parent_path"):
+        item.update({"parent_path":prior["parent_path"],"parent_trajectory_sha256":prior.get("parent_trajectory_sha256")})
     return item
 
 def _run_items(items:list[dict[str,Any]],by_id:dict[str,dict[str,Any]],kwargs:dict[str,Any])->list[dict[str,Any]]:
@@ -295,6 +396,13 @@ def _unresolved_started(item:dict[str,Any],root:Path,row:dict[str,Any])->dict[st
     delivered=[x for x in results.values() if x.get("status")=="delivered"]
     operation="private_audit" if unresolved.get("kind")=="private_audit" else "generation"
     outcome={"work_id":item["work_id"],"work_item_sha256":_json_sha(item),"sample_id":item["sample_id"],"round":item["round"],"attempt_ordinal":item["attempt_ordinal"],"quality_attempt_ordinal":item["quality_attempt_ordinal"],"predecessor_request_id":item.get("predecessor_request_id"),"predecessor_outcome_sha256":item.get("predecessor_outcome_sha256"),"predecessor_manifest_sha256":item.get("predecessor_manifest_sha256"),"checkpoint_sha256":row["classifier"]["checkpoint_sha256"],"delivery_status":"unknown_delivery","request_id":unresolved.get("request_id"),"unresolved_operation":operation,"disposition":"delivery_unknown","winner":False,"predict_calls":1 if operation=="generation" and any(x.get("key")=="generation:2" for x in delivered) else 0,"expand_calls":0,"interrupted_run_recovery":True}
+    # A trace-bound Q1's request is text-only, but its recovery must remain
+    # cryptographically bound to the R0 trace supplied in its work item.
+    if item.get("quality_attempt_ordinal") == 1 and item.get("parent_path"):
+        parent=Path(str(item["parent_path"]))
+        if not parent.is_file() or digest(parent)!=item.get("parent_trajectory_sha256"):
+            raise ValueError("E3.30 interrupted Q1 parent trajectory changed")
+        outcome.update({"parent_path":str(parent),"parent_trajectory_sha256":digest(parent)})
     if operation=="private_audit":
         parent=root/"public"/item["work_id"].replace(":","_")/"trajectory.json"
         if not parent.is_file(): raise ValueError("E3.22 unresolved private audit lacks frozen public trajectory")

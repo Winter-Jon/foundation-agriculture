@@ -1,0 +1,9 @@
+{
+  "id": "EXP-20260917-001",
+  "type": "EXP",
+  "title": "Unified auto-route Qwen3-VL-4B learning-rate sweep",
+  "state": "closed",
+  "created_at": "2026-09-17T02:22:22.030545+08:00",
+  "outcome": "REJECT",
+  "closed_at": "2026-09-17T09:56:17.482917+08:00"
+}

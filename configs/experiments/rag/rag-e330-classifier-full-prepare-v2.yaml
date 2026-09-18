@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e330-classifier-full-prepare-v2
+display_name: {en: E3.30 v2 full Classifier repair prepare, zh: E3.30 v2 全量 Classifier 修复准备}
+domain: rag
+task: e330_classifier_full_prepare
+lifecycle: active
+parameters:
+  queue: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/e321-future-classifier-queue-v3.json
+  direct_source: outputs/artifacts/e321-direct-first-hcv-cascade/sources/e321-direct-full-source-v1.jsonl
+  e320_source: outputs/artifacts/e320-four-stage-cascade/sources/e320-four-stage-cascade-source-v1.jsonl
+  e322_source: outputs/artifacts/e322-classifier-presample-v3/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  e322_report: outputs/artifacts/e322-classifier-presample-v3/campaign/final-report.json
+  e322_audit: outputs/artifacts/e322-classifier-presample-v3/campaign/artifact-audit-v4.json
+  e322_gate: outputs/artifacts/e322-classifier-presample-v3/campaign/final-gate-decision.json
+  output_root: outputs/artifacts/e330-classifier-full-v2
+outputs: {run_root: outputs/runs/rag/rag-e330-classifier-full-prepare-v2/}
+tags: [e330, v2, classifier, full, trace-bound-q1, provider-free, no-reject, no-sft]

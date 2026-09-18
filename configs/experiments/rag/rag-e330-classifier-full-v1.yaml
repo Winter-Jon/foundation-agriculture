@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e330-classifier-full-v1
+display_name: {en: E3.30 full Classifier repair campaign, zh: E3.30 全量 Classifier 修复采集}
+domain: rag
+task: e330_classifier_full
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e330-classifier-full-v1/manifest.json
+  source: outputs/artifacts/e330-classifier-full-v1/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  output_root: outputs/artifacts/e330-classifier-full-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e330-classifier-full-v1/}
+tags: [e330, classifier, full, trace-bound-q1, shared-budget, no-rag, no-reject, no-sft]

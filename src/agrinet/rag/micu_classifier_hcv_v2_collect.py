@@ -467,15 +467,20 @@ def classifier_tool_result(row: dict[str, Any], *, expand: bool = False) -> dict
 def execute_rag(endpoint: str, public: dict[str, Any], arguments: dict[str, Any]) -> dict[str, Any]:
     """Call only the local typed RAG HTTP surface and retain its raw response."""
     retrieval_type = arguments.get("retrieval_type")
-    if retrieval_type not in {"visual", "semantic"}:
-        raise ValueError("v2 exposes only visual and semantic retrieval")
+    if retrieval_type not in {"visual", "semantic", "balanced"}:
+        raise ValueError("RAG exposes visual, semantic, and balanced retrieval")
     rationale = arguments.get("rationale")
     query = arguments.get("query")
     if not isinstance(rationale, str) or not rationale.strip() or not isinstance(query, str) or not query.strip():
         raise ValueError("RAG requires non-empty query and rationale")
-    body: dict[str, Any] = {"retrieval_type": retrieval_type, "text": query, "top_k": 3}
-    if retrieval_type == "visual":
+    top_k=arguments.get("top_k",3)
+    if not isinstance(top_k,int) or not 1 <= top_k <= 10:
+        raise ValueError("RAG top_k must be an integer from 1 to 10")
+    body: dict[str, Any] = {"retrieval_type": retrieval_type, "text": query, "top_k": top_k}
+    if retrieval_type in {"visual","balanced"}:
         body["image_path"] = public["image_path"]
+    for key in ("ranker","text_weight","image_weight","sparse_weight"):
+        if key in arguments: body[key]=arguments[key]
     encoded = json.dumps(body, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(endpoint.rstrip("/") + "/search", encoded,
                                      {"Content-Type": "application/json"}, method="POST")
@@ -498,10 +503,17 @@ def execute_rag(endpoint: str, public: dict[str, Any], arguments: dict[str, Any]
     for item in raw["evidence"]:
         metadata=item.get("metadata") if isinstance(item, dict) else None
         name=metadata.get("english_name") if isinstance(metadata, dict) else None
-        if isinstance(name, str) and name.strip() and name.strip() not in returned_standard_class_names:
+        # Preserve one public class-name entry per returned rank slot.  Visual
+        # Top-3 protocols bind R1/R2/R3 to response positions, including when
+        # two backing artifacts share a canonical class name.
+        if isinstance(name, str) and name.strip():
             returned_standard_class_names.append(name.strip())
-    return {"tool": "agrinet_rag_search", "arguments": {"query": query,
-            "retrieval_type": retrieval_type, "rationale": rationale}, "raw_response": raw,
+    if retrieval_type == "visual" and top_k == 3 and len(returned_standard_class_names) != 3:
+        raise ValueError("fixed visual Top-3 retrieval must return exactly three named slots")
+    public_arguments={"query":query,"retrieval_type":retrieval_type,"top_k":top_k,"rationale":rationale}
+    for key in ("ranker","text_weight","image_weight","sparse_weight"):
+        if key in arguments: public_arguments[key]=arguments[key]
+    return {"tool": "agrinet_rag_search", "arguments": public_arguments, "raw_response": raw,
             "returned_standard_class_names": returned_standard_class_names}
 
 

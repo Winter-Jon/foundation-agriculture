@@ -1,0 +1,12 @@
+schema_version: agrinet.experiment/v1
+id: rag-wiki-source-scoped-index-v3
+display_name: {en: Source-scoped wiki index rebuild, zh: 来源独立知识索引重建}
+domain: rag
+task: wiki_source_scoped_index
+lifecycle: active
+parameters:
+  knowledge_base: datasets/AgriNet-1K/wiki_source_scoped_v3/catalog.json
+  database: datasets/AgriNet-1K/wiki_source_scoped_v3/index.db
+  collection: wiki_source_scoped_v3
+outputs: {run_root: outputs/runs/rag/rag-wiki-source-scoped-index-v3/}
+tags: [wiki, identity-repair, independent-index]

@@ -1,0 +1,24 @@
+schema_version: agrinet.experiment/v1
+id: vlm-full-tool-sft-v1
+display_name: {en: Dual teacher full-tool six epoch trial, zh: 双教师完整工具链六轮试验}
+domain: vlm
+task: sft
+lifecycle: active
+inputs:
+  config: configs/vlm/qwen3_vl_4b_full_tool_v1_sft.yaml
+  artifact: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1
+  test_manifest: outputs/artifacts/datasets/open-agri-v3-unified-auto-route-eval-v1/test_en.jsonl
+  classifier_predictions: outputs/runs/vlm/dual-tool-v7-token-balanced/20260917-initial/classifier/test/predictions_dev_known.jsonl
+  label_map: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/classifier-formal/label_map.json
+outputs:
+  run_root: outputs/runs/vlm/vlm-full-tool-sft-v1
+parameters:
+  rag_endpoint: http://127.0.0.1:8079/search
+  reference_image_root: datasets/AgriNet-1K/wiki/images
+  epochs: 6
+  report_epochs: [3, 6]
+  max_new_tokens: 16384
+  max_concurrent: 16
+  context_length: 65536
+  test_only: true
+  local_launch: {cuda_visible_devices: '0,1,2,3,4,5,6,7', nproc_per_node: 8, master_port: 29734, pytorch_cuda_alloc_conf: 'expandable_segments:True'}

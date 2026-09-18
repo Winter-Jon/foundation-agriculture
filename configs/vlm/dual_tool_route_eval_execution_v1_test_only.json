@@ -1,0 +1,10 @@
+{
+  "schema_version": "agrinet.dual-tool-route-evaluation-execution/v1",
+  "protocol_id": "dual-tool-route-eval-execution-v1-test-only",
+  "immutable": true,
+  "checkpoint_selection_split": "none",
+  "permitted_formal_split": "test",
+  "intermediate_checkpoint_evaluation": "test_permitted",
+  "evaluation_settings": "configs/vlm/dual_tool_route_eval_v1k_4k_c16_v1.json",
+  "note": "Run only test for the base model and explicitly selected intermediate or final checkpoints."
+}

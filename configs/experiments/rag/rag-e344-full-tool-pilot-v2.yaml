@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: rag-e344-full-tool-pilot-v2
+display_name: {en: Full-tool 32-image pilot, zh: 全工具32图试采}
+domain: rag
+task: e344_full_tool_pilot
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/e344-full-tool-v2
+  registry: datasets/AgriNet-1K/wiki_source_scoped_v3/canonical_label_registry.jsonl
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 16
+outputs: {run_root: outputs/runs/rag/rag-e344-full-tool-pilot-v2/}
+tags: [e344, full-tool, pilot32, no-sft]

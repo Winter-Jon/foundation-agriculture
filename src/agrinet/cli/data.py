@@ -28,6 +28,7 @@ from agrinet.data.validate import SchemaKind, validate_records
 from agrinet.data.sft_recovery import (
     prepare_recovery_pilot, recovery_pilot_artifact_id, recovery_pilot_experiment_id,
 )
+from agrinet.data.cascade_sft import ARTIFACT_ID as CASCADE_SFT_ARTIFACT_ID, build as build_cascade_sft
 from agrinet.research.m1.collection import (
     audit_and_convert, build_open_pest_preflight_plan, build_plan, build_replenishment_plan, build_sample_preflight_plan,
     build_single_cell_screen_plan, build_stratified_pilot_plan, freeze, promote_open_pest_screened_plan, promote_single_cell_screened_plan, promote_stratified_screened_plan,
@@ -911,6 +912,34 @@ def open_agri_v2_supplement_merge_command(experiment_id: str) -> None:
     completed = subprocess.run(_open_agri_v2_supplement_command(config, "merge"), cwd=repository_root(), check=False)
     if completed.returncode:
         raise typer.Exit(completed.returncode)
+
+
+@app.command("build-e343-cascade-sft-candidate")
+def build_e343_cascade_sft_candidate_command(
+    destination: Path = typer.Option(
+        Path("outputs/artifacts/datasets") / CASCADE_SFT_ARTIFACT_ID,
+        help="New immutable candidate artifact directory.",
+    ),
+) -> None:
+    """Build the local, no-training E3.43 four-route SFT candidate freeze."""
+    try:
+        target = destination if destination.is_absolute() else repository_root() / destination
+        result = build_cascade_sft(repository_root(), target)
+        typer.echo(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    except DataError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+
+@app.command("approve-e343-non-refusal-sft")
+def approve_e343_non_refusal_sft_command() -> None:
+    """Freeze the user-approved 950-row non-refusal subset; do not train."""
+    from agrinet.data.cascade_sft import approve_non_refusal
+    try:
+        typer.echo(json.dumps(approve_non_refusal(repository_root()), ensure_ascii=False, sort_keys=True))
+    except DataError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
 
 
 def _resolved(experiment_id: str, overrides: list[str] | None) -> dict:
@@ -3766,6 +3795,21 @@ def submit_command(
 ) -> None:
     """Run one Data operation locally, optionally as a detached process."""
     resolved = _resolved(experiment_id, None)
+    if operation == 'full-tool-freeze':
+        command = [sys.executable, '-m', 'agrinet.data.full_tool_sft', '--config',
+                   str(repository_root() / 'configs/experiments/data' / f'{experiment_id}.yaml')]
+        if dry_run:
+            typer.echo(' '.join(command))
+            return
+        if detach:
+            run = start_detached('data', experiment_id, command, {}, resolved)
+            typer.echo(f'run_id={run.run_id} pid={run.pid} run_dir={run.run_dir}')
+            return
+        run_id, run_dir, code = run_foreground('data', experiment_id, command, {}, resolved)
+        typer.echo(f'run_id={run_id} run_dir={run_dir} exit_code={code}')
+        if code:
+            raise typer.Exit(code)
+        return
     # Keep the resumable replenishment continuation available through the
     # managed submit interface rather than forcing an ad-hoc CLI invocation.
     if operation in {

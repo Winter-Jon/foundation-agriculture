@@ -1,0 +1,13 @@
+schema_version: agrinet.experiment/v1
+id: rag-e324-structured-rag-prepare-v2
+display_name: {en: E3.24 v2 structured RAG prepare, zh: E3.24 v2 结构化 RAG 准备}
+domain: rag
+task: e324_structured_rag_prepare
+lifecycle: active
+parameters:
+  e323_source: outputs/artifacts/e323-rag-preflight-v4/source.jsonl
+  e323_report: outputs/artifacts/e323-rag-preflight-v4/campaign/final-report.json
+  e323_gate: outputs/artifacts/e323-rag-preflight-v4/campaign/final-gate-decision.json
+  output_root: outputs/artifacts/e324-structured-rag-v2
+outputs: {run_root: outputs/runs/rag/rag-e324-structured-rag-prepare-v2/}
+tags: [e324, v2, structured-rag, prepare, no-reject, no-sft]

@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e329-visual-top3-full-prepare-v1
+display_name: {en: E3.29 dynamic full visual Top-3 RAG prepare, zh: E3.29 动态全量 visual Top-3 RAG 准备}
+domain: rag
+task: e329_visual_top3_full_prepare
+lifecycle: active
+parameters:
+  e328_source: outputs/artifacts/e328-classifier-full-v1/source.jsonl
+  e328_report: outputs/artifacts/e328-classifier-full-v1/campaign/final-report.json
+  e328_audit: outputs/artifacts/e328-classifier-full-v1/campaign/artifact-audit.json
+  e328_gate: outputs/artifacts/e328-classifier-full-v1/campaign/final-gate-decision.json
+  e327_source: outputs/artifacts/e327-visual-top3-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e329-visual-top3-rag-full-v1
+outputs: {run_root: outputs/runs/rag/rag-e329-visual-top3-full-prepare-v1/}
+tags: [e329, visual-top3, full, dynamic, prepare, no-reject, no-sft]

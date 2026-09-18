@@ -182,6 +182,11 @@ def main() -> None:
     parser.add_argument("--target-image-collection", default=TARGET_IMAGE_COLLECTION)
     parser.add_argument("--verify-existing", action="store_true", help="Verify existing target collections without writing them.")
     args = parser.parse_args()
+    if not args.verify_existing:
+        raise ValueError(
+            "Legacy bare-code name migration is disabled: source namespaces collide. "
+            "Use rag-wiki-source-scoped-index-v2 to rebuild source-qualified identities and vectors."
+        )
 
     registry = load_registry(args.dataset_root / "taxonomy/canonical_label_registry.jsonl", args.dataset_root / "taxonomy/approval.json")
     client = MilvusClient(uri=str(args.lite_db))

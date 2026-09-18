@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-slb-stability-canary-v6
+display_name: {en: Micu SLB Sol provider-stability canary v6, zh: Micu SLB Sol Provider 稳定性 Canary v6}
+domain: rag
+task: micu_slb_canary
+description: Fresh isolated no-data SLB stability check before any new Classifier lineage.
+lifecycle: active
+components: {teacher: micu_slb, model: gpt-5.6-sol}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-slb-canary/v6-sol-post-e331-stability
+  model: gpt-5.6-sol
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+outputs:
+  run_root: outputs/runs/rag/rag-micu-slb-stability-canary-v6/
+tags: [micu, slb, sol, canary, stability, post-e331, no-data, no-replay, no-rag, no-sft]

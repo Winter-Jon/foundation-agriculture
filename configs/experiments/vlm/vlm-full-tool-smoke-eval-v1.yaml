@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: vlm-full-tool-smoke-eval-v1
+display_name: {en: Full tool checkpoint load and inference smoke, zh: 完整工具链加载与推理冒烟}
+domain: vlm
+task: evaluation
+lifecycle: active
+inputs:
+  artifact: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1
+  checkpoint: outputs/runs/vlm/vlm-full-tool-sft-v1/20260918T180002-b1af5ee4-a01/checkpoints/v0-20260918-180022/checkpoint-3
+outputs:
+  run_root: outputs/runs/vlm/vlm-full-tool-smoke-eval-v1
+parameters:
+  evaluation_mode: smoke
+  rag_endpoint: http://127.0.0.1:8079/search
+  reference_image_root: datasets/AgriNet-1K/wiki/images
+  max_new_tokens: 16384
+  max_concurrent: 16
+  context_length: 65536

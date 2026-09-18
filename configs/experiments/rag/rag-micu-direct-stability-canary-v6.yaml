@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-direct-stability-canary-v6
+display_name: {en: Micu direct-node Sol provider-stability canary v6, zh: Micu 直连节点 Sol Provider 稳定性 Canary v6}
+domain: rag
+task: micu_slb_canary
+description: Independent no-data validation of the user-specified www.micuapi.ai v1 node; canary-only endpoint authorization.
+lifecycle: active
+components: {teacher: micu_main_canary_only, model: gpt-5.6-sol}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://www.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-direct-canary/v6-sol-post-e331-stability
+  model: gpt-5.6-sol
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+outputs:
+  run_root: outputs/runs/rag/rag-micu-direct-stability-canary-v6/
+tags: [micu, direct-node, sol, canary-only, stability, no-data, no-replay, no-rag, no-sft]

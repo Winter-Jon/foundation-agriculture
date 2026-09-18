@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e340-visual-top3-safe-subset-fixed-prepare-v1
+display_name: {en: E3.40 fixed-query visual Top-3 RAG safe-subset prepare, zh: E3.40 固定查询 visual Top-3 RAG 安全子集准备}
+domain: rag
+task: e340_visual_top3_safe_subset_fixed_prepare
+lifecycle: active
+parameters:
+  e328_source: outputs/artifacts/e338-classifier-full-v1/source.jsonl
+  e328_report: outputs/artifacts/e338-classifier-full-v1/campaign/final-report.json
+  e328_audit: outputs/artifacts/e338-classifier-full-v1/campaign/artifact-audit-remediation-v1.json
+  e328_gate: outputs/artifacts/e338-classifier-full-v1/campaign/final-gate-decision-remediation-v1.json
+  e327_source: outputs/artifacts/e327-visual-top3-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e340-visual-top3-rag-safe-subset-fixed-v1
+outputs: {run_root: outputs/runs/rag/rag-e340-visual-top3-safe-subset-fixed-prepare-v1/}
+tags: [e340, visual-top3, fixed-query, dynamic, safe-subset, sample-level, no-reject, no-sft]

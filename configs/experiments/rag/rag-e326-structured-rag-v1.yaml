@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e326-structured-rag-v1
+display_name: {en: E3.26 28-image morphology-first structured RAG preflight, zh: E3.26 28 图形态优先结构化 RAG 预检}
+domain: rag
+task: e326_structured_rag
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e326-structured-rag-v1/manifest-r0.json
+  source: outputs/artifacts/e326-structured-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e326-structured-rag-v1/campaign-r2
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  rag_endpoint: http://127.0.0.1:8077
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e326-structured-rag-v1/}
+tags: [e326, morphology-first, balanced-top8, structured-rag, independent, hcv, hermes, no-reject, no-sft]

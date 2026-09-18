@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e324-structured-rag-v2
+display_name: {en: E3.24 v2 8-image structured RAG preflight, zh: E3.24 v2 8 图结构化 RAG 预检}
+domain: rag
+task: e324_structured_rag
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e324-structured-rag-v2/manifest-r0.json
+  source: outputs/artifacts/e324-structured-rag-v2/source.jsonl
+  output_root: outputs/artifacts/e324-structured-rag-v2/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  rag_endpoint: http://127.0.0.1:8077
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e324-structured-rag-v2/}
+tags: [e324, v2, structured-rag, hcv, hermes, no-reject, no-sft]

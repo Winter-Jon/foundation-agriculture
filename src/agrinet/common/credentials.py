@@ -11,9 +11,10 @@ class CredentialError(RuntimeError):
 
 
 ALLOWED_YUNWU_KEYS = {"YUNWU_API_KEY", "YUNWU_API_BASE_URL"}
-ALLOWED_CREDENTIAL_PROFILES = {"yunwu", "micu_slb"}
+ALLOWED_CREDENTIAL_PROFILES = {"yunwu", "micu_main", "micu_slb"}
 PROFILE_ENV_NAMES = {
     "yunwu": {"YUNWU_API_KEY": "YUNWU_API_KEY", "YUNWU_API_BASE_URL": "YUNWU_API_BASE_URL"},
+    "micu_main": {"MICU_MAIN_API_KEY": "YUNWU_API_KEY", "MICU_MAIN_API_BASE_URL": "YUNWU_API_BASE_URL"},
     "micu_slb": {"MICU_SLB_API_KEY": "YUNWU_API_KEY", "MICU_SLB_API_BASE_URL": "YUNWU_API_BASE_URL"},
 }
 

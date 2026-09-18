@@ -115,6 +115,51 @@ def test_e322_option_prompt_and_quality_repair_are_type_specific():
     assert "class name — LETTER" in _quality_prompt("base","option")
 
 
+def test_trace_bound_q1_prompt_requires_visible_evidence_calibration(monkeypatch, tmp_path):
+    """A high frozen-card score must not be presented as visible diagnosis."""
+    source = (campaign.trace_bound_quality_repair.__code__.co_consts)
+    prompt = "".join(value for value in source if isinstance(value, str))
+    assert "candidate rank, or class name is never visual evidence" in prompt
+    assert "low or medium confidence" in prompt
+    assert "INSUFFICIENT_EVIDENCE" in prompt
+    assert "exactly three numbered, image-grounded observations" in prompt
+    assert "never the literal word `candidate`" in prompt
+    assert "Generic color, mottling, blight, or lesion shape alone" in prompt
+
+
+def test_trace_bound_q1_validator_rejects_extra_observation_and_placeholder_candidate():
+    from agrinet.rag.e322_campaign import _validate_trace_bound_q1_contract
+    frozen={"tool_trace":[{"response":{"candidates":[{"name":"alpha"},{"name":"beta"},{"name":"gamma"}]}}]}
+    invalid=("<think>Visual observations:\n1. one\n2. two\n3. three\n4. four\n"
+             "Candidate hypotheses: x\nCandidate comparison: x\nEvidence: x\nRejected alternatives:\n"
+             "candidate: rejected because visible trait conflicts with x\n"
+             "beta: rejected because visible trait conflicts with x\nUncertainty: low confidence.</think>")
+    with pytest.raises(ValueError,match="exactly three numbered"):
+        _validate_trace_bound_q1_contract(frozen,invalid)
+    invalid=invalid.replace("\n4. four", "")
+    with pytest.raises(ValueError,match="frozen-card candidate"):
+        _validate_trace_bound_q1_contract(frozen,invalid)
+
+
+def test_trace_bound_q1_option_requires_all_options_and_three_rejections():
+    from agrinet.rag.e322_campaign import _validate_trace_bound_q1_contract
+    frozen={"tool_trace":[{"response":{"candidates":[{"name":"alpha"},{"name":"beta"},{"name":"gamma"},{"name":"delta"}]}}]}
+    answer=("<think>Visual observations:\n1. one\n2. two\n3. three\n"
+            "Candidate hypotheses: alpha; beta; gamma; delta\n"
+            "Candidate comparison: A. alpha fits. B. beta conflicts. C. gamma conflicts. D. delta conflicts.\n"
+            "Evidence: visible traits.\nRejected alternatives:\n"
+            "beta: rejected because visible trait conflicts with a brown margin\n"
+            "gamma: rejected because visible trait conflicts with a spotted surface\n"
+            "delta: rejected because visible trait conflicts with a visible insect body\n"
+            "Uncertainty: medium confidence because fine detail is blurred.</think><answer>alpha — A</answer>")
+    options=[{"label":label,"name":name} for label,name in zip("ABCD",["alpha","beta","gamma","delta"])]
+    _validate_trace_bound_q1_contract(frozen,answer,question_type="option",public_options=options)
+    with pytest.raises(ValueError,match="every public option"):
+        _validate_trace_bound_q1_contract(frozen,answer.replace("D. delta conflicts.","delta conflicts."),question_type="option",public_options=options)
+    with pytest.raises(ValueError,match="exactly 3"):
+        _validate_trace_bound_q1_contract(frozen,answer.replace("delta: rejected because visible trait conflicts with a visible insect body\n",""),question_type="option",public_options=options)
+
+
 class _BudgetReport:
     def report(self): return {}
 
@@ -223,14 +268,21 @@ def test_e322_generation_counts_each_provider_turn_as_an_intent(tmp_path,monkeyp
     item={"work_id":"R0:s:e322","sample_id":row["sample_id"],"round":"R0",
           "attempt_ordinal":0,"quality_attempt_ordinal":0,"prompt_revision":"base"}
     monkeypatch.setattr(campaign,"transport_image",lambda *a,**k:({"type":"image_url","image_url":{"url":"data:image/jpeg;base64,x"}},None))
+    payloads=[]
     responses=iter([
         {"choices":[{"message":{"content":"<think>plan</think>"}}],"usage":{"prompt_tokens":10,"cached_tokens":0}},
         {"choices":[{"message":{"tool_calls":[{"id":"call-1","function":{"name":"agrinet_classifier_predict","arguments":"{}"}}]}}],"usage":{"prompt_tokens":20,"cached_tokens":0}},
         {"choices":[{"message":{"content":_valid_answer("class-0")}}],"usage":{"prompt_tokens":30,"cached_tokens":0}},
     ])
     intents=_Intents(); budget=E35TokenBudget(tmp_path/"budget.jsonl",uncached_input_token_cap=10_000)
-    _generation(row,item,model="gpt-5.6-sol",teacher=lambda payload:next(responses),budget=budget,intents=intents,root=tmp_path)
+    def teacher(payload):
+        payloads.append(payload)
+        return next(responses)
+    _generation(row,item,model="gpt-5.6-sol",teacher=teacher,budget=budget,intents=intents,root=tmp_path)
     assert intents.keys==[f"{item['work_id']}:generation:{i}" for i in (1,2,3)]
+    assert payloads[0]["tool_choice"]=="none"
+    assert payloads[0]["messages"][0]["content"].startswith("Planning phase only.")
+    assert "HCV sections" in payloads[0]["messages"][0]["content"]
 
 
 def test_e322_final_gate_binds_report_and_artifact_audit(tmp_path):

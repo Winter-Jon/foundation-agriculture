@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e343-refusal-trajectories-boundary-audit-prepare-v1
+display_name: {en: E3.43 refusal boundary-audit prepare, zh: E3.43 全量拒识边界审计准备}
+domain: rag
+task: e343_refusal_trajectories_prepare
+lifecycle: active
+parameters:
+  e341_source: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/source.jsonl
+  e341_report: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/final-report.json
+  e341_audit: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/artifact-audit.json
+  e341_gate: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/final-gate-decision.json
+  e341_campaign: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign
+  output_root: outputs/artifacts/e343-refusal-trajectories-boundary-audit-v1
+outputs: {run_root: outputs/runs/rag/rag-e343-refusal-trajectories-boundary-audit-prepare-v1/}
+tags: [e343, refusal, full, boundary-audit, no-tools, no-reject-execution, no-sft]

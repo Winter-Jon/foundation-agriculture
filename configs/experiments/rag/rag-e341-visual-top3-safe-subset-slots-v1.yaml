@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e341-visual-top3-safe-subset-slots-v1
+display_name: {en: E3.41 slot-preserving visual Top-3 RAG safe-subset campaign, zh: E3.41 保留候选槽位 visual Top-3 RAG 安全子集采集}
+domain: rag
+task: e341_visual_top3_safe_subset_slots
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/manifest.json
+  source: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/source.jsonl
+  output_root: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  rag_endpoint: http://127.0.0.1:8077
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e341-visual-top3-safe-subset-slots-v1/}
+tags: [e341, visual-top3, fixed-query, slots-preserved, dynamic, safe-subset, shared-budget, no-reject, no-sft]

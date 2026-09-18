@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e326-semantic-ablation-v1
+display_name: {en: E3.26 provider-free semantic retrieval ablation, zh: E3.26 无教师语义检索消融}
+domain: rag
+task: e326_semantic_ablation
+lifecycle: active
+parameters:
+  source: outputs/artifacts/e326-structured-rag-v1/source.jsonl
+  campaign_root: outputs/artifacts/e326-structured-rag-v1/campaign-r2
+  registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  endpoint: http://127.0.0.1:8077
+  output_root: outputs/artifacts/e326-semantic-ablation-v1
+  workers: 4
+outputs: {run_root: outputs/runs/rag/rag-e326-semantic-ablation-v1/}
+tags: [e326, semantic-ablation, retrieval, provider-free, no-reject, no-sft]

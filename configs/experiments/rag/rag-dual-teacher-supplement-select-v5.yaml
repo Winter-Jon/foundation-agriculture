@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-supplement-select-v5
+display_name: {en: Dual teacher final residual selection, zh: 双教师最终剩余配额选图}
+domain: rag
+task: dual_teacher_supplement_select
+lifecycle: active
+parameters:
+  source_root: outputs/artifacts/dual-teacher-full-v1
+  output_root: outputs/artifacts/dual-teacher-full-supplement-v5
+  inventory: outputs/artifacts/e344-full-tool-v2/cluster-inventory.jsonl
+  deficits: outputs/artifacts/dual-teacher-full-v1/final-v4/deficits.json
+  prior_sources:
+    - outputs/artifacts/dual-teacher-full-v1/pilot-source.jsonl
+    - outputs/artifacts/dual-teacher-full-supplement-v1/pilot-source.jsonl
+    - outputs/artifacts/dual-teacher-full-supplement-v2/pilot-source.jsonl
+    - outputs/artifacts/dual-teacher-full-supplement-v3/pilot-source.jsonl
+    - outputs/artifacts/dual-teacher-full-supplement-v4/pilot-source.jsonl
+  multiplier: 3
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-supplement-select-v5/}
+tags: [dual-teacher, quota-supplement, final-residual-targeting, no-sft]

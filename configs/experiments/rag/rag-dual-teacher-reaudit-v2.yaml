@@ -1,0 +1,14 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-reaudit-v2
+display_name: {en: Query-only relaxed material-defect audit, zh: 单查询图实质缺陷简审}
+domain: rag
+task: dual_teacher_reaudit
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-reaudit-v2
+  original_root: outputs/artifacts/dual-teacher-reference-v2/live
+  source: outputs/artifacts/dual-teacher-reference-v1/source.jsonl
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-reaudit-v2/}
+tags: [audit-only, smoke8]

@@ -30,6 +30,7 @@ app.add_typer(index_app, name="index")
 
 
 MICU_SLB_BASE_URL = "https://api-slb.micuapi.ai/v1"
+MICU_DIRECT_BASE_URL = "https://www.micuapi.ai/v1"
 _LOOPBACK_PROXY_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -54,7 +55,8 @@ def _usable_proxy_environment() -> dict[str, str]:
         return {}
 
 
-def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -> dict[str, str]:
+def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool,
+                              allow_direct_node: bool = False) -> dict[str, str]:
     """Load Micu credentials and apply an explicitly versioned endpoint choice.
 
     The endpoint is operational configuration, not a credential.  Keeping it
@@ -63,7 +65,9 @@ def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -
     """
     if dry_run:
         return {}
-    environment = {**yunwu_environment(profile="micu_slb"), **_usable_proxy_environment()}
+    configured = parameters.get("teacher_base_url")
+    profile = "micu_main" if configured == MICU_DIRECT_BASE_URL else "micu_slb"
+    environment = {**yunwu_environment(profile=profile), **_usable_proxy_environment()}
     # The child process needs the provider proxy and its local typed RAG HTTP
     # endpoint.  Explicitly keep loopback off the proxy path.
     inherited_no_proxy = os.environ.get("NO_PROXY") or os.environ.get("no_proxy") or ""
@@ -71,12 +75,14 @@ def _micu_runtime_environment(parameters: dict[str, object], *, dry_run: bool) -
     entries.update({"127.0.0.1", "localhost", "::1"})
     environment["NO_PROXY"] = ",".join(sorted(entries))
     environment["no_proxy"] = environment["NO_PROXY"]
-    configured = parameters.get("teacher_base_url")
     if configured is None:
         return environment
-    if not isinstance(configured, str) or configured.rstrip("/") != MICU_SLB_BASE_URL:
-        raise ConfigError("Micu E2 teacher_base_url must be the validated SLB v1 endpoint")
-    environment["YUNWU_API_BASE_URL"] = MICU_SLB_BASE_URL
+    allowed = {MICU_SLB_BASE_URL}
+    if allow_direct_node:
+        allowed.add(MICU_DIRECT_BASE_URL)
+    if not isinstance(configured, str) or configured.rstrip("/") not in allowed:
+        raise ConfigError("Micu teacher_base_url is not an allowed endpoint for this workflow")
+    environment["YUNWU_API_BASE_URL"] = configured.rstrip("/")
     return environment
 
 
@@ -129,6 +135,7 @@ def serve(
     host: str = "127.0.0.1", port: int = 8077, device: str = "auto",
     class_collection: str = "open_agri_v3_classes",
     image_collection: str = "open_agri_v3_images",
+    database: Path = Path("outputs/milvus/agrinet_wiki_lite.db"),
 ) -> None:
     """Serve the typed local retrieval service over HTTP."""
     import uvicorn
@@ -137,7 +144,7 @@ def serve(
     root = repository_root()
     def factory() -> RetrievalService:
         return RetrievalService(MilvusSiglipBackend(
-            root / "outputs/milvus/agrinet_wiki_lite.db",
+            root / database,
             root / "models/siglip2-so400m-patch16-naflex", device,
             class_collection=class_collection, image_collection=image_collection,
         ))
@@ -203,6 +210,88 @@ def submit(
         operation = "e323-rag-preflight-prepare"
     if operation == "distill" and spec.task == "e323_rag_preflight":
         operation = "e323-rag-preflight"
+    if operation == "distill" and spec.task == "e324_structured_rag_prepare":
+        operation = "e324-structured-rag-prepare"
+    if operation == "distill" and spec.task == "e324_structured_rag":
+        operation = "e324-structured-rag"
+    if operation == "distill" and spec.task == "e325_structured_rag_prepare":
+        operation = "e325-structured-rag-prepare"
+    if operation == "distill" and spec.task == "e325_structured_rag":
+        operation = "e325-structured-rag"
+    if operation == "distill" and spec.task == "e326_structured_rag_prepare":
+        operation = "e326-structured-rag-prepare"
+    if operation == "distill" and spec.task == "e326_structured_rag":
+        operation = "e326-structured-rag"
+    if operation == "distill" and spec.task == "e326_semantic_ablation":
+        operation = "e326-semantic-ablation"
+    if operation == "distill" and spec.task == "e327_visual_top3_prepare":
+        operation = "e327-visual-top3-prepare"
+    if operation == "distill" and spec.task == "e327_visual_top3":
+        operation = "e327-visual-top3"
+    if operation == "distill" and spec.task == "e328_classifier_full_prepare":
+        operation = "e328-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e328_classifier_full":
+        operation = "e328-classifier-full"
+    if operation == "distill" and spec.task == "e330_classifier_full_prepare":
+        operation = "e330-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e330_classifier_full":
+        operation = "e330-classifier-full"
+    if operation == "distill" and spec.task == "e331_classifier_full_prepare":
+        operation = "e331-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e331_classifier_full":
+        operation = "e331-classifier-full"
+    if operation == "distill" and spec.task == "e332_classifier_full_prepare":
+        operation = "e332-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e332_classifier_full":
+        operation = "e332-classifier-full"
+    if operation == "distill" and spec.task == "e333_classifier_full_prepare":
+        operation = "e333-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e333_classifier_full":
+        operation = "e333-classifier-full"
+    if operation == "distill" and spec.task == "e334_classifier_full_prepare":
+        operation = "e334-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e334_classifier_full":
+        operation = "e334-classifier-full"
+    if operation == "distill" and spec.task == "e335_classifier_full_prepare":
+        operation = "e335-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e335_classifier_full":
+        operation = "e335-classifier-full"
+    if operation == "distill" and spec.task == "e336_classifier_full_prepare":
+        operation = "e336-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e336_classifier_full":
+        operation = "e336-classifier-full"
+    if operation == "distill" and spec.task == "e337_classifier_full_prepare":
+        operation = "e337-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e337_classifier_full":
+        operation = "e337-classifier-full"
+    if operation == "distill" and spec.task == "e338_classifier_full_prepare":
+        operation = "e338-classifier-full-prepare"
+    if operation == "distill" and spec.task == "e338_classifier_full":
+        operation = "e338-classifier-full"
+    if operation == "distill" and spec.task == "e329_visual_top3_full_prepare":
+        operation = "e329-visual-top3-full-prepare"
+    if operation == "distill" and spec.task == "e329_visual_top3_full":
+        operation = "e329-visual-top3-full"
+    if operation == "distill" and spec.task == "e339_visual_top3_safe_subset_prepare":
+        operation = "e339-visual-top3-safe-subset-prepare"
+    if operation == "distill" and spec.task == "e339_visual_top3_safe_subset":
+        operation = "e339-visual-top3-safe-subset"
+    if operation == "distill" and spec.task == "e340_visual_top3_safe_subset_fixed_prepare":
+        operation = "e340-visual-top3-safe-subset-fixed-prepare"
+    if operation == "distill" and spec.task == "e340_visual_top3_safe_subset_fixed":
+        operation = "e340-visual-top3-safe-subset-fixed"
+    if operation == "distill" and spec.task == "e341_visual_top3_safe_subset_slots_prepare":
+        operation = "e341-visual-top3-safe-subset-slots-prepare"
+    if operation == "distill" and spec.task == "e341_visual_top3_safe_subset_slots":
+        operation = "e341-visual-top3-safe-subset-slots"
+    if operation == "distill" and spec.task == "e342_refusal_trajectories_prepare":
+        operation = "e342-refusal-trajectories-full-prepare"
+    if operation == "distill" and spec.task == "e342_refusal_trajectories":
+        operation = "e342-refusal-trajectories-full"
+    if operation == "distill" and spec.task == "e343_refusal_trajectories_prepare":
+        operation = "e343-refusal-trajectories-boundary-audit-prepare"
+    if operation == "distill" and spec.task == "e343_refusal_trajectories":
+        operation = "e343-refusal-trajectories-boundary-audit"
     if operation == "distill" and spec.task == "micu_slb_canary":
         operation = "micu-slb-canary"
     if operation == "distill" and spec.task == "micu_classifier_hcv_v2":
@@ -212,7 +301,39 @@ def submit(
                      else "micu-classifier-hcv-e2-dynamic-smoke"
                      if phase in {"freeze-source", "collect", "rewrite", "convert"}
                      else "micu-classifier-hcv-v2")
-    if operation == "classifier-distill-preflight":
+    if operation == "distill" and spec.task == "wiki_source_scoped_index":
+        params = config["parameters"]
+        command = [sys.executable, "-m", "agrinet.rag.milvus_tools.ingest_agrinet_wiki",
+                   "--knowledge-base", str(params["knowledge_base"]), "--mode", "lite",
+                   "--lite-db", str(params["database"]), "--collection", str(params["collection"]),
+                   "--device", "cuda", "--batch-size", "8"]
+        child_env = {}
+    elif operation == "distill" and spec.task == "dual_teacher_reaudit":
+        command = [sys.executable, "-m", "agrinet.rag.dual_teacher_reaudit", "--config",
+                   str(repository_root() / "configs/experiments/rag" / f"{experiment_id}.yaml")]
+        child_env = _micu_runtime_environment(config.get("parameters", {}), dry_run=dry_run)
+    elif operation == "distill" and spec.task == "dual_teacher_smoke":
+        command = [sys.executable, "-m", "agrinet.rag.dual_teacher_campaign", "--config",
+                   str(repository_root() / "configs/experiments/rag" / f"{experiment_id}.yaml")]
+        child_env = _micu_runtime_environment(config.get("parameters", {}), dry_run=dry_run)
+    elif operation == "distill" and spec.task == "e344_full_tool_report":
+        command = [sys.executable, "-m", "agrinet.rag.e344_finalize", "--root",
+                   str(config["parameters"]["artifact_root"])]
+        child_env = {}
+    elif operation == "distill" and spec.task in {"e344_full_tool_pilot", "e344_full_tool_pilot_prepare"}:
+        command = [sys.executable, "-m", "agrinet.rag.e344_campaign", "--config",
+                   str(repository_root() / "configs/experiments/rag" / f"{experiment_id}.yaml")]
+        if spec.task == "e344_full_tool_pilot_prepare":
+            command.append("--prepare-only")
+            child_env = {}
+        else:
+            child_env = _micu_runtime_environment(config.get("parameters", {}), dry_run=dry_run)
+    elif operation == "distill" and spec.task in {"e344_full_tool_readiness", "e344_full_tool_prepare"}:
+        module = "agrinet.rag.e344_prepare" if spec.task == "e344_full_tool_readiness" else "agrinet.rag.e344_pipeline"
+        command = [sys.executable, "-m", module, "--config",
+                   str(repository_root() / "configs/experiments/rag" / f"{experiment_id}.yaml")]
+        child_env = {}
+    elif operation == "classifier-distill-preflight":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.classifier_distill"]
         for key in ("contract", "dataset_root", "source", "exclusions", "output_root", "stage"):
@@ -318,6 +439,258 @@ def submit(
             child_env = _micu_runtime_environment(parameters, dry_run=dry_run)
         except (CredentialError, NetworkConfigError, ConfigError) as exc:
             typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
+    elif operation == "e324-structured-rag-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e324_structured_rag"]
+        for key,flag in (("e323_source","--e323-source"),("e323_report","--e323-report"),("e323_gate","--e323-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e324-structured-rag":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e324_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e325-structured-rag-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e325_structured_rag"]
+        command.extend(["--e319-source",str(parameters["e319_source"])])
+        for path in parameters.get("excluded_sources",[]): command.extend(["--excluded-source",str(path)])
+        command.extend(["--output-root",str(parameters["output_root"])])
+        child_env={}
+    elif operation == "e325-structured-rag":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e324_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e326-structured-rag-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e326_structured_rag"]
+        command.extend(["--e318-source",str(parameters["e318_source"])])
+        for path in parameters.get("excluded_sources",[]): command.extend(["--excluded-source",str(path)])
+        command.extend(["--output-root",str(parameters["output_root"])])
+        child_env={}
+    elif operation == "e326-structured-rag":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e324_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e326-semantic-ablation":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e326_semantic_ablation"]
+        for key,flag in (("source","--source"),("campaign_root","--campaign-root"),("registry","--registry"),("endpoint","--endpoint"),("output_root","--output-root"),("workers","--workers")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e327-visual-top3-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e327_visual_top3"]
+        for key,flag in (("e326_source","--e326-source"),("ablation_report","--ablation-report"),("ablation_audit","--ablation-audit"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e327-visual-top3":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e324_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e328-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e328_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e328-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e328_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e330-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e330_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e330-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e330_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e331-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e331_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e331-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e331_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e332-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e332_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e332-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e332_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e333-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e333_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e333-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e333_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e334-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e334_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e334-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e334_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e335-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e335_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e335-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e335_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e336-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e336_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e336-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e336_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e337-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e337_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e337-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e337_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e338-classifier-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e338_classifier_full"]
+        for key,flag in (("queue","--queue"),("direct_source","--direct-source"),("e320_source","--e320-source"),("e322_source","--e322-source"),("e322_campaign","--e322-campaign"),("e322_report","--e322-report"),("e322_audit","--e322-audit"),("e322_gate","--e322-gate"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e338-classifier-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e338_classifier_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("e322_campaign","--e322-campaign"),("output_root","--output-root"),("private_registry","--private-registry"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e329-visual-top3-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e329_visual_top3_full"]
+        for key,flag in (("e328_source","--e328-source"),("e328_report","--e328-report"),("e328_audit","--e328-audit"),("e328_gate","--e328-gate"),("e327_source","--e327-source"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e329-visual-top3-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e329_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e339-visual-top3-safe-subset-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e339_visual_top3_safe_subset"]
+        for key,flag in (("e328_source","--e328-source"),("e328_report","--e328-report"),("e328_audit","--e328-audit"),("e328_gate","--e328-gate"),("e327_source","--e327-source"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e339-visual-top3-safe-subset":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e339_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e340-visual-top3-safe-subset-fixed-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e340_visual_top3_safe_subset_fixed"]
+        for key,flag in (("e328_source","--e328-source"),("e328_report","--e328-report"),("e328_audit","--e328-audit"),("e328_gate","--e328-gate"),("e327_source","--e327-source"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e340-visual-top3-safe-subset-fixed":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e340_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e341-visual-top3-safe-subset-slots-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e341_visual_top3_safe_subset_slots"]
+        for key,flag in (("e328_source","--e328-source"),("e328_report","--e328-report"),("e328_audit","--e328-audit"),("e328_gate","--e328-gate"),("e327_source","--e327-source"),("output_root","--output-root")): command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e341-visual-top3-safe-subset-slots":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e341_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("private_registry","--private-registry"),("rag_endpoint","--rag-endpoint"),("teacher_model","--teacher-model"),("timeout","--timeout")): command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e342-refusal-trajectories-full-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e342_refusal_trajectories"]
+        for key,flag in (("e341_source","--e341-source"),("e341_report","--e341-report"),("e341_audit","--e341-audit"),("e341_gate","--e341-gate"),("e341_campaign","--e341-campaign"),("output_root","--output-root")):
+            command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e342-refusal-trajectories-full":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e342_refusal_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("teacher_model","--teacher-model"),("timeout","--timeout")):
+            command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
+    elif operation == "e343-refusal-trajectories-boundary-audit-prepare":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e343_refusal_trajectories"]
+        for key,flag in (("e341_source","--e341-source"),("e341_report","--e341-report"),("e341_audit","--e341-audit"),("e341_gate","--e341-gate"),("e341_campaign","--e341-campaign"),("output_root","--output-root")):
+            command.extend([flag,str(parameters[key])])
+        child_env={}
+    elif operation == "e343-refusal-trajectories-boundary-audit":
+        parameters=config.get("parameters",{}); command=[sys.executable,"-m","agrinet.rag.e343_refusal_campaign"]
+        for key,flag in (("manifest","--manifest"),("source","--source"),("output_root","--output-root"),("teacher_model","--teacher-model"),("timeout","--timeout")):
+            command.extend([flag,str(parameters[key])])
+        if dry_run: command.append("--dry-run")
+        if parameters.get("authorize_live_collection"): command.append("--authorize-live-collection")
+        try: child_env=_micu_runtime_environment(parameters,dry_run=dry_run)
+        except (CredentialError,NetworkConfigError,ConfigError) as exc:
+            typer.echo(f"error: local runtime preflight failed: {exc}",err=True); raise typer.Exit(1) from exc
     elif operation == "e35-live-audit-collect":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.e35_live"]
@@ -370,12 +743,15 @@ def submit(
     elif operation == "micu-slb-canary":
         parameters = config.get("parameters", {})
         command = [sys.executable, "-m", "agrinet.rag.micu_slb_canary"]
-        for key, flag in (("output_root", "--output-root"), ("model", "--model"), ("rounds", "--rounds"),
+        for key, flag in (("output_root", "--output-root"), ("teacher_base_url", "--endpoint"), ("model", "--model"), ("rounds", "--rounds"),
                           ("requests_per_round", "--requests-per-round"), ("timeout", "--timeout")):
             if key in parameters:
                 command.extend([flag, str(parameters[key])])
+        if parameters.get("delivery_recovery"):
+            command.append("--delivery-recovery")
         try:
-            child_env = _micu_runtime_environment({"teacher_base_url": MICU_SLB_BASE_URL}, dry_run=dry_run)
+            child_env = _micu_runtime_environment({"teacher_base_url": parameters.get("teacher_base_url", MICU_SLB_BASE_URL)},
+                                                  dry_run=dry_run, allow_direct_node=True)
         except (CredentialError, NetworkConfigError, ConfigError) as exc:
             typer.echo(f"error: local runtime preflight failed: {exc}", err=True); raise typer.Exit(1) from exc
     elif operation == "micu-classifier-hcv-e2-dynamic-smoke":
@@ -546,6 +922,8 @@ def submit(
         child_env = {}
     else:
         typer.echo(f"error: unsupported rag operation: {operation}", err=True); raise typer.Exit(2)
+    if operation == "serve" and parameters.get("database"):
+        command.extend(["--database", str(parameters["database"])])
     if dry_run:
         typer.echo(" ".join(command)); return
     if detach:

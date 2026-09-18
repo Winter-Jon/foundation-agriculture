@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-wiki-source-scoped-service-v2
+display_name: {en: Source-scoped wiki retrieval service, zh: 来源独立知识检索服务}
+domain: rag
+task: serve
+lifecycle: active
+parameters:
+  host: 127.0.0.1
+  port: 8078
+  device: cuda
+  database: outputs/artifacts/wiki-source-scoped-v2/index.db
+  class_collection: wiki_source_scoped_v2_classes
+  image_collection: wiki_source_scoped_v2_images
+outputs: {run_root: outputs/runs/rag/rag-wiki-source-scoped-service-v2/}
+tags: [wiki, identity-repair, independent-index]

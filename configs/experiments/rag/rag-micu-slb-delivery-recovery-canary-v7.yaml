@@ -1,0 +1,20 @@
+schema_version: agrinet.experiment/v1
+id: rag-micu-slb-delivery-recovery-canary-v7
+display_name: {en: Micu SLB Sol delivery-recovery canary v7, zh: Micu SLB Sol 多轮交付恢复 Canary v7}
+domain: rag
+task: micu_slb_canary
+description: Fresh no-data R0/R1/R2 lineage-bound delivery-recovery canary before any new Classifier lineage.
+lifecycle: active
+components: {teacher: micu_slb, model: gpt-5.6-sol}
+runtime_profile: runtime/local-rag
+parameters:
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  output_root: outputs/artifacts/micu-slb-recovery-canary/v7-sol-post-e331
+  model: gpt-5.6-sol
+  rounds: 2
+  requests_per_round: 10
+  timeout: 60
+  delivery_recovery: true
+outputs:
+  run_root: outputs/runs/rag/rag-micu-slb-delivery-recovery-canary-v7/
+tags: [micu, slb, sol, canary, delivery-recovery, r0, r1, r2, no-data, no-replay, no-rag, no-sft]

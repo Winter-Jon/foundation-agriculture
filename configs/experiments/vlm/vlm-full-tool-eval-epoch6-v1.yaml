@@ -1,0 +1,23 @@
+schema_version: agrinet.experiment/v1
+id: vlm-full-tool-eval-epoch6-v1
+display_name: {en: Full-tool epoch6 test-only evaluation, zh: 完整工具链第6轮 test-only 评测}
+domain: vlm
+task: evaluation
+lifecycle: active
+inputs:
+  artifact: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1
+  checkpoint: outputs/runs/vlm/vlm-full-tool-sft-v1/20260918T182846-b1af5ee4-a01/checkpoints/v0-20260918-182911/checkpoint-180
+  test_manifest: outputs/artifacts/datasets/open-agri-v3-unified-auto-route-eval-v1/test_en.jsonl
+  classifier_predictions: outputs/runs/vlm/dual-tool-v7-token-balanced/20260917-initial/classifier/test/predictions_dev_known.jsonl
+  label_map: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/classifier-formal/label_map.json
+  private_truth: datasets/AgriNet-1K/open_agri_v3/vlm_data/accepted/private/test_truth.jsonl
+outputs: {run_root: outputs/runs/vlm/vlm-full-tool-eval-epoch6-v1}
+parameters:
+  evaluation_mode: formal
+  rag_endpoint: http://127.0.0.1:8079/search
+  reference_image_root: datasets/AgriNet-1K/wiki/images
+  expected_rows: 1019
+  max_new_tokens: 16384
+  max_concurrent: 16
+  context_length: 65536
+  test_only: true

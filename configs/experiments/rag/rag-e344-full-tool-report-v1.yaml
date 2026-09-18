@@ -1,0 +1,10 @@
+schema_version: agrinet.experiment/v1
+id: rag-e344-full-tool-report-v1
+display_name: {en: Full-tool pilot final acceptance, zh: 全工具试采最终验收}
+domain: rag
+task: e344_full_tool_report
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/e344-full-tool-v1
+outputs: {run_root: outputs/runs/rag/rag-e344-full-tool-report-v1/}
+tags: [e344, full-tool, report, offline, no-sft]

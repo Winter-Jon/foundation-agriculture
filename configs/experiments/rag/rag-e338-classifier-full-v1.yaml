@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e338-classifier-full-v1
+display_name: {en: E3.38 full Classifier sample-level campaign, zh: E3.38 全量 Classifier 样本级采集}
+domain: rag
+task: e338_classifier_full
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e338-classifier-full-v1/manifest.json
+  source: outputs/artifacts/e338-classifier-full-v1/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  output_root: outputs/artifacts/e338-classifier-full-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e338-classifier-full-v1/}
+tags: [e338, v1, classifier, full, sample-level-audit, shard-scheduling-only, partial-rag-safe-subset, no-reject, no-sft]

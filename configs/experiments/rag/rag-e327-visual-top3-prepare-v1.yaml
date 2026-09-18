@@ -1,0 +1,13 @@
+schema_version: agrinet.experiment/v1
+id: rag-e327-visual-top3-prepare-v1
+display_name: {en: E3.27 image-only Top-3 RAG prepare, zh: E3.27 纯图像 Top-3 RAG 准备}
+domain: rag
+task: e327_visual_top3_prepare
+lifecycle: active
+parameters:
+  e326_source: outputs/artifacts/e326-structured-rag-v1/source.jsonl
+  ablation_report: outputs/artifacts/e326-semantic-ablation-v1/report.json
+  ablation_audit: outputs/artifacts/e326-semantic-ablation-v1/artifact-audit.json
+  output_root: outputs/artifacts/e327-visual-top3-rag-v1
+outputs: {run_root: outputs/runs/rag/rag-e327-visual-top3-prepare-v1/}
+tags: [e327, image-only, visual-top3, paired, prepare, provider-free, no-reject, no-sft]

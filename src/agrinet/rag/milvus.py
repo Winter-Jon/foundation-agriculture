@@ -19,7 +19,7 @@ CLASS_FIELDS = [
     # Curated same-domain neighbours stored in the wiki class collection.
     # Return them with a hit so callers can compare alternatives.
     "similar_english_classes", "similar_chinese_classes",
-    "public_description", "visual_descriptions",
+    "public_description", "visual_descriptions", "payload",
 ]
 IMAGE_FIELDS = [
     "image_id", "entry_id", "code", "english_name", "chinese_name",
@@ -187,6 +187,23 @@ class MilvusSiglipBackend:
 
     def _plain_row(self, row: dict[str, Any]) -> dict[str, Any]:
         output = dict(row)
+        payload = output.pop("payload", {}) or {}
+        if payload.get("identity_version") == "source-scoped-wiki/v1":
+            # Bind public evidence to the same payload used to build vectors.
+            for key in ("code", "english_name", "chinese_name", "source_dataset"):
+                if output.get(key) != payload.get(key):
+                    raise ValueError("source_scoped_index_payload_mismatch")
+            for key in ("identity_version", "source_code", "canonical_class_code"):
+                output[key] = payload.get(key)
+            output["public_description"] = str((payload.get("description") or {}).get("content_1") or "")
+            output["similar_english_classes"] = []
+            output["similar_chinese_classes"] = []
+            # Migrated visual descriptions are not independently reconciled.
+            output["visual_descriptions"] = []
+            for key in ("local_reference_images", "alias_en", "alias_cn"):
+                if output.get(key) is not None:
+                    output[key] = list(output[key])
+            return output
         for key in (
             "local_reference_images", "alias_en", "alias_cn",
             "similar_english_classes", "similar_chinese_classes",
@@ -238,7 +255,9 @@ class MilvusSiglipBackend:
 
     @staticmethod
     def _normalize_name(value: str) -> str:
-        return " ".join(re.findall(r"[a-z0-9]+", value.lower().replace("_", " ")))
+        # ``\w`` is Unicode-aware in Python. Canonical public names may be
+        # Chinese, so an ASCII-only key turns a valid lookup into an empty one.
+        return " ".join(re.findall(r"[^\W_]+", value.lower()))
 
     def _name_hits(self, query: str, top_k: int) -> list[dict[str, Any]]:
         normalized = self._normalize_name(query)

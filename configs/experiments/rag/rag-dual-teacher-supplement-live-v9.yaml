@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-supplement-live-v9
+display_name: {en: Dual teacher remaining eligible live, zh: 双教师剩余可用配额采集}
+domain: rag
+task: dual_teacher_smoke
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-full-supplement-v9/live
+  source: outputs/artifacts/dual-teacher-full-supplement-v9/pilot-source.jsonl
+  bindings: outputs/artifacts/dual-teacher-full-supplement-v9/classifier-bindings.json
+  sample_count: 21
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 32
+  collection_mode: quota_batch
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-supplement-live-v9/}
+tags: [dual-teacher, quota-supplement, remaining-eligible, no-sft]

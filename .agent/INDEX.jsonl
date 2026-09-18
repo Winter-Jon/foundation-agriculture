@@ -1,0 +1,7 @@
+{"agent_path": ".agent/work/G-20260916-001", "id": "G-20260916-001", "path": "human/work/G-20260916-001-e3-38-sample-level-full-classifier-and-e3-39-safe-subset-rag/GOAL.md", "profile": "execution", "state": "active", "type": "G"}
+{"agent_path": ".agent/work/G-20260916-002", "id": "G-20260916-002", "path": "human/work/G-20260916-002-e342-refusal-trajectories/GOAL.md", "profile": "execution", "state": "closed", "type": "G"}
+{"agent_path": ".agent/work/G-20260916-003", "id": "G-20260916-003", "path": "human/work/G-20260916-003-e343-boundary-audit/GOAL.md", "profile": "execution", "state": "closed", "type": "G"}
+{"agent_path": ".agent/work/G-20260917-001", "id": "G-20260917-001", "path": "human/work/G-20260917-001-full-tool-rag-resampling-and-32-image-pilot/GOAL.md", "profile": "execution", "state": "closed", "type": "G"}
+{"agent_path": ".agent/work/G-20260918-001", "id": "G-20260918-001", "path": "human/work/G-20260918-001-repaired-wiki-full-tool-pilot/GOAL.md", "profile": "execution", "state": "closed", "type": "G"}
+{"agent_path": ".agent/work/G-20260918-002", "id": "G-20260918-002", "path": "human/work/G-20260918-002-dual-teacher-full-collection/GOAL.md", "profile": "execution", "state": "active", "type": "G"}
+{"agent_path": ".agent/work/W-20260917-001", "id": "W-20260917-001", "path": "human/work/W-20260917-001-unified-auto-route-sft-trial/INTENT.md", "state": "active", "type": "W"}

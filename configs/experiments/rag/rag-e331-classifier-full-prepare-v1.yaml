@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e331-classifier-full-prepare-v1
+display_name: {en: E3.31 full Classifier fresh prepare, zh: E3.31 全量 Classifier 新谱系准备}
+domain: rag
+task: e331_classifier_full_prepare
+lifecycle: active
+parameters:
+  queue: outputs/artifacts/e321-direct-first-hcv-cascade/campaigns/e321-direct-first-hcv-full-v1/e321-future-classifier-queue-v3.json
+  direct_source: outputs/artifacts/e321-direct-first-hcv-cascade/sources/e321-direct-full-source-v1.jsonl
+  e320_source: outputs/artifacts/e320-four-stage-cascade/sources/e320-four-stage-cascade-source-v1.jsonl
+  e322_source: outputs/artifacts/e322-classifier-presample-v3/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  e322_report: outputs/artifacts/e322-classifier-presample-v3/campaign/final-report.json
+  e322_audit: outputs/artifacts/e322-classifier-presample-v3/campaign/artifact-audit-v4.json
+  e322_gate: outputs/artifacts/e322-classifier-presample-v3/campaign/final-gate-decision.json
+  output_root: outputs/artifacts/e331-classifier-full-v1
+outputs: {run_root: outputs/runs/rag/rag-e331-classifier-full-prepare-v1/}
+tags: [e331, v1, classifier, full, fresh-lineage, forced-planning, trace-bound-q1, provider-free, no-reject, no-sft]

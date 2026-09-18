@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e335-classifier-full-v1
+display_name: {en: E3.35 full Classifier parent-bound Q1 campaign, zh: E3.35 全量 Classifier 父链绑定 Q1 采集}
+domain: rag
+task: e335_classifier_full
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e335-classifier-full-v1/manifest.json
+  source: outputs/artifacts/e335-classifier-full-v1/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  output_root: outputs/artifacts/e335-classifier-full-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e335-classifier-full-v1/}
+tags: [e335, v1, classifier, full, fresh-lineage, strict-q1, parent-bound, r0-r1-r2, shared-budget, shard-hard-stop, no-rag, no-reject, no-sft]

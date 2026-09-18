@@ -1,0 +1,16 @@
+{"id": "ANA-20260916-001", "path": "research/analyses/ANA-20260916-001-e343-sft-readiness-and-sampling-versus-conversion-audit/meta.json", "state": "closed", "type": "ANA"}
+{"id": "ANA-20260917-001", "path": "research/analyses/ANA-20260917-001-unified-auto-route-sft-direct-route-collapse/meta.json", "state": "active", "type": "ANA"}
+{"id": "ANA-20260917-002", "path": "research/analyses/ANA-20260917-002-unified-auto-route-v6-e9-test-failure-analysis/meta.json", "state": "active", "type": "ANA"}
+{"id": "BLD-20260916-001", "path": "research/builds/BLD-20260916-001-e3-38-sample-level-terminal-accounting-and-e3-39-safe-subset-der/meta.json", "state": "active", "type": "BLD"}
+{"id": "BLD-20260916-002", "path": "research/builds/BLD-20260916-002-current-four-level-cascade-protocol-e3-43/meta.json", "state": "closed", "type": "BLD"}
+{"id": "BLD-20260917-001", "path": "research/builds/BLD-20260917-001-unified-auto-route-sft-and-evaluation-pipeline/meta.json", "state": "active", "type": "BLD"}
+{"id": "BLD-20260918-001", "path": "research/builds/BLD-20260918-001-source-scoped-wiki-identity-repair/meta.json", "state": "closed", "type": "BLD"}
+{"id": "DBG-20260917-001", "path": "research/debug/DBG-20260917-001-unified-auto-route-eval-context-budget-and-v1k-transport/meta.json", "state": "active", "type": "DBG"}
+{"id": "EVAL-20260917-001", "path": "research/evaluations/EVAL-20260917-001-dual-tool-v7-test-only-v3-results/meta.json", "state": "active", "type": "EVAL"}
+{"id": "EXP-20260916-001", "path": "research/experiments/EXP-20260916-001-e3-42-full-refusal-trajectory-collection/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260916-002", "path": "research/experiments/EXP-20260916-002-e3-43-boundary-audit-full-refusal-recollection/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260917-001", "path": "research/experiments/EXP-20260917-001-unified-auto-route-qwen3-vl-4b-learning-rate-sweep/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260917-002", "path": "research/experiments/EXP-20260917-002-e344-full-tool-fresh-resampling-pilot/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260918-001", "path": "research/experiments/EXP-20260918-001-repaired-wiki-full-tool-pilot-v2/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260918-002", "path": "research/experiments/EXP-20260918-002-dual-teacher-pilot32-protocol-v2/meta.json", "state": "closed", "type": "EXP"}
+{"id": "EXP-20260918-003", "path": "research/experiments/EXP-20260918-003-dual-teacher-full-tool-six-epoch-sft/meta.json", "state": "closed", "type": "EXP"}

@@ -85,6 +85,26 @@ def test_execute_rag_rounds_public_evidence_scores_half_up_to_three_decimal_plac
     assert result["returned_standard_class_names"] == ["A", "B", "C"]
 
 
+def test_fixed_visual_top3_preserves_duplicate_class_name_slots(monkeypatch) -> None:
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self):
+            return (
+                b'{"schema_version":"agrinet.rag.search/v1","evidence":['
+                b'{"artifact_id":"a","score":0.9,"metadata":{"english_name":"A"}},'
+                b'{"artifact_id":"b","score":0.8,"metadata":{"english_name":"B"}},'
+                b'{"artifact_id":"c","score":0.7,"metadata":{"english_name":"B"}}]}'
+            )
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda *_args, **_kwargs: Response())
+    result = execute_rag(
+        "http://rag", {"image_path": "image.jpg"},
+        {"query": "visual morphology", "retrieval_type": "visual", "rationale": "protocol-fixed image-only Top-3 retrieval", "top_k": 3},
+    )
+    assert result["returned_standard_class_names"] == ["A", "B", "B"]
+
+
 def test_progress_budget_is_cumulative_and_reserves_closure() -> None:
     budget = ProgressBudget()
     denied = budget.permit(query="q", retrieval_type="visual", image_sha256="sha", rationale="reason", generation_remaining=1)

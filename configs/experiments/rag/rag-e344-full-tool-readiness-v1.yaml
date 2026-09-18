@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e344-full-tool-readiness-v1
+display_name: {en: Full-tool fresh-pool readiness, zh: 全工具重采准备审查}
+domain: rag
+task: e344_full_tool_readiness
+lifecycle: active
+parameters:
+  candidate_pool: datasets/AgriNet-1K/open_agri_v3/vlm_data/candidates/image_pool.jsonl
+  evaluation_manifests:
+    - datasets/AgriNet-1K/open_agri_v3/vlm_data/accepted/dev.jsonl
+    - datasets/AgriNet-1K/open_agri_v3/vlm_data/accepted/test_public.jsonl
+  feature_checkpoint: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/classifier-formal/model_best.pth.tar
+  output_root: outputs/artifacts/e344-full-tool-v1
+outputs: {run_root: outputs/runs/rag/rag-e344-full-tool-readiness-v1/}
+tags: [e344, full-tool, fresh-selection, offline, no-sft]

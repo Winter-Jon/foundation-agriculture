@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e326-structured-rag-prepare-v1
+display_name: {en: E3.26 morphology-first structured RAG prepare, zh: E3.26 形态优先结构化 RAG 准备}
+domain: rag
+task: e326_structured_rag_prepare
+lifecycle: active
+parameters:
+  e318_source: outputs/artifacts/e318-all-unknown-512-rag-audit/sources/e318-all-unknown-512-rag-audit-source-v1.jsonl
+  excluded_sources:
+    - outputs/artifacts/e323-rag-preflight-v4/source.jsonl
+    - outputs/artifacts/e324-structured-rag-v2/source.jsonl
+    - outputs/artifacts/e325-structured-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e326-structured-rag-v1
+outputs: {run_root: outputs/runs/rag/rag-e326-structured-rag-prepare-v1/}
+tags: [e326, morphology-first, structured-rag, independent, prepare, no-reject, no-sft]

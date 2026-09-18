@@ -1,0 +1,16 @@
+schema_version: agrinet.experiment/v1
+id: rag-e343-refusal-trajectories-boundary-audit-v1
+display_name: {en: E3.43 full refusal boundary-audit campaign, zh: E3.43 全量拒识边界审计采集}
+domain: rag
+task: e343_refusal_trajectories
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e343-refusal-trajectories-boundary-audit-v1/manifest.json
+  source: outputs/artifacts/e343-refusal-trajectories-boundary-audit-v1/source.jsonl
+  output_root: outputs/artifacts/e343-refusal-trajectories-boundary-audit-v1/campaign
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e343-refusal-trajectories-boundary-audit-v1/}
+tags: [e343, refusal, full, sample-level, q1-r1-r2, boundary-audit, shared-budget, no-tools, no-reject-execution, no-sft]

@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e342-refusal-trajectories-full-prepare-v1
+display_name: {en: E3.42 full tool-free refusal-trajectory prepare, zh: E3.42 全量无工具拒识轨迹准备}
+domain: rag
+task: e342_refusal_trajectories_prepare
+lifecycle: active
+parameters:
+  e341_source: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/source.jsonl
+  e341_report: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/final-report.json
+  e341_audit: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/artifact-audit.json
+  e341_gate: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign/final-gate-decision.json
+  e341_campaign: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1/campaign
+  output_root: outputs/artifacts/e342-refusal-trajectories-full-v1
+outputs: {run_root: outputs/runs/rag/rag-e342-refusal-trajectories-full-prepare-v1/}
+tags: [e342, refusal, full, parent-bound, no-tools, no-reject-execution, no-sft]

@@ -1,6 +1,6 @@
 # Research Log Start Here
 
-Last updated: 2026-09-14 20:24:02 CST
+Last updated: 2026-09-15 21:46:29 CST
 
 ## Repository state
 
@@ -22,24 +22,184 @@ normally `outputs/volatile/` for transient operational material.
 
 ## Current focus
 
-### Current — E3.23 v4 RAG preflight completed below gate; Reject remains unauthorized
+### Current — Full Classifier collection is blocked on provider delivery confirmation
 
-The user-authorized 16-image E3.23 RAG-only preflight consumed exactly the
-E3.22 v3 frozen future-RAG cohort while preserving its private 6 autonomous
-`INSUFFICIENT_EVIDENCE` / 10 oracle-rescued unsafe-accept split. The terminal
-v4 campaign is under `outputs/artifacts/e323-rag-preflight-v4/campaign/`; its
-managed run `20260914T200528-350c670c-a01` completed with exit code 0.
+E3.28 remains frozen at its hard quality gate and is not resumed or modified.
+E3.30 v2/v3/v4/v5 are preserved frozen diagnostics. E3.30 v6 completed
+shard-00's full legal R0→R1→R2 recovery, but five rows remained terminal
+unknown-delivery after R2. It is therefore immutable and hard-gate failed at
+`outputs/artifacts/e330-classifier-full-v6/campaign/frozen-shard-gate-failure.json`;
+no later shard, RAG, or Reject was started. A regression-tested shard gate now
+stops later-shard spend on any such terminal shortfall.
 
-The artifact audit passes: 29 persisted trajectories each contain exactly one
-frozen classifier predict followed by exactly one actual local RAG search; 156
-global intents match 156 ledger intents and request IDs; there are zero public
-private-data leaks and zero Reject calls. The performance gate fails: final
-disposition is 12 quality-exhausted, three budget-shortfall, and one frozen
-future-Reject, with 0/16 semantic-correct. Budget closed at 296,649/300,000
-committed. Therefore do not execute Reject, remaining Classifier rows,
-conversion, SFT, or training. The next step is to interview the user and redesign
-the RAG evidence/answer contract under a new protocol rather than enlarge or
-replay this frozen campaign.
+E3.31 was a fresh 525-row lineage: 32 read-only E3.22-v3 outcomes and 493 new
+provider rows, with the forced planning-only first turn and trace-bound,
+tool-free Q1 repair retained. Provider-free preparation at
+`outputs/artifacts/e331-classifier-full-v1/` verified unique identities, 105
+classes, six checkpoint bindings, 274/251 Known/Unknown, 470/55 Open/Option,
+365/160 disease/pest, and 7×64+45 shards, with zero initial intents and false
+training flags. Focused regression now passes 28 tests and campaign dry-run
+passed.
+
+E3.31 completed the legal R0→Q1→R1→R2 path for shard-00 and stopped with
+exit code 2 at
+`outputs/runs/rag/rag-e331-classifier-full-v1/20260915T152448-b1af5ee4-a01/`.
+Its immutable freeze is
+`outputs/artifacts/e331-classifier-full-v1/campaign/frozen-shard-gate-failure.json`.
+Twenty R2 delivery shortfalls and one exhausted trace-bound Q1 quality repair
+make the hard gate false. Shard-01 and all downstream RAG artifacts remain
+absent. This repeats the external delivery-confirmation failure observed in
+E3.30 v6; do not replay either lineage. A fresh no-data stability canary then
+confirmed the current `https://api-slb.micuapi.ai/v1` / `gpt-5.6-sol` route is
+still unhealthy: only 4/10 fixed READY requests were delivered, with 6
+`DeliveryUnresolved` events, so it failed before a second round. Its immutable
+report is `outputs/artifacts/micu-slb-canary/v5-sol-post-e331-stability/report.json`.
+A new full lineage requires a separately validated provider transport/endpoint
+change, not another identical restart.
+The user-specified direct route `https://www.micuapi.ai/v1` was then tested by
+the same isolated no-data protocol. It failed closed in its first round: 0/10
+fixed `READY` requests had confirmed valid delivery, so round 2 was not sent.
+The report is
+`outputs/artifacts/micu-direct-canary/v6-sol-post-e331-stability/report.json`;
+the managed run exited 2 at
+`outputs/runs/rag/rag-micu-direct-stability-canary-v6/20260915T181406-b1af5ee4-a01/`.
+An authenticated, credential-safe follow-up using the exact `micu_slb` profile
+used by the canary returned HTTP 403 at the direct node. The identical request
+to the existing SLB node returned HTTP 200 and listed `gpt-5.6-sol`. The same
+key is therefore loaded correctly, while the direct node denies its API access
+under that profile. Its independent 0/10 chat result remains decisive. This
+endpoint is not eligible for a fresh collection.
+The no-data canary implementation now records only the durable safe exception
+class (for example `HTTPError` or `TimeoutError`) alongside
+`DeliveryUnresolved`; it never stores exception text, endpoint query strings,
+or credentials. Eight focused credentials/canary tests pass. Existing frozen
+canary output was not changed.
+Focused E3.22/E3.27/E3.28/E3.29 and credential/canary integration regression
+passes 36/36 after this change; no current E3.28--E3.31 or canary process is
+running. The E3.31 freeze remains present and no fresh dynamic E3.29 successor
+was derived.
+Direct-node canaries now require an authenticated `/models` preflight that
+lists the requested model before any output directory, ledger, or chat intent
+is created. The current direct node's HTTP 403 therefore fails before spending
+another ten-request no-data round; the SLB canary path is unchanged. Ten
+focused credential/canary tests pass after this guard.
+GPG diagnosis is now conclusive: `micu_main` and `micu_slb` both decrypt
+successfully, their key SHA-256 fingerprints match (not recorded in docs), and
+the invoking environment has no `YUNWU_API_KEY` override. The direct HTTP 403
+is therefore not a local GPG decryption or stale-environment failure. Direct
+canaries now explicitly load `micu_main`; SLB routes explicitly retain
+`micu_slb`. Eleven focused tests, syntax checks, CLI show, and dry-run pass.
+At the user's request, a fresh SLB v6 no-data canary was then run. Round 1
+returned 5/10 valid `READY` deliveries and five `UnknownTeacherDelivery`
+outcomes, so it fail-closed before round 2 and exited 2. Its report is
+`outputs/artifacts/micu-slb-canary/v6-sol-post-e331-stability/report.json`.
+This confirms the SLB chat route remains unstable; it is not eligible for a
+fresh full Classifier lineage.
+The user then authorized testing the existing bounded multi-round delivery
+mechanism. A fresh no-data SLB R0/R1/R2 recovery canary passed 10/10 final
+deliveries: one R0 `UnknownTeacherDelivery` was recovered by one new, direct
+predecessor-bound R1 request; no R2 was needed. Its report is
+`outputs/artifacts/micu-slb-recovery-canary/v7-sol-post-e331/report.json`; all
+training flags remain false. This authorized a new, never-replayed E3.32
+Classifier lineage (525=32 reused+493 fresh), prepared provider-free at
+`outputs/artifacts/e332-classifier-full-v1/` and now running shard-00 under
+managed PID 1250174. Volatile: inspect run status and immutable outcomes before
+relying on interim counts; no RAG is authorized until the full Classifier gate.
+E3.32 has now terminated at shard-00 hard gate (exit 2), with no shard-01/RAG
+created. Its 64 R0 rows all had confirmed delivery; R1/R2 were empty. Five
+Q1 quality repairs ran, but one delivered trace-bound Q1 remained a quality
+reject despite a semantically-correct private audit. That sample exhausted its
+only Q1 and is not eligible for delivery R1/R2; the immutable freeze is
+`outputs/artifacts/e332-classifier-full-v1/campaign/frozen-shard-gate-failure.json`.
+Thus the current blocker is a public quality-contract failure, not SLB delivery.
+Dynamic RAG remains prohibited. Reject, conversion, SFT, and training remain
+unexecuted, with all authorization flags false.
+
+E3.33 is the current fresh lineage. It retains the passed bounded SLB recovery
+mechanism (R0, then one new predecessor-bound R1 only for unresolved delivery,
+then at most one R2; never replay an ambiguous request), but tightens Q1:
+classifier rank, score, and class name cannot be visual evidence; absent or
+unresolvable decisive traits require calibrated low/medium confidence and
+`INSUFFICIENT_EVIDENCE`. Provider-free preparation verified 525 rows
+(32 E3.22-v3 reuse + 493 new), 105 classes, six checkpoint bindings, unique
+identities, 7×64+45 shards, zero initial intents, and false training flags.
+The authenticated SLB model preflight returned HTTP 200 with `gpt-5.6-sol`.
+After show/dry-run and focused regression (36 passed), the campaign was started
+once as managed PID 1263696 at
+`outputs/runs/rag/rag-e333-classifier-full-v1/20260915T203346-b1af5ee4-a01/`.
+Volatile: inspect its status, bounded ledgers, and immutable shard outcomes; do
+not start RAG unless the complete Classifier hard gate passes.
+
+E3.33 then froze at shard-00 after two delivered Q1 quality rejects. E3.34
+strengthened Q1 with exact observation/rejection-candidate rules but exposed a
+local continuation bug: an R0 contract error without a frozen public trajectory
+was incorrectly admitted to Q1, so the managed run exited before an outcome or
+gate was written. E3.34 remains immutable. E3.35 fixes that scheduler boundary:
+only a delivered R0 quality reject with both a persisted parent path and matching
+SHA can enter trace-bound Q1; all other R0 contract errors are terminal shard
+shortfalls. Its provider-free 525-row prepare and 38 focused tests passed. The
+current volatile managed run is PID 1286637 at
+`outputs/runs/rag/rag-e335-classifier-full-v1/20260915T214200-b1af5ee4-a01/`.
+No RAG, Reject, conversion, SFT, or training is authorized.
+
+### Current — E3.27 image-only Top-3 RAG preflight passes the repaired-cohort gate
+
+E3.27 pairs the frozen 28-image E3.26 cohort with exactly one local visual
+Top-3 retrieval per image, no planner, a short ID-only closure, deterministic
+HCV/Hermes rendering, and isolated private semantic audit. The source retains
+28 truth classes, seven rows in each Open/Option × disease/pest cell, fold
+counts 9/10/9, three checkpoint SHAs, and uniqueness at sample, image, source
+group, and near-duplicate group. Prepare made zero provider requests.
+
+The authoritative repaired-cohort run is
+outputs/runs/rag/rag-e327-visual-top3-v3/20260915T021554-b1af5ee4-a01/.
+It completed with exit code 0. The final result under
+outputs/artifacts/e327-visual-top3-rag-v1/campaign-r3/ is 24/28
+semantic-correct: Open-disease 5/7, Open-pest 5/7, Option-disease 7/7, and
+Option-pest 7/7. One private-audit unknown delivery was resolved by R1 without
+repeating retrieval or closure. There were zero quality-exhausted and budget
+shortfalls. Independent audit passes all 28 trajectories with 57 global intents
+equal to 57 ledger intents, zero private leakage, zero Reject calls, and fixed
+visual Top-3/no-ranker arguments. The final gate is true; all training flags
+remain false.
+
+Two earlier immutable diagnostics are retained. campaign/ exposed a catalog bug
+that removed RAG slots when a retrieved class duplicated a classifier name;
+campaign-r2 fixed the loss and reached 22/28, but Open-disease was 4/7.
+campaign-r3 added a general visibility-grounded closure rule and reached the
+gate. Because that rule was designed after inspecting errors on this same
+cohort, the 24/28 result is a repaired-cohort validation, not an unbiased
+independent generalization estimate. Do not expand collection, run remaining
+Classifier, invoke Reject, convert data, start SFT, or train. Interview the user
+and preregister a fresh disjoint confirmation cohort if stronger evidence is
+desired.
+
+### Historical — E3.25 independent 28-image RAG preflight completed below performance gate
+
+E3.25 applied E3.24's structured planner, one local RAG search, structured
+closure, deterministic HCV/Hermes renderer, and semantic-only private audit to
+a new 28-image cohort. The source is disjoint from E3.23/E3.24 on sample ID,
+image SHA, source group, and near-duplicate group; it contains 28 truth classes,
+seven rows in every Open/Option × disease/pest cell, and class-fold counts
+9/10/9 with zero truth membership in the corresponding label maps.
+
+Managed run
+`outputs/runs/rag/rag-e325-structured-rag-v1/20260914T214948-b1af5ee4-a01/`
+completed with exit code 0. Final state is 22 semantic-correct, five frozen
+future-Reject, and one quality-exhausted closure; no delivery or budget
+shortfall occurred. Option reached 13/14, but Open reached only 9/14. The key
+failure cell is Open-pest at 3/7, below the preregistered five-correct minimum;
+therefore `presample_gate_passed=false` despite meeting the 22/28 overall
+threshold.
+
+The authoritative audit is
+`outputs/artifacts/e325-structured-rag-v1/campaign/artifact-audit-r1.json`; it
+passes with 28/28 RAG evidence receipts, 27 valid final trajectories plus the
+retained quality-exhausted row, 84 global intents equal to 84 ledger intents,
+unique request IDs, zero leakage, and zero Reject calls. Budget closed at
+163,018/700,000 committed. Do not expand RAG, execute Reject, run the remaining
+Classifier queue, convert data, start SFT, or train. Diagnose Open-pest candidate
+selection and decision consistency before proposing a new protocol.
 
 ### Historical — E3.22 v3 paired Classifier preflight passed
 
@@ -927,7 +1087,21 @@ mechanism passes a fresh private-audited pilot.
 
 ## Records and archive
 
-- E3.23 v4 RAG preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 20:24:02 CST). The 16-image RAG-only campaign completed safely but failed its performance gate with zero semantic-correct, 12 quality-exhausted, three budget shortfalls, and one future-Reject.
+- E3.36 bounded terminal-delivery Classifier campaign: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-15 22:04:00 CST). E3.35 froze on one terminal unknown under its zero-tolerance policy; fresh E3.36 permits at most 10% terminal delivery exposure per shard and globally, while preserving R0--R2 recovery and zero tolerance for every non-delivery failure. The managed E3.36 run is volatile; RAG remains blocked.
+
+- E3.37 Option-safe Q1 Classifier campaign: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-15 23:27:21 CST). E3.36 froze at shard-03 because an Option Q1 prompt/validator mismatch permitted only two rejections while the Option contract demands OA--OD comparison. Fresh E3.37 makes Option Q1 compare all four public choices and reject all three unselected options; its managed run is volatile and RAG remains blocked.
+
+- E3.38 sample-level Classifier audit correction: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-16 00:01:43 CST). Shards are now explicitly scheduling/recovery boundaries only. Full collection continues after a terminal sample shortfall; only sample-level confirmed `future_rag` results may enter RAG, while all other terminals remain explicit residuals. E3.38 is prepared but waits for the active E3.37 run to become terminal.
+
+- E3.27 image-only Top-3 repaired-cohort preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-15 02:23:20 CST). Lossless R1/R2/R3 slots and visibility-grounded closure reached 24/28 and passed the artifact-backed gate; fresh-cohort confirmation remains pending.
+
+- E3.26 provider-free semantic retrieval ablation: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-15 00:53:00 CST). Visual-only Top-8 dominates all tested semantic/fused strategies and restores retrieval for seven prior failures without regression.
+
+- E3.26 morphology-first structured RAG preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 23:40:47 CST). The final 28-image campaign passed every engineering/privacy audit but closed at 16/28, with Open-pest retrieval recall as the dominant semantic blocker.
+
+- E3.25 independent structured RAG preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 22:01:51 CST). The identity-disjoint 28-image campaign completed safely at 22 semantic-correct but failed its Open-pest and quality gates.
+
+- E3.24 v2 structured RAG preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 21:19:12 CST). The 8-image structured planner/closure campaign passed its corrected report+artifact gate at 7/8 semantic-correct, with zero quality, delivery, budget, leakage, or Reject failures.
 
 - E3.22 v3 paired Classifier preflight: [experiments/2026-W38-0914-0920.md](experiments/2026-W38-0914-0920.md) (2026-09-14 19:10:14 CST). The repaired 32-image preflight passed its report+artifact gate; Known reached 16/16, while simulated-Unknown autonomous deferral remains only 6/16.
 

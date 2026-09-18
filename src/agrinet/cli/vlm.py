@@ -529,6 +529,17 @@ def submit(
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(2) from exc
         command = MsSwiftAdapter().train_command(root / config["inputs"]["config"], sft_python(config))
+    elif operation == 'full-tool-evaluate':
+        command = [str(root / '.venv/bin/python'), '-m', 'agrinet.vlm.full_tool_service_eval',
+                   '--config', str(root / 'configs/experiments/vlm' / f'{experiment_id}.yaml'),
+                   '--checkpoint', config['inputs']['checkpoint'], '--mode', config['parameters']['evaluation_mode']]
+    elif operation in {'full-tool-smoke', 'full-tool-train'}:
+        command = [str(root / '.venv/bin/python'), '-m', 'agrinet.vlm.full_tool_trial',
+                   '--config', str(root / 'configs/experiments/vlm' / f'{experiment_id}.yaml'),
+                   '--phase', 'smoke' if operation == 'full-tool-smoke' else 'train']
+    elif operation == 'full-tool-template':
+        command = [str(sft_python(config)), 'scripts/vlm/validate_full_tool_template.py',
+                   '--data', config['inputs']['data'], '--output', config['outputs']['report']]
     elif operation == "export":
         command = MsSwiftAdapter().export_command(root / config["inputs"]["baseline_model"], root / config["outputs"]["model"])
     elif operation == "evaluate":
@@ -587,6 +598,7 @@ def submit(
     else:
         typer.echo(f"error: unsupported vlm operation: {operation}", err=True); raise typer.Exit(2)
     env = local_training_env(config) if operation in {
+        'full-tool-smoke', 'full-tool-train',
         "train", "manual-json-checkpoint-queue", "m1-direct-checkpoint-queue",
         "checkpoint-smoke-evaluation",
         "formal-direct-native", "formal-rag-native",

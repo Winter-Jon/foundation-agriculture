@@ -1,0 +1,14 @@
+schema_version: agrinet.experiment/v1
+id: rag-e325-structured-rag-prepare-v1
+display_name: {en: E3.25 identity-disjoint structured RAG prepare, zh: E3.25 身份独立结构化 RAG 准备}
+domain: rag
+task: e325_structured_rag_prepare
+lifecycle: active
+parameters:
+  e319_source: outputs/artifacts/e319-rag-closure-audit/sources/e319-rag-closure-audit-source-v1.jsonl
+  excluded_sources:
+    - outputs/artifacts/e323-rag-preflight-v4/source.jsonl
+    - outputs/artifacts/e324-structured-rag-v2/source.jsonl
+  output_root: outputs/artifacts/e325-structured-rag-v1
+outputs: {run_root: outputs/runs/rag/rag-e325-structured-rag-prepare-v1/}
+tags: [e325, structured-rag, independent, prepare, no-reject, no-sft]

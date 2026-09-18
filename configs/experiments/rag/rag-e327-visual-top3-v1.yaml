@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e327-visual-top3-v1
+display_name: {en: E3.27 28-image image-only Top-3 RAG preflight, zh: E3.27 28 图纯图像 Top-3 RAG 预检}
+domain: rag
+task: e327_visual_top3
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e327-visual-top3-rag-v1/manifest-r0.json
+  source: outputs/artifacts/e327-visual-top3-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e327-visual-top3-rag-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  rag_endpoint: http://127.0.0.1:8077
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e327-visual-top3-v1/}
+tags: [e327, image-only, visual-top3, paired, structured-rag, hcv, hermes, no-reject, no-sft]

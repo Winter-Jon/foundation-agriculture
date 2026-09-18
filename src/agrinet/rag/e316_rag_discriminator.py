@@ -55,7 +55,7 @@ def validate_e316_trajectory(row: dict[str, Any], trajectory: dict[str, Any]) ->
         raise ValueError("E3.16 RAG requires an actual search response")
     for item in rag_calls:
         args=item.get("call", {}).get("arguments")
-        if not isinstance(args, dict) or args.get("retrieval_type") not in {"visual", "semantic"}:
+        if not isinstance(args, dict) or args.get("retrieval_type") not in {"visual", "semantic", "balanced"}:
             raise ValueError("E3.16 RAG retrieval_type is required")
     answer=str(trajectory.get("answer") or "")
     body=re.search(r"<answer>(.*?)</answer>", answer, re.I | re.S).group(1).strip()

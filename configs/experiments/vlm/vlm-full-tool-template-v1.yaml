@@ -1,0 +1,10 @@
+schema_version: agrinet.experiment/v1
+id: vlm-full-tool-template-v1
+display_name: {en: Full tool actual template validation, zh: 完整工具链实际模板验收}
+domain: vlm
+task: validation
+lifecycle: active
+inputs:
+  data: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1/data.jsonl
+outputs:
+  report: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1/template-check.json

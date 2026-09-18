@@ -46,6 +46,7 @@ def main() -> None:
     extract = normalizer()
     groups: dict[tuple[str, str, str], Counter[str]] = defaultdict(Counter)
     buckets: dict[str, Counter[str]] = defaultdict(Counter)
+    routes: dict[str, Counter[str]] = defaultdict(Counter)
     redacted = []
     for prediction in prediction_rows:
         private = truth[str(prediction["id"])]
@@ -63,6 +64,10 @@ def main() -> None:
         buckets[str(private.get("evaluation_bucket") or "")].update(
             rows=1, correct=int(correct), errors=int(bool(prediction.get("error"))), terminal_tool_calls=int(terminal_tool_call)
         )
+        route = str(prediction.get("route") or "unknown")
+        routes[route].update(rows=1, correct=int(correct), errors=int(bool(prediction.get("error"))),
+                             protocol_errors=int(bool(prediction.get("protocol_error"))),
+                             tool_turns=int(prediction.get("tool_turns") or 0))
         redacted.append({"id": prediction["id"], "language": prediction.get("language"), "route": prediction.get("route"),
                          "final_answer_text": final, "answer_extraction_source": source, "correct": correct,
                          "protocol_error": protocol_error, "terminal_tool_call": terminal_tool_call})
@@ -86,6 +91,14 @@ def main() -> None:
                "registry_sha256": registry.digest, "private_truth_used_offline_only": True,
                "private_labels_or_codes_emitted": False, "by_language_domain_bucket": by_group}
     metrics["by_evaluation_bucket"] = by_bucket
+    metrics["by_route"] = {
+        route: {"rows": values["rows"], "accuracy": values["correct"] / values["rows"],
+                "request_error_rate": values["errors"] / values["rows"],
+                "protocol_error_rate": values["protocol_errors"] / values["rows"],
+                "mean_tool_turns": values["tool_turns"] / values["rows"]}
+        for route, values in sorted(routes.items())
+    }
+    metrics["route_distribution"] = {route: values["rows"] / total["rows"] for route, values in sorted(routes.items())}
     args.output_jsonl.parent.mkdir(parents=True, exist_ok=True)
     args.output_jsonl.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in redacted), encoding="utf-8")
     args.output_metrics.parent.mkdir(parents=True, exist_ok=True)

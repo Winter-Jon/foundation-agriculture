@@ -1,0 +1,19 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-supplement-live-v2
+display_name: {en: Dual teacher final quota live, zh: 双教师最终定向补采}
+domain: rag
+task: dual_teacher_smoke
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-full-supplement-v2/live
+  source: outputs/artifacts/dual-teacher-full-supplement-v2/pilot-source.jsonl
+  bindings: outputs/artifacts/dual-teacher-full-supplement-v2/classifier-bindings.json
+  sample_count: 289
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 32
+  collection_mode: quota_batch
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-supplement-live-v2/}
+tags: [dual-teacher, quota-supplement, final-targeting, no-sft]

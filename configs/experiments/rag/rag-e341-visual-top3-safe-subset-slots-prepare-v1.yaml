@@ -1,0 +1,15 @@
+schema_version: agrinet.experiment/v1
+id: rag-e341-visual-top3-safe-subset-slots-prepare-v1
+display_name: {en: E3.41 slot-preserving visual Top-3 RAG safe-subset prepare, zh: E3.41 保留候选槽位 visual Top-3 RAG 安全子集准备}
+domain: rag
+task: e341_visual_top3_safe_subset_slots_prepare
+lifecycle: active
+parameters:
+  e328_source: outputs/artifacts/e338-classifier-full-v1/source.jsonl
+  e328_report: outputs/artifacts/e338-classifier-full-v1/campaign/final-report.json
+  e328_audit: outputs/artifacts/e338-classifier-full-v1/campaign/artifact-audit-remediation-v1.json
+  e328_gate: outputs/artifacts/e338-classifier-full-v1/campaign/final-gate-decision-remediation-v1.json
+  e327_source: outputs/artifacts/e327-visual-top3-rag-v1/source.jsonl
+  output_root: outputs/artifacts/e341-visual-top3-rag-safe-subset-slots-v1
+outputs: {run_root: outputs/runs/rag/rag-e341-visual-top3-safe-subset-slots-prepare-v1/}
+tags: [e341, visual-top3, fixed-query, slots-preserved, dynamic, safe-subset, no-reject, no-sft]

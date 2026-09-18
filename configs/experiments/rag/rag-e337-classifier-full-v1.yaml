@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e337-classifier-full-v1
+display_name: {en: E3.37 full Classifier Option-safe Q1 campaign, zh: E3.37 全量 Classifier Option-Q1 采集}
+domain: rag
+task: e337_classifier_full
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e337-classifier-full-v1/manifest.json
+  source: outputs/artifacts/e337-classifier-full-v1/source.jsonl
+  e322_campaign: outputs/artifacts/e322-classifier-presample-v3/campaign
+  output_root: outputs/artifacts/e337-classifier-full-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e337-classifier-full-v1/}
+tags: [e337, v1, classifier, full, fresh-lineage, option-safe-q1, parent-bound, r0-r1-r2, shared-budget, terminal-unknown-delivery-le-10-percent, no-rag, no-reject, no-sft]

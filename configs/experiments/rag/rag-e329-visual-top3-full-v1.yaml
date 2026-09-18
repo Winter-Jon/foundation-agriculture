@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-e329-visual-top3-full-v1
+display_name: {en: E3.29 dynamic full visual Top-3 RAG campaign, zh: E3.29 动态全量 visual Top-3 RAG 采集}
+domain: rag
+task: e329_visual_top3_full
+lifecycle: active
+parameters:
+  manifest: outputs/artifacts/e329-visual-top3-rag-full-v1/manifest.json
+  source: outputs/artifacts/e329-visual-top3-rag-full-v1/source.jsonl
+  output_root: outputs/artifacts/e329-visual-top3-rag-full-v1/campaign
+  private_registry: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/fold-artifacts/fold-0/label_map.json
+  rag_endpoint: http://127.0.0.1:8077
+  teacher_model: gpt-5.6-sol
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  timeout: 180
+  authorize_live_collection: true
+outputs: {run_root: outputs/runs/rag/rag-e329-visual-top3-full-v1/}
+tags: [e329, visual-top3, full, dynamic, shared-budget, no-reject, no-sft]

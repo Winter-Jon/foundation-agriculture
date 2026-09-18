@@ -1,0 +1,14 @@
+{
+  "schema_version": "agrinet.dual-tool-route-evaluation-settings/v1",
+  "settings_id": "dual-tool-route-eval-v1k-4k-c16-v2-unconstrained",
+  "immutable": true,
+  "image_max_side": 1024,
+  "max_new_tokens": 4096,
+  "max_concurrent": 16,
+  "max_running_requests": 16,
+  "context_length": 32768,
+  "image_transport": "in_memory_rgb_jpeg_lanczos_q88",
+  "tool_call_text_policy": "consume_first_valid_tool_call_from_parseable_multi_call_text",
+  "tool_order_policy": "model_chosen",
+  "max_distinct_tool_calls": 2
+}

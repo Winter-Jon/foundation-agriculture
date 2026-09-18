@@ -1,0 +1,18 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-supplement-prepare-v13
+display_name: {en: Dual teacher final residual 4x prepare, zh: 双教师最后残余四倍准备}
+domain: rag
+task: e344_full_tool_pilot_prepare
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-full-supplement-v13
+  registry: datasets/AgriNet-1K/wiki_source_scoped_v3/canonical_label_registry.jsonl
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 32
+  sample_count: 24
+  collection_mode: quota_batch
+outputs: {run_root: outputs/runs/rag/rag-dual-teacher-supplement-prepare-v13/}
+tags: [dual-teacher, quota-supplement, final-residual-4x, no-sft]

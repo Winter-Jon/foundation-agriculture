@@ -1,0 +1,12 @@
+schema_version: agrinet.experiment/v1
+id: data-dual-teacher-full-tool-freeze-v1
+display_name: {en: Dual teacher full-tool SFT freeze, zh: 双教师完整工具链训练集冻结}
+domain: data
+task: convert
+lifecycle: active
+inputs:
+  source: outputs/artifacts/dual-teacher-full-v1/final-v10
+  isolation: outputs/artifacts/dual-teacher-full-v1/isolation-audit.json
+outputs:
+  artifact: outputs/artifacts/datasets/agrinet-dual-teacher-full-tool-sft-v1
+parameters: {expected_rows: 1881, seed: 42}

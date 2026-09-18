@@ -1,0 +1,29 @@
+schema_version: agrinet.experiment/v1
+id: rag-e344-full-tool-prepare-v1
+display_name:
+  en: Full-tool fresh selection and features
+  zh: 全工具重新选图与特征聚类
+domain: rag
+task: e344_full_tool_prepare
+lifecycle: active
+parameters:
+  candidate_pool: datasets/AgriNet-1K/open_agri_v3/vlm_data/candidates/image_pool.jsonl
+  evaluation_manifests:
+  - datasets/AgriNet-1K/open_agri_v3/vlm_data/accepted/dev.jsonl
+  - datasets/AgriNet-1K/open_agri_v3/vlm_data/accepted/test_public.jsonl
+  feature_checkpoint: outputs/artifacts/vision/openagri-v3-known-vitl-mae-v1/classifier-formal/model_best.pth.tar
+  output_root: outputs/artifacts/e344-full-tool-v1
+  known_root: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2
+  unknown_root: outputs/artifacts/vision/openagri-v3-known-vitl-e3-adjacent-classfold-v1
+  near_duplicate_audit: datasets/AgriNet-1K/open_agri_v3/vlm_data/audits/near_duplicate_clusters.jsonl
+  device: cuda:0
+  batch_size: 64
+  known_heldout_root: outputs/artifacts/vision/openagri-v3-known-vitl-oof-v2/manifests-attempt3
+outputs:
+  run_root: outputs/runs/rag/rag-e344-full-tool-prepare-v1/
+tags:
+- e344
+- full-tool
+- fresh-selection
+- offline
+- no-sft

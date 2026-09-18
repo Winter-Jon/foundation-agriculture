@@ -1,0 +1,12 @@
+{
+  "schema_version": "agrinet.unified-auto-route-evaluation-settings/v1",
+  "settings_id": "unified-auto-route-eval-v1k-4k-c16-v2-permissive-tool-text",
+  "immutable": true,
+  "image_max_side": 1024,
+  "max_new_tokens": 4096,
+  "max_concurrent": 16,
+  "max_running_requests": 16,
+  "context_length": 32768,
+  "image_transport": "in_memory_rgb_jpeg_lanczos_q88",
+  "tool_call_text_policy": "allow_single_valid_tool_call_with_surrounding_text"
+}

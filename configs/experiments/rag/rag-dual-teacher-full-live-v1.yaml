@@ -1,0 +1,26 @@
+schema_version: agrinet.experiment/v1
+id: rag-dual-teacher-full-live-v1
+display_name:
+  en: Dual teacher full 2x live
+  zh: 双教师两倍全量live
+domain: rag
+task: dual_teacher_smoke
+lifecycle: active
+parameters:
+  artifact_root: outputs/artifacts/dual-teacher-full-v1/live
+  source: outputs/artifacts/dual-teacher-full-v1/pilot-source.jsonl
+  bindings: outputs/artifacts/dual-teacher-full-v1/classifier-bindings.json
+  sample_count: 3798
+  rag_endpoint: http://127.0.0.1:8079/search
+  classifier_device: cuda:1
+  teacher_base_url: https://api-slb.micuapi.ai/v1
+  teacher_model: gpt-5.6-sol
+  workers: 32
+  collection_mode: quota_batch
+outputs:
+  run_root: outputs/runs/rag/rag-dual-teacher-full-live-v1/
+tags:
+- dual-teacher
+- full-collection
+- 2x
+- no-sft
