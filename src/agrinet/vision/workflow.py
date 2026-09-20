@@ -330,14 +330,18 @@ def run_classifier(args: argparse.Namespace) -> None:
     for epoch in range(args.epochs):
         if hasattr(sampler, "set_epoch"): sampler.set_epoch(epoch)
         model.train()
+        train_total = torch.zeros(2, device=device)
         for images, labels, _ in train_loader:
             optimizer.zero_grad(set_to_none=True)
             with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
                 loss = nn.functional.cross_entropy(model(images.to(device)), labels.to(device), label_smoothing=0.1)
             scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update(); step += 1
+            train_total += torch.tensor([loss.detach() * labels.numel(), labels.numel()], device=device)
             if args.max_steps and step >= args.max_steps: break
+        train_total = _reduce(train_total, world)
         metrics = _evaluate(model, dev_loader, device, labels_meta, world=world); metrics.update({"epoch": epoch + 1, "step": step})
         if _primary(rank):
+            metrics["train_loss"] = (train_total[0] / train_total[1].clamp_min(1)).item()
             history.append(metrics); _write_json(output / "classifier_dev_metrics.json", history)
             raw_model = model.module if isinstance(model, DistributedDataParallel) else model
             if metrics["macro_f1"] > best:
