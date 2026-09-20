@@ -194,6 +194,7 @@ def _reduce(value: torch.Tensor, world: int) -> torch.Tensor:
 
 _ARCHITECTURES = {
     "mae_vit_base_patch16_224": "vit_base_patch16_224",
+    "mae_vit_huge_patch14_224": "vit_huge_patch14_224",
     "mae_vit_large_patch16_224": "vit_large_patch16_224",
 }
 

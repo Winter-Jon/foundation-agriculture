@@ -1,6 +1,7 @@
 from collections import Counter
 
 from agrinet.vision.workflow import DistributedBalancedSampler
+from agrinet.vision.workflow import _ARCHITECTURES
 
 
 def test_distributed_balanced_sampler_is_deterministic_and_globally_balanced() -> None:
@@ -26,3 +27,7 @@ def test_distributed_balanced_sampler_rotates_remainder_classes() -> None:
     second = Counter(rows[index]["label"] for index in sampler._global_indices())
     assert first == {0: 3, 1: 3, 2: 2}
     assert second == {0: 2, 1: 3, 2: 3}
+
+
+def test_vith_architecture_maps_to_timm_huge_patch14() -> None:
+    assert _ARCHITECTURES["mae_vit_huge_patch14_224"] == "vit_huge_patch14_224"

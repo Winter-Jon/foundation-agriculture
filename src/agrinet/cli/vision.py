@@ -102,7 +102,13 @@ def _command(config: dict, operation: str) -> list[str]:
 def doctor() -> None:
     import timm
     import torch
-    typer.echo(json.dumps({"torch": torch.__version__, "cuda": torch.cuda.is_available(), "gpus": torch.cuda.device_count(), "vit_large": timm.is_model("vit_large_patch16_224")}, indent=2))
+    typer.echo(json.dumps({
+        "torch": torch.__version__,
+        "cuda": torch.cuda.is_available(),
+        "gpus": torch.cuda.device_count(),
+        "vit_large": timm.is_model("vit_large_patch16_224"),
+        "vit_huge": timm.is_model("vit_huge_patch14_224"),
+    }, indent=2))
 
 
 @app.command("submit")
